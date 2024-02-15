@@ -1,0 +1,65 @@
+---
+title: "Modèles de Distribution d'Espèces (SDMs)"
+author: "Abdou"
+date: "2024-01-31"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## 1. Modèles Linéaires Généralisés (GLM)
+
+**Avantages:**
+- Appropriés pour des relations linéaires entre les variables.
+- Interprétables et simples à mettre en ouvre.
+
+**Inconvénients:**
+- Sensibles aux valeurs aberrantes.
+- Limités dans la modélisation de non-linéarités.
+
+## 2. Modèles Additifs Généralisés (GAM)
+
+**Avantages:**
+- Capables de gérer des relations non linéaires.
+- Flexibles dans la modélisation des effets de variables.
+
+**Inconvénients:**
+- Complexes par rapport aux GLM.
+- Sensibles au surajustement.
+
+## 3. Forêt Aléatoire (RF)
+
+**Avantages:**
+- Performants sur des ensembles de données variés.
+- Peu sensibles au surajustement.
+
+**Inconvénients:**
+- Moins interprétables.
+- Plus gourmands en ressources computationnelles.
+
+## 4. Modèles de Régression Boostée Généralisée (GBM)
+
+**Avantages:**
+- Grande précision prédictive.
+- Adaptés à des modèles complexes.
+
+**Inconvénients:**
+- Complexes à paramétrer.
+- Sensibles au surajustement.
+
+## 5. Réseaux de Neurones Artificiels (ANN)
+
+**Avantages:**
+- Capables de modéliser des relations complexes.
+- Adaptés à de grandes quantités de données.
+
+**Inconvénients:**
+- Demandent un grand volume de données pour éviter le surajustement.
+- Complexes à interpréter.
+

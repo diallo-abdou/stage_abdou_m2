@@ -1,0 +1,799 @@
+---
+title: "Avancement Stage "
+author: "Abdourahmane Diallo"
+date: "2024-02-05"
+format: 
+  revealjs
+#smaller: true
+scrollable: true
+#theme: sky
+editor: visual
+number-sections: true
+toc: true
+#toc_float: 'yes'
+code_download: 'yes'
+slide-number: true
+margin: 0.1
+#center: true
+code-fold: true
+width: 1200
+height: 700
+toc_depth: 0
+execute: 
+  cache: true
+---
+
+```{r setup, include=FALSE, fig.align='center',message=FALSE,warning=FALSE,message=FALSE,echo=TRUE}
+#rm(list=ls()) # Properly clear workspace
+#source("function_abdou.R")
+
+```
+
+# Packages
+
+```{r,echo=TRUE}
+
+  library(tidyverse)
+  library(glme)
+  library(lsmeans)
+  library(agricolae)
+  library(RVAideMemoire)
+  library(corrplot)
+  library(emmeans)
+  library(ggplot2)
+  library(lme4)
+  library(multcomp)
+  library(MASS)
+  library(R2WinBUGS)
+  library(arm)
+  library(performance)
+  library(AER)
+  library(dplyr)
+  library(AICcmodavg)
+  library(MuMIn)
+  library(ade4)
+  library(Hmisc)
+  library(labdsv)
+  library(vegan)
+  library(cowplot)
+  library(ggpubr)
+  library(rstatix)
+  library(patchwork)
+  library(multcompView)
+  library(ggsignif)
+  library(grid)
+  library(FactoMineR)
+  library(factoextra)
+  library(explore)
+  library(ggrepel)
+  library(naniar)
+  library(outliers)
+  library(leaps)
+  library(fastDummies)
+  library(caret)
+  library(mgcv)
+  library(ggeffects)
+  library(gratia)
+  library(GGally)
+  library(caTools)
+  library(rpart)
+  library(rpart.plot)
+  library(openxlsx)
+  library(readxl)
+  library(leaflet)
+  library(quarto)
+  library(raster)
+  library(knitr)
+  library(kableExtra)
+  library(stringr)
+  library(plotly)
+
+
+```
+
+# Fonctions
+
+```{r, echo=TRUE}
+
+## Identification des NA dans un df -----------------------------------------------
+taux_completion<-
+  function(df, afficher_zero_percent = FALSE, seuil, trie=FALSE) {
+    # Calculer le pourcentage de NA dans le dataframe
+    pourcentage_total <-
+      round(sum(is.na(df)) / (nrow(df) * ncol(df)) * 100, 1)
+    
+    # Calculer le pourcentage de NA par colonne
+    pourcentage_colonnes <- round(colMeans(is.na(df)) * 100, 1)
+    
+    # Créer un dataframe résultat avec deux colonnes
+    result <-
+      data.frame(
+        Variables = names(df),
+        TC = pourcentage_colonnes,
+        row.names = NULL
+      )
+    
+    if (afficher_zero_percent) {
+      result <- result[result$TC == 0, ]
+      result$TC = 100 -result$TC
+    } else {
+      result <- result[result$TC > 0, ]
+      result$TC = 100 -result$TC
+      
+    }
+    
+    result <- rbind(result, c("Total", pourcentage_total))
+    #result <- rbind(result, c("Total", paste0(pourcentage_total, "")))
+    
+    result <- result[, c("Variables", "TC")]
+    result$TC = as.numeric(result$TC)
+    result$TC = round(result$TC,1)
+    if (trie){
+      result = result %>% arrange(desc(TC))
+    }
+    result$TC = paste0(result$TC,"%")
+    
+    return(result)
+  }
+# Converssion des colonne en num ou factor-----------------------------------------------
+conv_col <- function (data, columns_to_convert, to_types) {
+  if (to_types == "numeric") {
+    # Conversion des colonnes en numeric
+    for (col in columns_to_convert) {
+      data[, col] <- as.numeric(data[, col])
+    }
+  } else {
+    # Conversion des colonnes en facteurs
+    for (col in columns_to_convert) {
+      data[, col] <- as.factor(data[, col])
+    }
+  }
+  return(data)
+}
+#data_converted <- conv_col(data, names(data [, c(1, 3)]), "factor")
+
+# exploration graphiques des variables numeriques -----------------------------------------------
+explo_num <- function(nom_col, titre, df = bdd, ligne_col = c(2, 2),mini = min(df[[nom_col]]), maxi=max(df[[nom_col]]) ) {
+  par(mfrow = ligne_col)
+  
+  df[complete.cases(df[[nom_col]]), ]
+  df <- df %>%filter(!is.na(df[[nom_col]]))
+  df[[nom_col]] = as.numeric(df[[nom_col]])
+  # Boxplot
+  boxplot(df[[nom_col]], col = 'blue', ylab = titre, ylim = c(mini, maxi))
+  # Cleveland plot
+  dotchart(df[[nom_col]], pch = 16, col = 'blue', xlab = titre)
+  # Histogram
+  hist(df[[nom_col]], col = 'blue', xlab = titre, main = "")
+  # Quantile-Quantile plot
+  qqnorm(df[[nom_col]], pch = 16, col = 'blue', xlab = '')
+  qqline(df[[nom_col]], col = 'red') 
+}
+
+# Extraction des predictors + moyennes -----------------------------------------------
+
+extraction <- function(nom_col, tif_file_path, df = bdd, conv = 1) {
+  # Lire le fichier raster
+  #df <- df %>%filter(!is.na(gps_x) & !is.na(gps_y))
+  raster_data <- raster(tif_file_path)
+  
+  # Créer un dataframe pour stocker les valeurs extraites
+  df_interne <- data.frame(gps_x = df$gps_x, gps_y = df$gps_y)
+  proj4Str <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+  # Transformer les coordonnées GPS en système de coordonnées du raster
+  gps_coords_sp <- SpatialPoints(df_interne, proj4string = CRS(proj4Str))
+  gps_coords_proj <- spTransform(gps_coords_sp, crs(raster_data))
+  
+  # Extraire les valeurs du raster 
+  values <- raster::extract(raster_data, gps_coords_proj)
+  
+  # Ajout les valeurs extraites comme nouvelles colonnes a df
+  #df_save = data.frame()
+  #df_save[[nom_col]] <- values / conv
+  
+  df[[nom_col]] <- values / conv
+  
+  return(df)
+}
+
+# la moyenne des predictores -----------------------------------------------
+moyenne_val_extrct <- function(nom_col, vec_col, df=bdd) {
+  df[[nom_col]] <- rowMeans(as.matrix(df[, vec_col, drop = FALSE]), na.rm = TRUE)
+  df[[nom_col]] = round(df[[nom_col]],1)
+  return(as.data.frame(df))
+}
+```
+
+# Importation de la BDD
+
+-   Importation de la BDD **LandWorm_dataset_site.xlsx** version **V1.5**
+
+```{r,echo=TRUE}
+chemin_fichier_excel = "C:/Users/diall/Downloads/datas/LandWorm_dataset_site.xlsx"
+bdd <- read.xlsx(chemin_fichier_excel, sheet = "Sheet1")
+```
+
+la BDD contient **`r nrow(bdd)`** lignes et **`r ncol(bdd)`** colonnes
+
+-   Conversion des colonnes au bon format
+
+```{r,echo=TRUE}
+col_en_factor = c("Programme","Annee","ID_Site","Code_Parcelle","postal_code","clcm_lvl1",
+                  "clcm_lvl2","clcm_lvl3","Modalite","Bloc","Protocole","land_cover_detail","type_tillage","fertilisation","ferti_min_product","ferti_orga_product")
+bdd = conv_col(bdd, col_en_factor, "factor")
+```
+
+# Explorations
+
+-   TC = Taux de Completion
+
+## Colonnes complets
+
+```{r}
+df_col=taux_completion(bdd,TRUE,trie=FALSE)
+df_col = df_col[df_col$Variables != "Total",]
+kable(df_col, caption = "", col.width = c("75%", "25%"))
+```
+
+## Colonnes non complets
+
+```{r, scrollable = TRUE}
+df_col= taux_completion(bdd,FALSE,trie = TRUE)
+kable(df_col, caption = " ", col.width = c("75%", "25%"))
+```
+
+## Zoom sur les coordonées GPS
+
+-   Il y a **`r sum(is.na(bdd$gps_x))`** NA (TC = `r df_col[df_col$Variable=="gps_x","TC"]`) dans GPS_X
+-   Il y a **`r sum(is.na(bdd$gps_y))`** NA (TC = `r df_col[df_col$Variable=="gps_y","TC"]`) dans GPS_Y
+
+```{r,echo=TRUE}
+n_ligne= nrow(bdd)
+bdd$gps_x <- as.numeric(gsub("[^0-9.-]", "", bdd$gps_x))
+bdd$gps_y <- as.numeric(gsub("[^0-9.-]", "", bdd$gps_y))
+bdd <- bdd[complete.cases(bdd$gps_x, bdd$gps_y), ]
+bdd <- bdd %>%filter(!is.na(gps_x) & !is.na(gps_y))
+#all(is.na(bdd$gps_x))
+#all(is.na(bdd$gps_y))
+```
+
+-   We delete the NA lines in the GPS coordinates
+-   La BDD passe donc de **`r n_ligne`** à **`r nrow(bdd)`**
+
+```{r,echo=TRUE}
+# Ajout variables climatiques (voir chunk extraction données climatiques)
+chemin_fichier <- "C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/datas/bdd_climat_ok.rds"
+# saveRDS(bdd_climat_ok, chemin_fichier)
+bdd_climat_ok <- readRDS(chemin_fichier)
+df_fusion <- subset(bdd_climat_ok, select = -c(ID,gps_x, gps_y))
+bdd <- cbind(bdd, df_fusion) # all = TRUE pour garder toutes les lignes
+```
+
+## Cartographie
+
+```{r,echo=TRUE}
+n_ligne= nrow(bdd)
+df_coord <- bdd[, c("gps_x", "gps_y")] %>% mutate(gps_x = as.numeric(gps_x),gps_y = as.numeric(gps_y))
+
+df_coord$num_ligne <- seq(nrow(df_coord))
+carte <- leaflet(df_coord) %>%
+  addTiles() %>%
+  addCircleMarkers(lng = ~gps_x, lat = ~gps_y, radius = 0.8, fillOpacity = 0.8, fillColor = "blue")
+carte
+```
+
+```{r}
+hors_france= read.csv(file = "C:/Users/diall/Downloads/datas/hors_france.csv", header = TRUE)
+
+bdd <- bdd[!(bdd$gps_x %in% hors_france$gps_x & bdd$gps_y %in% hors_france$gps_y), ]
+bdd <- droplevels(bdd)
+```
+
+-   We delete points outside France (**`r nrow(hors_france)`**)
+-   The BDD therefore changes from **`r n_ligne`** to **`r nrow(bdd)`**.
+
+## Zoom sur les années
+
+-   TC de Annee = **`r df_col[df_col$Variable=="Annee","TC"]`** (`r length(levels(bdd$Annee))` levels)
+
+-   Néttoyage de la colonne Annee
+
+```{r, echo=TRUE, scrollable = TRUE}
+bdd$Annee= as.factor(bdd$Annee)
+bdd$Annee_2=bdd$Annee
+bdd$Annee <- gsub("^(\\d{4}).*$", "\\1", bdd$Annee)
+bdd$Annee= as.factor(bdd$Annee)
+#bdd[c(7300:7310), c("Annee", "Annee_2")]
+
+summary_df <- as.data.frame(summary(bdd$Annee))
+colnames(summary_df) <- c("Nombres")
+kable(summary_df)
+```
+
+-   On enlève toutes les années avant **1990** et les NA
+
+```{r, echo=TRUE, scrollable = TRUE}
+n_ligne =nrow(bdd)
+bdd <- bdd %>%filter(!is.na(Annee))# on enleve les NA
+annes_omit= c("1821", "1960", "1978", "1982", "1983", "1984", "1986", "1988", "1989") # annee sup
+bdd <- bdd[!bdd$Annee %in% annes_omit, ]
+bdd=droplevels(bdd)
+#levels (bdd$Annee)
+#summary (bdd$Annee)
+summary_df <- as.data.frame(summary(bdd$Annee))
+colnames(summary_df) <- c("Nombres")
+kable(summary_df,padding = 5)
+```
+
+-   The BDD therefore changes from **`r n_ligne`** to **`r nrow(bdd)`**.
+
+## Tableau OS & Protocole (initial)
+
+-   OS 1 & Protocole
+
+```{r, echo=TRUE}
+kable(table(bdd$clcm_lvl1, bdd$Protocole),padding = 10,align = "c")
+```
+
+-   OS 2 & Protocole
+
+```{r, echo=TRUE}
+kable(table(bdd$clcm_lvl2, bdd$Protocole),padding = 10,align = "c")
+```
+
+-   OS 3 & Protocole
+
+```{r, echo=TRUE}
+kable(table(bdd$clcm_lvl3, bdd$Protocole),padding = 0,align = "c")
+```
+
+## Zoom sur les protocoles
+
+-   Liste des protocoles disponibles
+
+```{r}
+bdd$Protocole = as.factor(bdd$Protocole)
+summary_df <- as.data.frame(summary(bdd$Protocole))
+colnames(summary_df) <- c("Nombres")
+kable(summary_df,padding = 5)
+```
+
+-   Séléction des protocoles: **F_HS, FHS, hand sorting, HS**
+
+```{r}
+n_ligne = nrow(bdd)
+select_protocole =c("F_HS", "FHS", "hand sorting" ,"HS")
+bdd <- bdd[bdd$Protocole %in% select_protocole, ]
+bdd=droplevels(bdd)
+bdd$Protocole = as.factor(bdd$Protocole)
+summary_df <- as.data.frame(summary(bdd$Protocole))
+colnames(summary_df) <- c("Nombres")
+kable(summary_df,padding = 5)
+```
+
+-   The BDD therefore changes from **`r n_ligne`** to **`r nrow(bdd)`**.
+
+-   Fusion des levels :
+
+    -   F_HS $=$ F_HS $+$ FHS;\
+    -   HS $=$ HS $+$ hand sorting
+
+    ```{r}
+    levels(bdd$Protocole)[levels(bdd$Protocole) == "FHS"] <- "F_HS"
+    levels(bdd$Protocole)[levels(bdd$Protocole) == "hand sorting"] <- "HS"
+    bdd$Protocole = as.factor(bdd$Protocole)
+    summary_df <- as.data.frame(summary(bdd$Protocole))
+    colnames(summary_df) <- c("Nombres")
+    kable(summary_df,padding = 5)
+    ```
+
+## Zoom sur l'occupation du sol 1
+
+-   TC de clcm_lvl1 = **`r df_col[df_col$Variable=="clcm_lvl1","TC"]`** (`r length(levels(bdd$clcm_lvl1))` levels)
+
+```{r, echo=TRUE}
+bdd$clcm_lvl1= as.factor(bdd$clcm_lvl1)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl1))
+colnames(summary_df) <- c("Nombres")
+kable(summary_df,padding = 5)
+```
+
+-   Fusion des levels:
+    -   2_Agricole $=$ 2_Agricole $+$ Agricole
+
+```{r, echo=TRUE}
+bdd$clcm_lvl1= as.factor(bdd$clcm_lvl1)
+levels(bdd$clcm_lvl1)[levels(bdd$clcm_lvl1) == "Agricole"] <- "2_Agricole"
+#levels(bdd$clcm_lvl1)
+
+summary_df <- as.data.frame(summary(bdd$clcm_lvl1))
+colnames(summary_df) <- c("Nombres")
+kable(summary_df,padding = 5)
+```
+
+-   Pour le moment, on garde les NA de **clcm_lvl1**
+
+## Zoom sur l'occupation du sol 2
+
+-   TC de clcm_lvl2 = **`r df_col[df_col$Variable=="clcm_lvl2","TC"]`** (`r length(levels(bdd$clcm_lvl2))` levels)
+-   A suivre (avec la BDD.V2)
+
+```{r, echo=TRUE}
+bdd$clcm_lvl2= as.factor(bdd$clcm_lvl2)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl2))
+colnames(summary_df) <- c("Nombres")
+kable(summary_df,padding = 8)
+```
+
+## Zoom sur l'occupation du sol 3
+
+-   TC de clcm_lvl3 = **`r df_col[df_col$Variable=="clcm_lvl3","TC"]`** (`r length(levels(bdd$clcm_lvl3))` levels)
+-   A suivre (avec la BDD.V2)
+
+```{r, echo=TRUE, scrollable = TRUE}
+bdd$clcm_lvl3= as.factor(bdd$clcm_lvl3)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl3))
+colnames(summary_df) <- c("Nombres")
+kable(summary_df,padding = 5)
+
+```
+
+## Séléction des OS
+
+-   **Forêt** $=$ 111_Forêt_de_feuillus $+$ 112_Forêt_de_conifères $+$ 113_Forêt_mixte
+
+-   **Prairie agricole p.** $=$ 210_Prairie_agricole_permanente $+$ 231_Prairies
+
+-   **Prairie agricole t.** $=$ 211_Prairie_agricole_temporaire
+
+-   **Culture** $=$ 214_Culture_annuelle
+
+-   **Vignoble** $=$ 218_Vignes_et_autres_Cultures_pérennes
+
+-   **Pelouse urbaine** $=$ 321_Pelouse_urbaine
+
+-   **Potager** $=$ 340_Potager
+
+```{r, echo=TRUE}
+select_os= c("111_Forêt_de_feuillus", "112_Forêt_de_conifères","113_Forêt_mixte", "210_Prairie_agricole_permanente", "211_Prairie_agricole_temporaire", "231_Prairies", "214_Culture_annuelle", "218_Vignes_et_autres_Cultures_pérennes", "321_Pelouse_urbaine", "340_Potager")
+
+# bdd <- bdd[bdd$clcm_lvl3 %in% select_os, ]
+# bdd=droplevels(bdd)
+# bdd$clcm_lvl3 = as.factor(bdd$clcm_lvl3)
+# summary_df <- as.data.frame(summary(bdd$clcm_lvl3))
+# colnames(summary_df) <- c("Nombres")
+# kable(summary_df)
+
+```
+
+## Synthèse OS 3 & Protocole
+
+```{r}
+#table(bdd$clcm_lvl1, bdd$Protocole)
+#table(bdd$clcm_lvl2, bdd$Protocole)
+kable (table(bdd$clcm_lvl3, bdd$Protocole), align = "c", format = "pipe", padding = 10)
+```
+
+# Les données vers de terre
+
+## Abondance totale (TC = `r df_col[df_col$Variable=="AB_tot","TC"]`)
+
+```{r,fig.align='center',fig.height=10}
+summary(bdd$AB_tot) 
+#bdd <- subset(bdd, AB_tot <= 800)
+explo_num(nom_col = "AB_tot", titre = "Abondance totale")
+```
+
+## Biomasse totale (TC = `r df_col[df_col$Variable=="BM_tot","TC"]`)
+
+```{r,fig.align='center',fig.height=10}
+summary(bdd$BM_tot) 
+#bdd <- subset(bdd, BM_tot <= 3000)
+explo_num(nom_col = "BM_tot", titre = "Biomasse totale",)
+```
+
+## Total_AB ? (TC = `r df_col[df_col$Variable=="Total_AB","TC"]`)
+
+```{r,fig.align='center',fig.height=10}
+summary(bdd$Total_AB)
+#bdd <- subset(bdd, Total_AB <= 2000)
+explo_num(nom_col = "Total_AB", titre = "total_AB",)
+```
+
+## **Méthode de calcule de la** richesse totale
+
+-   On supprimme toutes les colonnes ayant que des NA (**`r length(colnames(bdd)[colSums(is.na(bdd)) == nrow(bdd)])`**)
+-   On supprimme toutes les colonnes ayant que des NA et des 0
+-   On récupère toutes les colonnes qui commencent par **AB\_**
+-   On supprimme les colonnes AB\_ qui ne sont pas des espèces
+-   On calcule la richesse en attribiant 1 à chaque colonne si la valeur est différent de 0 et de NA
+
+```{r, echo=TRUE}
+# on supprime tout les colonnes ayant que des NA
+colonnes_na <- colnames(bdd)[colSums(is.na(bdd)) == nrow(bdd)]
+# summary(bdd[, colonnes_na])
+bdd <- bdd[, !colnames(bdd) %in% colonnes_na]
+
+
+# On supprimme toutes les colonnes ayant que des NA et des 0
+colonnes_numeriques <- sapply(bdd, is.numeric)
+somme_colonnes_numeriques <- colSums(bdd[, colonnes_numeriques],na.rm=TRUE)
+colonnes_zeros <- names(somme_colonnes_numeriques[somme_colonnes_numeriques == 0])
+#summary(bdd[, colonnes_zeros])
+bdd <- bdd[, !colnames(bdd) %in% colonnes_zeros]
+
+
+# On récupère toutes les colonnes qui commencent par **AB_**
+colonnes_AB <- grep("^AB_", names(bdd), value = TRUE)
+
+
+# On supprimme les colonnes AB_ qui sont pas des espèces
+ab_supprimee =  c("AB_AD","AB_JV","AB_SA","AB_STAD_X","AB_indéterminable","AB_Indéterminable","AB_indéterminable_endogeic","AB_tot","AB_Indéterminable_epigeic","AB_indéterminable_endogeic","AB_Ep.X","AB_vide", "AB_Ep.X1","AB_Ep.X2","AB_A.X","AB_Adult","AB_cocon","AB_indéterminé","AB_Juvenile","AB_Sub.adult","AB_Indéterminé","AB_Lumbricidae")
+colonnes_AB <- colonnes_AB[!colonnes_AB %in% ab_supprimee]
+
+
+# On calcule la richesse en attribiant 1 à chaque colonne si la valeur est de 0 et de NA
+bdd$Richesse_tot <- 0
+bdd$Richesse_tot <- rowSums(!is.na(bdd[colonnes_AB]) & bdd[colonnes_AB] != 0)
+#sum (is.na(bdd$Richesse_tot) )
+#summary(bdd$Richesse_tot)
+
+
+# Check des lignes ayant des 0 richesse et X AB ou BM : 11 lignes
+vdt_a_checker = bdd[bdd$Richesse_tot == 0 & (bdd$Total_AB !=0 | bdd$BM_to !=0), c("ID_Site","AB_tot","Total_AB","BM_tot","Richesse_tot")]
+vdt_a_checker = subset(vdt_a_checker, Richesse_tot==0)
+#View(vdt_a_checker)
+
+
+#  Check si y a des ligne ayant que des NA dans AB, BM et Richesse : nop
+resultat <- subset(bdd, is.na(AB_tot) & is.na(BM_tot) & is.na(Total_AB) & is.na(Richesse_tot))
+#View(resultat[, c("AB_tot","Total_AB","BM_tot", "Richesse_tot")])
+
+
+# lignes avec uniquement des zéros ou des NA dans AB, BM et Richesse_tot: 84 ligne
+vdt <- c("AB_tot", "BM_tot", "Total_AB", "Richesse_tot")
+lignes_zero <- which(rowSums(bdd[vdt] != 0, na.rm = TRUE) == 0)
+#View(bdd[lignes_zero,c("ID_Site","AB_tot", "BM_tot", "Total_AB", "Richesse_tot")])
+
+```
+
+## Richesse totale
+
+```{r, fig.align='center',fig.height=10}
+summary(bdd$Richesse_tot)
+#bdd <- subset(bdd, Richesse_tot <= 2000)
+explo_num(nom_col = "Richesse_tot", titre = "Richesse_tot",)
+```
+
+# Extraction des données pédologiques
+
+## La bdd source
+
+```{r,echo=TRUE}
+chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
+pedo <- read.xlsx(chemin_fichier_excel, sheet = "pedo")
+
+# Fusion des cellules des colonnes avec des éléments dupliqués
+for (col in names(pedo)) {
+  pedo[[col]] <- ifelse(duplicated(pedo[[col]]), "", pedo[[col]])
+}
+
+#tableau avec kableExtra et centrage du contenu des cellules
+kableExtra::kable(pedo) %>%
+  kableExtra::kable_styling() %>%
+  kableExtra::column_spec(1:ncol(pedo))  # Centrer le contenu de toutes les colonnes
+
+
+```
+
+## pH
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "ph_0",df = bdd,conv = 10, 
+                  tif_file_path = "C:/Users/diall/Downloads/datas/sol_ph.h2o_usda.4c1a2a_m_250m_b0..0cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "ph_10" ,df = bdd,conv = 10, 
+                  tif_file_path = "C:/Users/diall/Downloads/datas/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "ph_30" ,df = bdd,conv = 10, 
+                  tif_file_path = "C:/Users/diall/Downloads/datas/sol_ph.h2o_usda.4c1a2a_m_250m_b30..30cm_1950..2017_v0.2.tif")
+bdd = moyenne_val_extrct(nom_col = "ph_0_a_30", vec_col = c("ph_0","ph_10","ph_30"),df=bdd)
+summary(bdd$ph_0_a_30)
+#summary(droplevels ( bdd[bdd$ph_0_a_30=="NA",c("Programme", "Annee", "gps_x", "gps_y")]) )
+explo_num(nom_col = "ph_0_a_30", titre = "pH (0 - 30 cm)")
+```
+
+## Densité apparente (kg / m-cube)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "d_ap_0",df = bdd,conv = 10, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/sol_bulkdens.fineearth_usda.4a1h_m_250m_b0..0cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "d_ap_10",df = bdd,conv = 10, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/sol_bulkdens.fineearth_usda.4a1h_m_250m_b10..10cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "d_ap_30",df = bdd,conv = 10, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/sol_bulkdens.fineearth_usda.4a1h_m_250m_b30..30cm_1950..2017_v0.2.tif")
+bdd = moyenne_val_extrct(nom_col = "d_ap_0_a_30", vec_col = c("d_ap_0","d_ap_10","d_ap_30"),bdd)
+summary(bdd$d_ap_0_a_30)
+explo_num(nom_col = "d_ap_0_a_30", titre = "Densité apparente")
+```
+
+## Teneur en sable (% kg/kg)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "sable_0",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/sol_sand.wfraction_usda.3a1a1a_m_250m_b0..0cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "sable_10",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/sol_sand.wfraction_usda.3a1a1a_m_250m_b10..10cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "sable_30",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/sol_sand.wfraction_usda.3a1a1a_m_250m_b30..30cm_1950..2017_v0.2.tif")
+bdd = moyenne_val_extrct(nom_col = "sable_0_a_30", vec_col = c("sable_0","sable_10","sable_30"),df=bdd)
+summary(bdd$sable_0_a_30)
+explo_num(nom_col = "sable_0_a_30", titre = "Sable")
+```
+
+## Teneur en carbone (g/kg)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "c_orga_0",df = bdd,conv = 5, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/sol_organic.carbon_usda.6a1c_m_250m_b0..0cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "c_orga_10",df = bdd,conv = 5, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/sol_organic.carbon_usda.6a1c_m_250m_b10..10cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "c_orga_30",df = bdd,conv = 5, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/sol_organic.carbon_usda.6a1c_m_250m_b30..30cm_1950..2017_v0.2.tif")
+bdd = moyenne_val_extrct(nom_col = "c_orga_0_a_30", vec_col = c("c_orga_0","c_orga_10","c_orga_30"),df=bdd)
+summary(bdd$c_orga_0_a_30)
+explo_num(nom_col = "c_orga_0_a_30", titre = "C. organique")
+```
+
+# Extraction des données climatique
+
+## La bdd source
+
+```{r,echo=TRUE}
+
+# Lire le fichier Excel
+chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
+climat <- read.xlsx(chemin_fichier_excel, sheet = "climat")
+
+# Fusionner les cellules des colonnes avec des éléments dupliqués
+for (col in names(climat)) {
+  climat[[col]] <- ifelse(duplicated(climat[[col]]), "", climat[[col]])
+}
+
+# Afficher le tableau avec kableExtra et centrage du contenu des cellules
+kableExtra::kable(climat) %>%
+  kableExtra::kable_styling() %>%
+  kableExtra::column_spec(1:ncol(climat))  # Centrer le contenu de toutes les colonnes
+
+```
+
+## Méthode d'extraction
+
+-   Récuppération des liens (voir fichier **liens_tif**)
+-   Extractions des noms des variables
+-   Utilisations de la fonction **extraction()**
+-   Conversion des colonnes au bon format et à la bonne unité
+-   Ajout des variables à la BBD
+
+```{r,echo=TRUE}
+liens_tif = read.table(file = "C:/Users/diall/Downloads/datas/envidatS3paths.txt")
+liens_tif$shortname <- str_extract(liens_tif$V1, "(?<=CHELSA_).*?(?=_1981)")
+liens_tif[liens_tif$shortname=="rsds","shortname"]=c("rsds_max","rsds_mean","rsds_min","rsds_range")
+
+#all(is.na(bdd$gps_x))
+#all(is.na(bdd$gps_y))
+
+bdd_climat= bdd[, c("ID","gps_x","gps_y")]
+
+temp_1=Sys.time()
+#for( i in 1:nrow(liens_tif)){
+  #nom=liens_tif[i,c("shortname")]
+  #df_ext <- extraction(nom_col = nom,df = bdd_climat,conv = 1, 
+                  #tif_file_path = liens_tif[i,c("V1")] ) 
+  #bdd_climat[[nom]] <- df_ext [,nom]
+  #rm("df_ext","nom")
+  #cat("Extraction: ",i,"/",nrow(liens_tif), "\n")
+#}
+temp_2=Sys.time()
+duree= difftime(temp_2,temp_1)
+
+chemin_fichier <- "C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/datas/bdd_climat.rds"
+# saveRDS(bdd_climat, chemin_fichier)
+#bdd_climat <- readRDS(chemin_fichier)
+
+# debut cnversion ------------------------------------------------------------
+conv_df_climat= data.frame(shortname =liens_tif$shortname )
+
+# unit = 1
+conv_df_climat$unit = rep(1)
+# unit = 100
+unit_100=c("bio4")
+conv_df_climat$unit <- ifelse(conv_df_climat$shortname %in% unit_100, 100, 1)
+
+
+# scale = 0.1
+conv_df_climat$scale = rep(0.1)
+# scale = 1
+scale_1=c("fcf","fgd","gddlgd0","gddlgd5","gddlgd10","gdgfgd0","gdgfgd5","gdgfgd10","gsl","kg0","kg1" ,"kg2" ,"kg3" ,"kg4" ,"kg5","lgd","ngd0","ngd5","ngd10","scd")
+
+# scale = 0.01
+scale_01=c("hurs_max","hurs_mean","hurs_min","hurs_range","pet_penman_max",
+       "pet_penman_mean","pet_penman_min","pet_penman_range")
+
+# scale = 0.001
+scale_001=c("rsds","sfcWind_max","sfcWind_mean","sfcWind_min","sfcWind_range","pet_penman_max","pet_penman_mean","pet_penman_min","pet_penman_range","rsds_max","rsds_mean","rsds_min","rsds_range")
+
+# Remplacement des valeurs de l'échelle en fonction des conditions
+conv_df_climat$scale <- ifelse(conv_df_climat$shortname %in% scale_1, 1,
+              ifelse(conv_df_climat$shortname %in% scale_01, 0.01,
+                    ifelse(conv_df_climat$shortname %in% scale_001,0.001, 0.1)))
+
+# offset = 0
+conv_df_climat$offset = rep(0)
+# offset = - 273.15
+offset_273=c("bio1","bio5","bio6","bio8","bio9","bio10","bio11","gdgfgd10","gsl","gst")
+conv_df_climat$offset = ifelse(conv_df_climat$shortname %in% offset_273, -273.15, 0)
+
+# Pas present dans dans le pdf explicative donc pas de conversion
+pas_pdf=c( "ai","swb", "clt_max","clt_mean","clt_min","clt_range")
+verif=c(unit_100,scale_1,scale_01,scale_001,offset_273)
+pas_pdf_2=setdiff(conv_df_climat$shortname, verif)
+conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
+
+#bdd_climat_ok=bdd_climat[,c("ID","gps_x","gps_y")]
+
+#for ( i in conv_df_climat$shortname){
+  #if (i %in% names(bdd_climat)){
+  #unitee= conv_df_climat[conv_df_climat$shortname ==i,"unit"]
+  #echelle = conv_df_climat[conv_df_climat$shortname ==i,"scale"]
+  #decalage = conv_df_climat[conv_df_climat$shortname ==i,"offset"]
+  #bdd_climat_ok[[i]] = ((bdd_climat[[i]] / unitee)* echelle) + decalage
+  #}else {
+    #cat("Attention ",i, "n'exite pas dans la bdd_climat","\n")
+  #}
+#}
+
+
+# chemin_fichier <- "C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/datas/bdd_climat_ok.rds"
+# saveRDS(bdd_climat_ok, chemin_fichier)
+# bdd_climat_ok <- readRDS(chemin_fichier)
+# fin conversion
+
+#df_fusion <- subset(bdd_climat_ok, select = -c(ID,gps_x, gps_y))
+#bdd <- cbind(bdd, df_fusion) # all = TRUE pour garder toutes les lignes
+```
+
+## Liste des variables
+
+[Déscription des variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf){target="_blank"}
+
+```{r}
+summary(bdd_climat_ok)
+```
+
+## Température
+
+-   Température moyenne annuelle de l'air (°C) = bio1
+
+    ```{r,fig.align='center',fig.height=8}
+    summary(bdd$bio1)
+    explo_num(nom_col = "bio1", titre = "temp°.")
+    ```
+
+## Précipitations
+
+-   Quantité de précipitations annuelles (kg/m²) = bio12
+
+```{r,fig.align='center',fig.height=8}
+summary(bdd$bio12)
+explo_num(nom_col = "bio12", titre = "Précipitat°.")
+```
+
+# Questions
+
+-   Comment gerer les parcelles repetées ?
+-   Liens des données du sol (sable, argile et limon) de data.gouv.fr ?
+-   C'est quoi la différence entre AB_tot et Total_AB ?
+-   Le niveau de OS ? resolu
+-   Belgique ou erreur ? resolu
+-   Comment faire pour avoir la même resolution ?
+-   Est ce qu'on supprime toutes les lignes qui ont des zero dans AB, BM et Richesse ?
+-   Comment gerer les parcelles comme: ID_Site = 538 (2020)
