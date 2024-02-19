@@ -1,59 +1,115 @@
 
-t_taxo = readRDS("C:/Users/diall/OneDrive/Documents/LMCU/T_TAXONOMIE.rds")
-
-View(t_taxo)
-
-tif_file_path = "C:/Users/diall/Downloads/U2018_CLC2018_V2020_20u1.tif"
-tif_file_path = "C:/Users/diall/Downloads/eea_r_3035_100_m_etm-terrestrial-c_2012_v3-1_r00 (1).tif"
-
-# Lire le fichier raster
-raster_data <- raster(tif_file_path)
-print(raster_data)
-# Afficher les métadonnées du raster pour obtenir la légende
-print(attributes(raster_data))$legend
-# Afficher les niveaux de valeurs du raster
-print(levels(raster_data))
+# Comparaison raster origine et modifier ----------------------------------
 
 
-# Créer un dataframe pour stocker les valeurs extraites
-df <- data.frame(gps_x = bdd$gps_x, gps_y = bdd$gps_y)
-proj4Str <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-# Transformer les coordonnées GPS en système de coordonnées du raster
-gps_coords_sp <- SpatialPoints(df, proj4string = CRS(proj4Str))
-gps_coords_proj <- spTransform(gps_coords_sp, crs(raster_data))
+### raster d'origine
+tif_file_path_origine = "C:/Users/diall/Downloads/datas/raster_origine/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
+raster_ph_origine <- raster(tif_file_path_origine)
 
-# Extraire les valeurs du raster 
-values <- raster::extract(raster_data, gps_coords_proj)
+# Obtenir la résolution du raster pH
+res(raster_ph_origine)
+crs(raster_ph_origine)
+projection(raster_ph_origine)
 
-# Ajout les valeurs extraites comme nouvelles colonnes a bdd
-#bdd[[basename(nom_col)]] <- values / conv
-bdd_test = bdd[, c("clcm_lvl1","clcm_lvl2","clcm_lvl3")]
-bdd_test$clc=values
-bdd_test[100:110,]
+image(raster_ph_origine,main="raster d'origine (0.002)")
 
 
+res(raster_ph_origine) * 111000 # Convertir la résolution en mètres
 
-df_coord <- bdd[, c("gps_x", "gps_y")] %>% mutate(gps_x = as.numeric(gps_x),gps_y = as.numeric(gps_y))
+(res(raster_ph_origine) * 111000) / 1000 # Convertir la résolution en kilomètres
 
-df_coord$num_ligne <- seq(nrow(df_coord))
-# Créer la carte Leaflet avec les marqueurs et les numéros de lignes
-carte <- leaflet(df_coord) %>%
-  addTiles() %>%
-  addCircleMarkers(lng = ~gps_x, lat = ~gps_y, radius = 0.8, fillOpacity = 0.8, fillColor = "blue",
-                   label = ~as.character(num_ligne), labelOptions = labelOptions(noHide = TRUE))
+bdd <- extraction(nom_col = "ph_0_origine",df = bdd,conv = 10, 
+                  tif_file_path = tif_file_path_origine)
 
-# Afficher la carte
-#carte
-
-write.csv2(x = df_coord,file = "C:/Users/diall/Downloads/df_coord.csv")
+summary(bdd$ph_0_origine)
 
 
 
 
+### raster reechantillonner
+tif_file_path_rech = "C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
+raster_ph_rech <- raster(tif_file_path_rech)
+image(raster_ph_rech)
 
-#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
-usethis::edit_r_environ()
-OPENAI_API_KEY=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
+# Obtenir la résolution du raster pH
+res(raster_ph_rech)
+crs(raster_ph_rech)
+projection(raster_ph_rech)
+
+image(raster_ph_rech, main = "raster modifier (0.008)")
+
+
+res(raster_ph_rech) * 111000 # Convertir la résolution en mètres
+
+(res(raster_ph_rech) * 111000) / 1000 # Convertir la résolution en kilomètres
+
+
+bdd <- extraction(nom_col = "ph_0_rech",df = bdd,conv = 10, 
+                  tif_file_path = tif_file_path_rech)
+
+summary(bdd$ph_0_rech)
+
+
+
+
+
+library(ggplot2)
+
+
+bdd_echan = bdd
+bdd_echan =bdd_echan[complete.cases(bdd_echan$ph_0_origine),] 
+bdd_echan =bdd_echan[complete.cases(bdd_echan$ph_0_rech),]
+
+# graphique avec ggplot
+p <- ggplot(bdd_echan, aes(x = ph_0_origine, y = ph_0_rech)) +
+  geom_point() + # Ajouter les points
+  geom_smooth(method = "lm", se = FALSE, color = "red") + 
+  labs(x = "pH d'origine", y = "pH reéchantillonée") + 
+  theme_classic() 
+
+# coefficient de corrélation
+correlation <- cor(as.numeric(bdd_echan$ph_0_origine), bdd_echan$ph_0_rech)
+p <- p + annotate("text", x = max(bdd_echan$ph_0_origine) - 0.5, y = min(bdd_echan$ph_0_rech) + 0.1, 
+                  label = paste("Corrélation:", round(correlation, 2)), color = "blue")
+
+p
+
+
+
+
+
+
+
+
+
+# Modif resolution et reechantillonage methode R --------------------------
+
+# Charger le fichier raster avec la bonne résolution
+tif_file_path= "https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V2/GLOBAL/climatologies/1981-2010/bio/CHELSA_clt_max_1981-2010_V.2.1.tif"
+tif_file_path= "https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V2/GLOBAL/climatologies/1981-2010/bio/CHELSA_bio18_1981-2010_V.2.1.tif"
+tif_file_path="https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V2/GLOBAL/climatologies/1981-2010/bio/CHELSA_kg3_1981-2010_V.2.1.tif"
+tif_file_path= "https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V2/GLOBAL/climatologies/1981-2010/bio/CHELSA_bio10_1981-2010_V.2.1.tif"
+raster_reference <- raster(tif_file_path)
+attributes(raster_reference)
+res(raster_reference)
+crs(raster_reference)
+projection(raster_reference)
+
+image(raster_reference)
+
+
+# Charger le deuxième fichier raster que vous souhaitez aligner sur la résolution du raster de référence
+tif_file_path_origine = "C:/Users/diall/Downloads/datas/sol_ph.h2o_usda.4c1a2a_m_250m_b0..0cm_1950..2017_v0.2.tif"
+raster_ph0 <- raster(tif_file_path_origine)
+
+
+# Utiliser la fonction resample pour aligner le raster à la résolution du raster de référence
+raster_aligne <- resample(raster_ph0, raster_reference, method = "bilinear")
+
+# Enregistrer le raster aligné si nécessaire
+writeRaster(raster_aligne, "C:/Users/diall/Downloads/datas/ph0_aligne.tif", format = "GTiff")
+
+
 
 # Calculer le nombre total de valeurs manquantes
 nb_na <- sum(is.na(bdd))

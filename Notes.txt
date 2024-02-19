@@ -1,5 +1,0 @@
-Collecte de données :
-Karger DN, Conrad O, Böhner J, Kawohl T, Kreft H, Soria-Auza RW, Zimmermann NE, Linder P, Kessler M (2017) Climatologies à haute résolution pour les surfaces terrestres. Données Sci 4 : 170122. https://doi.org/10.1038/sdata.2017.122 : https://chelsa-climate.org/bioclim/
-Dorigo W (2019) Evolution des enregistrements de données climatiques sur l'humidité du sol de l'ESA CCI et leur méthodologie de fusion sous-jacente. Données Earth Syst Sci 11 : 717-739. https://doi.org/10.5194/essd-11-717-2019 : https://www.esa-soilmoisture-cci.org/data 
-https://earthexplorer.usgs.gov/ 
-https://www.eea.europa.eu/data-and-maps/data/ecosystem-types-of-europe-1
