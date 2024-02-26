@@ -9,7 +9,8 @@ scrollable: true
 #theme: sky
 editor: visual
 number-sections: true
-toc: true
+toc: FALSE
+#toc-expand: false
 #toc_float: 'yes'
 code_download: 'yes'
 slide-number: true
@@ -18,21 +19,23 @@ margin: 0.1
 code-fold: true
 width: 1200
 height: 700
-toc_depth: 0
+toc_depth: 1
 execute: 
   cache: true
 ---
 
-```{r setup, include=FALSE, fig.align='center',message=FALSE,warning=FALSE,message=FALSE,echo=TRUE}
-#rm(list=ls()) # Properly clear workspace
-#source("function_abdou.R")
+
+
+# Setting
+
+```{r setup, include=FALSE,fig.align='center',message=FALSE,warning=FALSE,message=FALSE,echo=TRUE}
+# rm(list=ls()) # Properly clear workspace
+# source("function_abdou.R")
 
 ```
-
-# Packages
+## Packages
 
 ```{r,echo=TRUE}
-
   library(tidyverse)
   library(glme)
   library(lsmeans)
@@ -40,7 +43,6 @@ execute:
   library(RVAideMemoire)
   library(corrplot)
   library(emmeans)
-  library(ggplot2)
   library(lme4)
   library(multcomp)
   library(MASS)
@@ -48,7 +50,6 @@ execute:
   library(arm)
   library(performance)
   library(AER)
-  library(dplyr)
   library(AICcmodavg)
   library(MuMIn)
   library(ade4)
@@ -91,7 +92,7 @@ execute:
 
 ```
 
-# Functions
+## Functions
 
 ```{r, echo=TRUE}
 
@@ -203,27 +204,59 @@ moyenne_val_extrct <- function(nom_col, vec_col, df=bdd) {
 }
 ```
 
+# Plan
+
+-   Setting
+
+-   Database import
+
+-   Database exploration
+
+-   Earthworms data
+
+-   Soil data extraction
+
+-   Climate data extraction
+
+-   To do next
+
 # Database import
 
--   Import of database **LandWorm_dataset_site.xlsx** version **V1.5**
+-   Import of database **LandWorm_dataset_site_V1.9.xlsx** (february 22, 2024)
 
-```{r,echo=TRUE}
-chemin_fichier_excel = "C:/Users/diall/Downloads/datas/LandWorm_dataset_site.xlsx"
+```{r,echo=FALSE}
+chemin_fichier_excel = "C:/Users/diall/Downloads/datas/LandWorm_dataset_site_V1.9.xlsx"
 bdd <- read.xlsx(chemin_fichier_excel, sheet = "Sheet1")
 ```
 
 -   The database contains **`r nrow(bdd)`** rows and **`r ncol(bdd)`** columns
 
-```{=html}
-<!-- -->
-```
--   Convert columns to correct format
-
-```{r,echo=TRUE}
+```{r,echo=FALSE}
 col_en_factor = c("Programme","Annee","ID_Site","Code_Parcelle","postal_code","clcm_lvl1",
                   "clcm_lvl2","clcm_lvl3","Modalite","Bloc","Protocole","land_cover_detail","type_tillage","fertilisation","ferti_min_product","ferti_orga_product")
 bdd = conv_col(bdd, col_en_factor, "factor")
 ```
+
+-   Data selection: EcoBioSoil = *"dc "*
+
+```{r,echo=TRUE}
+n_line=nrow(bdd)
+bdd$owner=as.factor(bdd$owner)
+summary_df <- as.data.frame(summary(bdd$owner))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df)
+```
+
+
+```{r,echo=FALSE}
+bdd <- subset(bdd, owner == "dc")
+bdd$owner=droplevels(bdd$owner)
+
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(bdd)`** observations.
+
+
 
 # Database exploration
 
@@ -231,11 +264,13 @@ bdd = conv_col(bdd, col_en_factor, "factor")
 
 ## Complete columns
 
-```{r}
+```{r, echo=TRUE}
 df_col=taux_completion(bdd,TRUE,trie=FALSE)
 df_col = df_col[df_col$Variables != "Total",]
 #print("table")
 kable(df_col, caption = "", col.width = c("75%", "25%"))
+# cat(                                                    )
+# head(bdd[, "ID"])
 ```
 
 ## Non-complete columns
@@ -248,8 +283,8 @@ kable(df_col, caption = " ", col.width = c("75%", "25%"))
 
 ## Focus on GPS coordinates
 
--   There is **`r sum(is.na(bdd$gps_x))`** NA (CR = `r df_col[df_col$Variable=="gps_x", "CR"]`) in GPS_X
--   There is **`r sum(is.na(bdd$gps_y))`** NA (CR = `r df_col[df_col$Variable=="gps_y", "CR"]`) in GPS_Y
+-   There is **`r sum(is.na(bdd$gps_x))`** NA (CR = `r df_col[df_col$Variable=="gps_x", "CR"]`) in **GPS_X**
+-   There is **`r sum(is.na(bdd$gps_y))`** NA (CR = `r df_col[df_col$Variable=="gps_y", "CR"]`) in **GPS_Y**
 
 ```{r,echo=TRUE}
 n_line= nrow(bdd)
@@ -257,20 +292,28 @@ bdd$gps_x <- as.numeric(gsub("[^0-9.-]", "", bdd$gps_x))
 bdd$gps_y <- as.numeric(gsub("[^0-9.-]", "", bdd$gps_y))
 bdd <- bdd[complete.cases(bdd$gps_x, bdd$gps_y), ]
 bdd <- bdd %>%filter(!is.na(gps_x) & !is.na(gps_y))
-#all(is.na(bdd$gps_x))
-#all(is.na(bdd$gps_y))
+#sum(is.na(bdd$gps_x))
+#sum(is.na(bdd$gps_y))
 ```
 
--   We delete the NA lines in the GPS coordinates
--   The database therefore changes from `r n_line ` to `r nrow(bdd)` observations.
-
-```{r,echo=TRUE}
+-   We delete the *NA* lines in the GPS coordinates
+-   The database therefore changes from **`r n_line`** to **`r nrow(bdd)`** observations.
+-   Merging database and climat database
+```{r, echo=TRUE}
 # Ajout variables climatiques (voir chunk extraction données climatiques)
 chemin_fichier <- "C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/datas/bdd_climat_ok.rds"
 # saveRDS(bdd_climat_ok, chemin_fichier)
 bdd_climat_ok <- readRDS(chemin_fichier)
-df_fusion <- subset(bdd_climat_ok, select = -c(ID,gps_x, gps_y))
-bdd <- cbind(bdd, df_fusion) # all = TRUE pour garder toutes les lignes
+df_fusion <- subset(bdd_climat_ok, select = -c(gps_x, gps_y))
+
+rows_not_in_df_fusion <- anti_join(bdd, df_fusion, by = "ID")
+merged_df <- merge(bdd, df_fusion, by = "ID")
+
+ids_not_matching <- anti_join( merged_df,bdd, by = "ID")
+
+bdd = merged_df
+
+#bdd <- cbind(bdd, df_fusion) # all = TRUE pour garder toutes les lignes
 ```
 
 ## Cartography
@@ -298,23 +341,29 @@ bdd <- droplevels(bdd)
 
 ## Focus on years
 
--   Completion rate of Annee = `r df_col[df_col$Variable=="Annee", "CR"]` (`r length(levels(bdd$Annee))` levels)
-
 -   Cleaning the Annee column
+<br/>
+<!--
+```{r , echo=TRUE}
+# levels(bdd$Annee) # parfois années et jours et ou mois
+# bdd$Annee= as.factor(bdd$Annee)
+# bdd$Annee <- gsub("^(\\d{4}).*$", "\\1", bdd$Annee) # on prend uniquement les 04 premier chiffre
+# bdd$Annee= as.factor(bdd$Annee)
+
+```
+-->
+
+-   CR of Annee = **`r df_col[df_col$Variable=="Annee", "CR"]`** (`r length(levels(bdd$Annee))` levels)
 
 ```{r, echo=TRUE, scrollable = TRUE}
 bdd$Annee= as.factor(bdd$Annee)
-bdd$Annee_2=bdd$Annee
-bdd$Annee <- gsub("^(\\d{4}).*$", "\\1", bdd$Annee)
-bdd$Annee= as.factor(bdd$Annee)
-#bdd[c(7300:7310), c("Annee", "Annee_2")]
-
 summary_df <- as.data.frame(summary(bdd$Annee))
 colnames(summary_df) <- c("Numbers")
 kable(summary_df)
 ```
 
--   We remove all the years before **1990** and the NA
+<!-- 
+-   We remove all the years before **1990** and the NA 
 
 ```{r, echo=TRUE, scrollable = TRUE}
 n_ligne =nrow(bdd)
@@ -329,46 +378,58 @@ colnames(summary_df) <- c("Numbers")
 kable(summary_df,padding = 5)
 ```
 
--   The BDD therefore changes from **`r n_ligne`** to **`r nrow(bdd)`** observations.
+-   The database therefore changes from **`r n_ligne`** to **`r nrow(bdd)`** observations. 
+-->
 
+
+
+<!--
 ## Table land use & protocol ( start )
 
 -   clcm_lvl1 & protocol
 
-```{r, echo=FALSE}
-kable(table(bdd$clcm_lvl1, bdd$Protocole),padding = 10,align = "c")
+```{r, echo=TRUE}
+kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c")
+
 ```
 
-\n
+\n\n\n
+
 -   clcm_lvl2 & protocol
 
-```{r, echo=FALSE}
-kable(table(bdd$clcm_lvl2, bdd$Protocole),padding = 10,align = "c")
+```{r, echo=TRUE}
+kable(table(bdd$clcm_lvl2, bdd$Protocole,exclude = NULL),padding = 10,align = "c")
 ```
 
-\n
+\n\n\n
+
 -   clcm_lvl3 & protocol
 
-```{r, echo=FALSE}
-kable(table(bdd$clcm_lvl3, bdd$Protocole),padding = 0,align = "c")
+```{r, echo=TRUE}
+kable(table(bdd$clcm_lvl3, bdd$Protocole,exclude = NULL),padding = 0,align = "c")
 ```
+-->
+
 
 ## Focus on protocols
 
--   List of protocols available on the database
+-   List of protocols available on the database ( `r length(levels(bdd$Protocole))` levels)
 
-```{r}
+```{r,echo=TRUE}
 bdd$Protocole = as.factor(bdd$Protocole)
 summary_df <- as.data.frame(summary(bdd$Protocole))
 colnames(summary_df) <- c("Numbers")
 kable(summary_df,padding = 5)
 ```
 
+<!--
 -   Selection of protocols: **F_HS, FHS, hand sorting, HS**
-
-```{r}
+-->
+-   Selection of protocols: **F_HS, HS**
+```{r,echo=TRUE}
 n_ligne = nrow(bdd)
-select_protocole =c("F_HS", "FHS", "hand sorting" ,"HS")
+#select_protocole =c("F_HS", "FHS", "hand sorting" ,"HS")
+select_protocole =c("F_HS", "HS")
 bdd <- bdd[bdd$Protocole %in% select_protocole, ]
 bdd=droplevels(bdd)
 bdd$Protocole = as.factor(bdd$Protocole)
@@ -377,15 +438,15 @@ colnames(summary_df) <- c("Numbers")
 kable(summary_df,padding = 5)
 ```
 
--   The BDD therefore changes from **`r n_ligne`** to **`r nrow(bdd)`** observations.
+-   The database therefore changes from **`r n_ligne`** to **`r nrow(bdd)`** observations.
 
+<!--
 -   Merging levels :
 
-    -   F_HS $=$ F_HS $+$ FHS;
+    -   F_HS $=$ F_HS $+$ FHS
     -   HS $=$ HS $+$ hand sorting
-    
 
-    ```{r}
+    ```{r,echo=TRUE}
     levels(bdd$Protocole)[levels(bdd$Protocole) == "FHS"] <- "F_HS"
     levels(bdd$Protocole)[levels(bdd$Protocole) == "hand sorting"] <- "HS"
     bdd$Protocole = as.factor(bdd$Protocole)
@@ -393,49 +454,77 @@ kable(summary_df,padding = 5)
     colnames(summary_df) <- c("Numbers")
     kable(summary_df,padding = 5)
     ```
+-->
+
 
 ## Focus on clcm_lvl1
 
--   CR of clcm_lvl1 = ** `r df_col[df_col$Variable=="clcm_lvl1","CR"]`** (`r length(levels(bdd$clcm_lvl1))` levels)
+-   CR of clcm_lvl1 = **`r df_col[df_col$Variable=="clcm_lvl1","CR"]`** (`r length(levels(bdd$clcm_lvl1))` levels)
+
 
 ```{r, echo=TRUE}
+bdd$clcm_lvl1= as.factor(bdd$clcm_lvl1)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl1))
+colnames(summary_df) <- c("Numbers")
+# kable(summary_df,padding = 5)
+```
+
+-   Merging levels
+```{r, echo=TRUE}
+levels(bdd$clcm_lvl1)[levels(bdd$clcm_lvl1) == "1_Naturel"] <- "Forest and semi natural areas"
+levels(bdd$clcm_lvl1)[levels(bdd$clcm_lvl1) == "2_Agricole"] <- "Agricultural areas"
+
 bdd$clcm_lvl1= as.factor(bdd$clcm_lvl1)
 summary_df <- as.data.frame(summary(bdd$clcm_lvl1))
 colnames(summary_df) <- c("Numbers")
 kable(summary_df,padding = 5)
 ```
 
--   Merging levels :
-    -   2_Agricole $=$ 2_Agricole $+$ Agricole
-
+-   Update **code_clcm_lvl1**
 ```{r, echo=TRUE}
-bdd$clcm_lvl1= as.factor(bdd$clcm_lvl1)
-levels(bdd$clcm_lvl1)[levels(bdd$clcm_lvl1) == "Agricole"] <- "2_Agricole"
-#levels(bdd$clcm_lvl1)
+#bdd$code_clcm_lvl1 = as.factor(bdd$code_clcm_lvl1)
 
-summary_df <- as.data.frame(summary(bdd$clcm_lvl1))
-colnames(summary_df) <- c("Numbers")
-kable(summary_df,padding = 5)
+bdd$code_clcm_lvl1 <- ifelse(bdd$clcm_lvl1 == "Forest and semi natural areas", 3, bdd$code_clcm_lvl1)
+
+bdd$code_clcm_lvl1 <- ifelse(bdd$clcm_lvl1 == "Agricultural areas", 2, bdd$code_clcm_lvl1)
 ```
 
 -   For the moment, we will keep the NA of **clcm_lvl1**
 
+
+
 ## Focus on clcm_lvl2
 
--   CR of clcm_lvl2 = ** `r df_col[df_col$Variable=="clcm_lvl2","CR"]`** (`r length(levels(bdd$clcm_lvl2))` levels)
--   To be continued (with BDD.V2)
+-   CR of clcm_lvl2 = **`r df_col[df_col$Variable=="clcm_lvl2","CR"]`** (`r length(levels(bdd$clcm_lvl2))` levels)
 
 ```{r, echo=TRUE}
 bdd$clcm_lvl2= as.factor(bdd$clcm_lvl2)
 summary_df <- as.data.frame(summary(bdd$clcm_lvl2))
 colnames(summary_df) <- c("Numbers")
-kable(summary_df,padding = 8)
+# kable(summary_df,padding = 8)
+```
+
+-   Merging levels
+```{r, echo=TRUE}
+levels(bdd$clcm_lvl2)[levels(bdd$clcm_lvl2) == "21_Agricole ouvert"] <- "Arable land"
+
+bdd$clcm_lvl2= as.factor(bdd$clcm_lvl2)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl2))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df,padding = 5)
+```
+
+-   Update **code_clcm_lvl2**
+```{r, echo=TRUE}
+
+bdd$code_clcm_lvl2 <- ifelse(bdd$clcm_lvl2 == "Arable land", 21, bdd$code_clcm_lvl2)
+
 ```
 
 ## Focus on clcm_lvl3
 
--   CR of clcm_lvl3 = ** `r df_col[df_col$Variable=="clcm_lvl3","CR"]`** (`r length(levels(bdd$clcm_lvl3))` levels)
--   To be continued (with BDD.V2)
+-   CR of clcm_lvl3 = **`r df_col[df_col$Variable=="clcm_lvl3","CR"]`** (`r length(levels(bdd$clcm_lvl3))` levels)
+
 
 ```{r, echo=TRUE, scrollable = TRUE}
 bdd$clcm_lvl3= as.factor(bdd$clcm_lvl3)
@@ -445,60 +534,56 @@ kable(summary_df,padding = 5)
 
 ```
 
-## Land use selection
+## Land use selection (clcm_lvl3)
+<!--
+-   **Broad-leaved forest** 
+-   **Coniferous forest** 
+-   **Mixed forest** 
 
--   **Forêt** $=$ 111_Forêt_de_feuillus $+$ 112_Forêt_de_conifères $+$ 113_Forêt_mixte
+-   **Pastures, meadows and other permanent grasslands under agricultural use** 
 
--   **Prairie agricole p.** $=$ 210_Prairie_agricole_permanente $+$ 231_Prairies
+-   **Non-irrigated arable land** 
 
--   **Prairie agricole t.** $=$ 211_Prairie_agricole_temporaire
+-   **Vineyards**
 
--   **Culture** $=$ 214_Culture_annuelle
+-   **Green urban areas**
 
--   **Vignoble** $=$ 218_Vignes_et_autres_Cultures_pérennes
-
--   **Pelouse urbaine** $=$ 321_Pelouse_urbaine
-
--   **Potager** $=$ 340_Potager
-
-(To be continued with BDD.V2)
+-   **Natural grasslands**
+-->
 
 ```{r, echo=TRUE}
-select_os= c("111_Forêt_de_feuillus", "112_Forêt_de_conifères","113_Forêt_mixte", "210_Prairie_agricole_permanente", "211_Prairie_agricole_temporaire", "231_Prairies", "214_Culture_annuelle", "218_Vignes_et_autres_Cultures_pérennes", "321_Pelouse_urbaine", "340_Potager")
+select_os= c("Broad-leaved forest", "Coniferous forest", "Mixed forest", 
+"Pastures, meadows and other permanent grasslands under agricultural use", "Non-irrigated arable land", 
+"Vineyards","Green urban areas","Natural grasslands")
 
-# bdd <- bdd[bdd$clcm_lvl3 %in% select_os, ]
-# bdd=droplevels(bdd)
-# bdd$clcm_lvl3 = as.factor(bdd$clcm_lvl3)
-# summary_df <- as.data.frame(summary(bdd$clcm_lvl3))
-# colnames(summary_df) <- c("Numbers")
-# kable(summary_df)
+bdd <- bdd[bdd$clcm_lvl3 %in% select_os, ]
+bdd=droplevels(bdd)
+bdd$clcm_lvl3 = as.factor(bdd$clcm_lvl3)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl3))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df)
 
 ```
+- **Maybe, we can merge the three types of forest ?**
 
 ## Land use & protocol overview
 
-```{r}
-#table(bdd$clcm_lvl1, bdd$Protocole)
-#table(bdd$clcm_lvl2, bdd$Protocole)
-kable (table(bdd$clcm_lvl3, bdd$Protocole), align = "c", format = "pipe", padding = 10)
+```{r, echo=TRUE}
+# kable (table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)
+# kable (table(bdd$clcm_lvl2, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)
+kable (table(bdd$clcm_lvl3, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)
 ```
 
+
+<!--
 # Earthworms data
 
-## Total abundance (CR = `r df_col[df_col$Variable=="AB_tot","CR"]` )
+## Total abundance (CR = 100 % )
 
 ```{r,fig.align='center',fig.height=10}
 summary(bdd$AB_tot) 
 #bdd <- subset(bdd, AB_tot <= 800)
 explo_num(nom_col = "AB_tot", titre = "Total abundance")
-```
-
-## Total_AB ? (CR = `r df_col[df_col$Variable=="Total_AB","CR"]`)
-
-```{r,fig.align='center',fig.height=10}
-summary(bdd$Total_AB)
-#bdd <- subset(bdd, Total_AB <= 2000)
-explo_num(nom_col = "Total_AB", titre = "Total_abundance",)
 ```
 
 ## Total biomass (CR = `r df_col[df_col$Variable=="BM_tot","CR"]`)
@@ -509,15 +594,19 @@ summary(bdd$BM_tot)
 explo_num(nom_col = "BM_tot", titre = "Total biomass",)
 ```
 
+
+-->
+<!--
 ## Total richness calculation method
 
-- Removal of columns with only NA (**`r length(colnames(bdd)[colSums(is.na(bdd)) == nrow(bdd)])`**) and/or only 0
-- Identify columns beginning with **AB\_**
-- Deletion of **AB\_** columns that are not species
-- Calculate richness by assigning **1** to each column if the value is different from 0 and NA
-- Total richness = **1** if the plot has a value in AB and/or BM
+-   Removal of columns with only NA (**`r length(colnames(bdd)[colSums(is.na(bdd)) == nrow(bdd)])`**) and/or only 0
+-   Identify columns beginning with **AB\_**
+-   Deletion of **AB\_** columns that are not species
+-   Calculate richness by assigning **1** to each column if the value is different from 0 and NA
+-   Total richness = **1** if the plot has a value in AB and/or BM
+-->
 
-```{r, echo=TRUE}
+```{r, echo=FALSE,"Total richness calculation method"}
 # on supprime tout les colonnes ayant que des NA
 colonnes_na <- colnames(bdd)[colSums(is.na(bdd)) == nrow(bdd)]
 # summary(bdd[, colonnes_na])
@@ -553,44 +642,45 @@ bdd$Richesse_tot <- rowSums(!is.na(bdd[colonnes_AB]) & bdd[colonnes_AB] != 0)
 
 
 
-# Check des lignes ayant des 0 richesse et X AB ou BM : 11 lignes
-vdt_a_checker = bdd[bdd$Richesse_tot == 0 & (bdd$Total_AB !=0 | bdd$BM_to !=0), c("ID_Site","AB_tot","Total_AB","BM_tot","Richesse_tot")]
-vdt_a_checker = subset(vdt_a_checker, Richesse_tot==0)
-#View(vdt_a_checker)
-vdt_a_checker$Richesse_tot <- 1
+# Check des lignes ayant des 0 richesse et X AB ou BM : 0 lignes
+# vdt_a_checker = bdd[bdd$Richesse_tot == 0 & (bdd$Total_AB !=0 | bdd$BM_to !=0), c("ID_Site","AB_tot","BM_tot","Richesse_tot")]
+# vdt_a_checker = subset(vdt_a_checker, Richesse_tot==0)
+# View(vdt_a_checker)
+# vdt_a_checker$Richesse_tot <- 1
 # Mettre à jour les ligne correspondant dans la bdd 
-bdd[rownames(bdd) %in% rownames(vdt_a_checker), "Richesse_tot"] <- 1
+# bdd[rownames(bdd) %in% rownames(vdt_a_checker), "Richesse_tot"] <- 1
 
 
 
-#  Check si y a des ligne ayant que des NA dans AB, BM et Richesse : nop
-resultat <- subset(bdd, is.na(AB_tot) & is.na(BM_tot) & is.na(Total_AB) & is.na(Richesse_tot))
-#View(resultat[, c("AB_tot","Total_AB","BM_tot", "Richesse_tot")])
+# Check si y a des ligne ayant que des NA dans AB, BM et Richesse : nop
+resultat <- subset(bdd, is.na(AB_tot) & is.na(BM_tot) & is.na(Richesse_tot))
+# View(resultat[, c("AB_tot","BM_tot", "Richesse_tot")])
 
 
 
-# Check si y a des ligne ayant que des zéros ou des NA dans AB, BM et Richesse_tot: 84 ligne
-vdt <- c("AB_tot", "BM_tot", "Total_AB", "Richesse_tot")
+# Check si y a des ligne ayant que des zéros ou des NA dans AB, BM et Richesse_tot: 66 ligne
+vdt <- c("AB_tot", "BM_tot", "Richesse_tot")
 lignes_zero <- which(rowSums(bdd[vdt] != 0, na.rm = TRUE) == 0)
-#View(bdd[lignes_zero,c("ID_Site","AB_tot", "BM_tot", "Total_AB", "Richesse_tot")])
+# View(bdd[lignes_zero,c("ID_Site","AB_tot", "BM_tot", "Richesse_tot")])
 
 
 
 # Check des lignes ayant de BM mais pas de AB
-bm_sans_ab <- subset(bdd, Total_AB == 0 & BM_tot != 0)
-# bm_sans_ab[, c("ID","ID_Site", "Programme", "Protocole", "AB_tot", "Total_AB", "BM_tot")]
+bm_sans_ab <- subset(bdd, AB_tot == 0 & BM_tot != 0)
+# bm_sans_ab[, c("ID","ID_Site", "Programme", "Protocole", "AB_tot", "BM_tot")]
 
+ab_sans_bm <- subset(bdd, BM_tot == 0 & AB_tot != 0) # 1 parcelles
+# ab_sans_bm[, c("ID","ID_Site", "Programme", "Protocole", "AB_tot", "BM_tot")]
 
 
 # Check des doublons
 
-#duplicated_rows <- subset(bdd, duplicated(bdd[, c("ID", "AB_tot", "Total_AB", "BM_tot")]) | #duplicated(bdd[, c("ID", "AB_tot", "Total_AB", "BM_tot")], fromLast = TRUE))
-
-
+#duplicated_rows <- subset(bdd, duplicated(bdd[, c("ID", "AB_tot", "BM_tot")]) | #duplicated(bdd[, c("ID", "AB_tot", "BM_tot")], fromLast = TRUE))
 
 ```
 
-## Total richness
+<!--
+## Total richness (CR = 100 % )
 
 ```{r, fig.align='center',fig.height=10}
 summary(bdd$Richesse_tot)
@@ -598,7 +688,16 @@ summary(bdd$Richesse_tot)
 explo_num(nom_col = "Richesse_tot", titre = "Total richness",)
 ```
 
-# Extraction of soil data
+
+
+
+
+
+
+
+-->
+
+# Soil data extraction
 
 ```{r}
 # Calcul des distances euclidiennes entre les sites
@@ -608,7 +707,8 @@ distance_moyenne <- mean(distances)
 
 ```
 
-## The source database
+<!--
+## The source database ([openlandmap](https://openlandmap.org/?center=25,39&zoom=4&opacity=72&base=OpenStreetMap&layer=lc_glc.fcs30d&time=2022){target="_blank"})
 
 ```{r,echo=TRUE}
 chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
@@ -629,23 +729,28 @@ kableExtra::kable(pedo) %>%
 
 -   Average values between surface (0 cm) and 30 cm depth
 
+
+
+
 ## Changing the resolution ![](https://logowik.com/content/uploads/images/python.jpg){width="200"}
 
--   Long compilation time
--   GDAL module with the resampleAlg=bilinear method
+-   Long compilation time in R
 
--   Resolution = 0.0083333333 = 30 arc-second \~ 1km
+-   GDAL module with the resampleAlg = bilinear method
+
+-   Resolution = 0.0083 = 30 arc-second \~ 1km
 
     ```{r}
+    test_resolution = bdd
     tif_file_path_origine = "C:/Users/diall/Downloads/datas/raster_origine/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
     raster_ph_origine <- raster(tif_file_path_origine)
-    bdd <- extraction(nom_col = "ph_10_origine",df = bdd,conv = 10, 
+    test_resolution <- extraction(nom_col = "ph_10_origine",df = test_resolution,conv = 10, 
                       tif_file_path = tif_file_path_origine)
 
 
     tif_file_path_rech = "C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
     raster_ph_rech <- raster(tif_file_path_rech)
-    bdd <- extraction(nom_col = "ph_10_rech",df = bdd,conv = 10, 
+    test_resolution <- extraction(nom_col = "ph_10_rech",df = test_resolution,conv = 10, 
                       tif_file_path = tif_file_path_rech)
 
     par(mforw=c(1,2))
@@ -653,27 +758,50 @@ kableExtra::kable(pedo) %>%
     image(raster_ph_rech, main = "pH at 10cm: raster modify (0.008)")
 
 
-    bdd_echan = bdd
+    bdd_echan = test_resolution
     bdd_echan <- bdd_echan %>%filter(!is.na(ph_10_origine) & !is.na(ph_10_rech))
 
     # graphique avec ggplot
+        # coefficient de corrélation
+    correlation <- cor(as.numeric(bdd_echan$ph_10_origine), bdd_echan$ph_10_rech)
     p <- ggplot(bdd_echan, aes(x = ph_10_origine, y = ph_10_rech)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = FALSE, color = "red") + 
-      labs(x = "Original pH", y = "Resampled pH") + 
+      labs(subtitle = paste("R = ", round(correlation, 2)),
+           x = "Original pH", y = "Resampled pH") + 
       theme_classic() 
-
-    # coefficient de corrélation
-    correlation <- cor(as.numeric(bdd_echan$ph_10_origine), bdd_echan$ph_10_rech)
-    p <- p + annotate("text", x = max(bdd_echan$ph_10_origine) - 0.5, y = min(bdd_echan$ph_10_rech) + 0.1, 
-                  label = paste("Correlation:", round(correlation, 2)), color = "blue")
 
     p
 
     ```
 
-## pH
 
+
+-->
+
+
+## Soil organic carbone (g/kg)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "c_orga_0",df = bdd,conv = 5, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b0..0cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "c_orga_10",df = bdd,conv = 5, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b10..10cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "c_orga_30",df = bdd,conv = 5, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b30..30cm_1950..2017_v0.2.tif")
+bdd = moyenne_val_extrct(nom_col = "c_orga_0_a_30", vec_col = c("c_orga_0","c_orga_10","c_orga_30"),df=bdd)
+
+
+indice_max <- which.max(bdd$c_orga_0_a_30)
+bdd <- bdd[-indice_max, ]
+
+
+summary(bdd$c_orga_0_a_30)
+explo_num(nom_col = "c_orga_0_a_30", titre = "C. organic")
+```
+
+## pH
+**Extracted values**
 ```{r,fig.align='center',fig.height=8}
 bdd <- extraction(nom_col = "ph_0",df = bdd,conv = 10, 
                   tif_file_path ="C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif")
@@ -683,11 +811,93 @@ bdd <- extraction(nom_col = "ph_10" ,df = bdd,conv = 10,
 bdd <- extraction(nom_col = "ph_30" ,df = bdd,conv = 10, 
                   tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b30..30cm_1950..2017_v0.2.tif")
 bdd = moyenne_val_extrct(nom_col = "ph_0_a_30", vec_col = c("ph_0","ph_10","ph_30"),df=bdd)
-summary(bdd$ph_0_a_30)
-#summary(droplevels ( bdd[bdd$ph_0_a_30=="NA",c("Programme", "Annee", "gps_x", "gps_y")]) )
+# summary(bdd$ph_0_a_30)
+
 explo_num(nom_col = "ph_0_a_30", titre = "pH (0 - 30 cm)")
 ```
 
+**Measured values & extracted values**
+
+-   Clean pH column
+```{r,echo=TRUE}
+# On recupere les deux colonnes du pH
+df_comp=bdd[, c("ID", "ID_Site","ph_eau","ph_0_a_30" )]
+df_comp =df_comp[complete.cases(df_comp$ph_eau),] 
+df_comp =df_comp[complete.cases(df_comp$ph_0_a_30),] 
+df_comp <- df_comp[!grepl("[^0-9.]", df_comp$ph_eau), ]
+df_comp$ph_eau <- as.numeric(df_comp$ph_eau)
+df_comp$ph_0_a_30 <- as.numeric(df_comp$ph_0_a_30)
+
+
+df_comp = df_comp[!df_comp$ph_eau== 44140.00,]
+df_comp = df_comp[!df_comp$ph_eau== "NA",]
+df_comp = df_comp[!df_comp$ph_0_a_30== "NA",]
+df_comp = droplevels(df_comp)
+```
+
+
+```{r,echo=TRUE}
+ID_Site_dupliques <- df_comp$ID_Site[duplicated(df_comp$ID_Site)]
+#length(ID_Site_dupliques)
+
+lignes_dupliquees <- subset(df_comp, duplicated(ID_Site) & duplicated(ph_eau))
+
+lignes_unique <- unique(lignes_dupliquees$ID_Site )
+#length(lignes_unique)
+
+# nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)
+
+
+dupliquees <- duplicated(df_comp$ID_Site)
+df_comp <- df_comp[!dupliquees, ]
+df_comp=droplevels(df_comp)
+
+# correlation <- cor.test(df_comp$ph_eau, df_comp$ph_0_a_30,method = "pearson")
+#resultat_test <- t.test(df_comp$ph_eau, df_comp$ph_0_a_30)
+
+df_comp$ph_eau <- as.numeric(df_comp$ph_eau)
+df_comp$ph_0_a_30 <- as.numeric(df_comp$ph_0_a_30)
+
+```
+
+<!-- <br/>  -->
+
+::: columns
+::: {.column width="60%"}
+-   Method ?
+
+-   Depth ?
+
+-   Measured values (CR = `r df_col[df_col$Variable=="ph_eau","CR"]`)
+
+```{r}
+  summary(df_comp$ph_eau)
+```
+
+-   Extracted values
+
+```{r}
+  summary(df_comp$ph_0_a_30)
+```
+:::
+
+::: {.column width="40%"}
+```{r,fig.align='center',fig.height=5,fig.width=4}
+    correlation <- cor(as.numeric(df_comp$ph_eau), df_comp$ph_0_a_30)
+# graphique avec ggplot
+    p <- ggplot(df_comp, aes(x = ph_eau, y = ph_0_a_30)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = FALSE, color = "red") + 
+      labs(subtitle =paste("R = ", round(correlation, 2)),x = "pH measured values", y = "pH extracted values") + 
+      theme_classic() 
+p
+```
+:::
+:::
+
+
+
+<!--
 ## Bulk density (kg / m-cube)
 
 ```{r,fig.align='center',fig.height=8}
@@ -702,6 +912,7 @@ summary(bdd$d_ap_0_a_30)
 explo_num(nom_col = "d_ap_0_a_30", titre = "Bulk density (0 - 30 cm)")
 ```
 
+
 ## Sand content (% kg/kg)
 
 ```{r,fig.align='center',fig.height=8}
@@ -715,24 +926,34 @@ bdd = moyenne_val_extrct(nom_col = "sable_0_a_30", vec_col = c("sable_0","sable_
 summary(bdd$sable_0_a_30)
 explo_num(nom_col = "sable_0_a_30", titre = "Sand (0 - 30 cm)")
 ```
+-->
 
-## Soil organic carbone (g/kg)
 
-```{r,fig.align='center',fig.height=8}
-bdd <- extraction(nom_col = "c_orga_0",df = bdd,conv = 5, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b0..0cm_1950..2017_v0.2.tif")
-bdd <- extraction(nom_col = "c_orga_10",df = bdd,conv = 5, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b10..10cm_1950..2017_v0.2.tif")
-bdd <- extraction(nom_col = "c_orga_30",df = bdd,conv = 5, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b30..30cm_1950..2017_v0.2.tif")
-bdd = moyenne_val_extrct(nom_col = "c_orga_0_a_30", vec_col = c("c_orga_0","c_orga_10","c_orga_30"),df=bdd)
-summary(bdd$c_orga_0_a_30)
-explo_num(nom_col = "c_orga_0_a_30", titre = "C. organic")
+<!--
+# Synthèse du taux de remplissage
+
+## Complete columns
+
+```{r, echo=TRUE}
+df_col=taux_completion(bdd,TRUE,trie=FALSE)
+df_col = df_col[df_col$Variables != "Total",]
+kable(df_col, caption = " ", col.width = c("75%", "25%"))
 ```
 
-# Climate data extraction
+## Non-complete columns
 
-## The source database
+```{r, scrollable = TRUE}
+df_col= taux_completion(bdd,FALSE,trie = TRUE)
+df_col = df_col[df_col$Variables != "Total",]
+kable(df_col, caption = " ", col.width = c("75%", "25%"))
+```
+
+
+-->
+
+<!--
+# Climate data extraction
+## The source database ([CHELSA V2](https://chelsa-climate.org/bioclim/){target="_blank"})
 
 ```{r,echo=TRUE}
 
@@ -754,15 +975,15 @@ kableExtra::kable(climat) %>%
 
 ## Extraction method
 
-- Link recovery ( see file [liens tif](https://1drv.ms/t/s!Avfm81EzNGBHjIZWw8YePljXaGSpCQ?e=qIPeWR){target="_blank"} )
+-   Link recovery ( see file [link .tif](https://1drv.ms/t/s!Avfm81EzNGBHjIZWw8YePljXaGSpCQ?e=qIPeWR){target="_blank"} )
 
-- Extracting variable names
+-   Extracting variable names
 
-- Uses of the **extraction()** function
+-   Uses of the **extraction()** function
 
-- Convert columns to correct format and unit
+-   Convert columns to correct format and unit
 
-- Adding variables to the BBD
+-   Adding variables to the LANDWORM database
 
 ```{r,echo=TRUE}
 liens_tif = read.table(file = "C:/Users/diall/Downloads/datas/envidatS3paths.txt")
@@ -854,7 +1075,7 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 
 ## List of variables
 
-[Déscription des variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf){target="_blank"}
+[Variable description](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf){target="_blank"}
 
 ```{r}
 summary(bdd_climat_ok)
@@ -862,7 +1083,7 @@ summary(bdd_climat_ok)
 
 ## Temperature
 
-- Average annual air temperature (°C) = bio1
+-   Average annual air temperature (°C) = bio1
 
 ```{r,fig.align='center',fig.height=8}
 summary(bdd$bio1)
@@ -871,14 +1092,370 @@ explo_num(nom_col = "bio1", titre = "temp°.")
 
 ## Precipitation
 
-- Annual precipitation (kg/m²) = bio12
+-   Annual precipitation (kg/m²) = bio12
 
 ```{r,fig.align='center',fig.height=8}
 summary(bdd$bio12)
 explo_num(nom_col = "bio12", titre = "Précipitat°.")
 ```
 
+
+
+
 # Questions
 
--   Comment gerer les parcelles repetées ?
+```{r}
+ID_Site_dupliques <- bdd$ID_Site[duplicated(bdd$ID_Site)]
+#length(ID_Site_dupliques)
+
+lignes_dupliquees <- subset(bdd, duplicated(ID_Site))
+
+lignes_unique <- unique(lignes_dupliquees$ID_Site)
+#length(lignes_unique)
+
+# nrow(bdd) - length(ID_Site_dupliques) + length(lignes_unique)
+```
+
+-   Comment gérer la répétition temporelle des parcelles ?
+    -   Avec répétition : **`r nrow(bdd)`** observations
+    -   Sans répétition : **`r nrow(bdd) - length(ID_Site_dupliques) + length(lignes_unique)`** observations
 -   Liens des données du sol (sable, argile et limon) de data.gouv.fr ?
+
+
+# To do next
+
+-   
+
+    1.  Extraction des prédicteurs : CEC, Limon, argile, évapotranspiration, paysage,...
+
+-   
+
+    2.  Analyse exploratoire : test de corrélation, VIF, ACP
+
+-   
+
+    3.  Sélection des variables
+
+-   
+
+    4.  Modélisation (GLM, GAM, RF, ANN)
+
+-   
+
+    5.  Validation croisée
+
+-   
+
+    6.  Rédaction, protocol ODMAP
+
+
+
+-->
+
+
+
+```{r}
+df_col= taux_completion(bdd,FALSE,trie = TRUE)
+df_col = df_col[df_col$Variables != "Total",]
+```
+
+## Sand
+**Extracted values (g/kg, 0 - 30 cm)**
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "sable.0_5",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sable.0_5.tif")
+
+bdd <- extraction(nom_col = "sable.5_15",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sable.5_15.tif")
+
+bdd <- extraction(nom_col = "sable.15_30",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sable.15_30.tif")
+
+bdd = moyenne_val_extrct(nom_col = "sable.0_30", vec_col = c("sable.0_5","sable.5_15","sable.15_30"),df=bdd)
+
+# summary(bdd$sable.0_30)
+
+explo_num(nom_col = "sable.0_30", titre = "Sand extracted values")
+```
+
+
+**Measured values & extracted values**
+
+-   Clean sand column
+```{r,echo=TRUE}
+# On recupere les deux colonnes du pH
+df_comp=bdd[, c("ID", "ID_Site","sand","sable.0_30" )]
+df_comp =df_comp[complete.cases(df_comp$sand),] 
+df_comp =df_comp[complete.cases(df_comp$sable.0_30),] 
+df_comp <- df_comp[!grepl("[^0-9.]", df_comp$sand), ]
+df_comp$sand <- as.numeric(df_comp$sand)
+df_comp$sable.0_30 <- as.numeric(df_comp$sable.0_30)
+# colSums(is.na(df_comp))
+
+df_comp = df_comp[!df_comp$sand== "NA",]
+df_comp = df_comp[!df_comp$sable.0_30== "NaN",]
+df_comp = droplevels(df_comp)
+```
+
+
+```{r,echo=TRUE}
+# -   Deleting duplicate measured values
+
+ID_Site_dupliques <- df_comp$ID_Site[duplicated(df_comp$ID_Site)]
+#length(ID_Site_dupliques)
+
+lignes_dupliquees <- subset(df_comp, duplicated(ID_Site) & duplicated(sand))
+
+lignes_unique <- unique(lignes_dupliquees$ID_Site )
+#length(lignes_unique)
+# nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)
+
+dupliquees <- duplicated(df_comp$ID_Site)
+df_comp <- df_comp[!dupliquees, ]
+df_comp=droplevels(df_comp)
+df_comp$sand <- as.numeric(df_comp$sand)
+df_comp$sable.0_30 <- as.numeric(df_comp$sable.0_30)
+
+```
+
+
+::: columns
+::: {.column width="60%"}
+-   Method ?
+
+-   Depth ?
+
+-   Measured values  (CR = `r df_col[df_col$Variable=="sand","CR"]`)
+
+```{r}
+  summary(df_comp$sand)
+```
+
+-   Extracted values
+
+```{r}
+  summary(df_comp$sable.0_30)
+```
+:::
+
+::: {.column width="40%"}
+\n\n\n
+
+```{r,fig.align='center',fig.height=5,fig.width=4}
+# graphique avec ggplot
+correlation <- cor(as.numeric(df_comp$sand), df_comp$sable.0_30)
+    p <- ggplot(df_comp, aes(x = sand, y = sable.0_30)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = FALSE, color = "red") + 
+      labs(subtitle =paste("R = ", round(correlation, 2)) ,x = "Sand measured values", y = "Sand extracted values") + 
+      theme_classic() 
+p
+```
+:::
+:::
+
+## Silt
+**Extracted values (g/kg, 0 - 30 cm)**
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "limon.0_5",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/limon.0_5.tif")
+
+bdd <- extraction(nom_col = "limon.5_15",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/limon.5_15.tif")
+
+bdd <- extraction(nom_col = "limon.15_30",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/limon.15_30.tif")
+
+bdd = moyenne_val_extrct(nom_col = "limon.0_30", vec_col = c("limon.0_5","limon.5_15","limon.15_30"),df=bdd)
+
+# summary(bdd$limon.0_30)
+
+explo_num(nom_col = "limon.0_30", titre = "Silt extracted values")
+```
+
+**Measured values & extracted values**
+
+-   Clean silt column
+
+```{r,echo=TRUE}
+# On recupere les deux colonnes du pH
+df_comp=bdd[, c("ID", "ID_Site","silt","limon.0_30" )]
+df_comp =df_comp[complete.cases(df_comp$silt),] 
+df_comp =df_comp[complete.cases(df_comp$limon.0_30),] 
+df_comp <- df_comp[!grepl("[^0-9.]", df_comp$silt), ]
+df_comp$silt <- as.numeric(df_comp$silt)
+df_comp$limon.0_30 <- as.numeric(df_comp$limon.0_30)
+# colSums(is.na(df_comp))
+
+
+df_comp = df_comp[!df_comp$silt== "NA",]
+df_comp = df_comp[!df_comp$limon.0_30== "NaN",]
+df_comp = droplevels(df_comp)
+```
+
+
+```{r,echo=TRUE}
+# -   Deleting duplicate measured values
+
+ID_Site_dupliques <- df_comp$ID_Site[duplicated(df_comp$ID_Site)]
+#length(ID_Site_dupliques)
+
+lignes_dupliquees <- subset(df_comp, duplicated(ID_Site) & duplicated(silt))
+
+lignes_unique <- unique(lignes_dupliquees$ID_Site )
+#length(lignes_unique)
+# nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)
+
+
+dupliquees <- duplicated(df_comp$ID_Site)
+df_comp <- df_comp[!dupliquees, ]
+df_comp=droplevels(df_comp)
+df_comp$silt <- as.numeric(df_comp$silt)
+df_comp$limon.0_30 <- as.numeric(df_comp$limon.0_30)
+
+```
+
+::: columns
+::: {.column width="60%"}
+-   Method ?
+
+-   Depth ?
+
+-   Measured values  CR = `r df_col[df_col$Variable=="silt","CR"]`
+
+```{r}
+  summary(df_comp$silt)
+```
+
+-   Extracted values
+
+```{r}
+  summary(df_comp$limon.0_30)
+```
+:::
+
+::: {.column width="40%"}
+\n\n\n
+
+```{r,fig.align='center',fig.height=5,fig.width=4}
+# graphique avec ggplot
+correlation <- cor(as.numeric(df_comp$silt), df_comp$limon.0_30)
+    p <- ggplot(df_comp, aes(x = silt, y = limon.0_30)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = FALSE, color = "red") + 
+      labs(subtitle =paste("R = ", round(correlation, 2)) ,x = "Silt measured values", y = "Silt extracted values") + 
+      theme_classic() 
+p
+```
+:::
+:::
+
+
+## Clay
+
+**Extracted values (g/kg, 0 - 30 cm)**
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "argile.0_5",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/argile.0_5.tif")
+
+bdd <- extraction(nom_col = "argile.5_15",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/argile.5_15.tif")
+
+bdd <- extraction(nom_col = "argile.15_30",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/argile.15_30.tif")
+
+bdd = moyenne_val_extrct(nom_col = "argile.0_30", vec_col = c("argile.0_5","argile.5_15","argile.15_30"),df=bdd)
+
+summary(bdd$argile.0_30)
+
+explo_num(nom_col = "argile.0_30", titre = "Clay extracted values")
+```
+
+**Measured values & extracted values**
+-   Clean clay column
+
+```{r,echo=TRUE}
+# On recupere les deux colonnes du pH
+df_comp=bdd[, c("ID", "ID_Site","clay","argile.0_30" )]
+df_comp =df_comp[complete.cases(df_comp$clay),] 
+df_comp =df_comp[complete.cases(df_comp$argile.0_30),] 
+df_comp <- df_comp[!grepl("[^0-9.]", df_comp$clay), ]
+df_comp$clay <- as.numeric(df_comp$clay)
+df_comp$argile.0_30 <- as.numeric(df_comp$argile.0_30)
+# colSums(is.na(df_comp))
+
+df_comp = df_comp[!df_comp$clay== "NA",]
+df_comp = df_comp[!df_comp$argile.0_30== "NaN",]
+df_comp = droplevels(df_comp)
+```
+
+
+```{r,echo=TRUE}
+# -   Deleting duplicate measured values
+
+ID_Site_dupliques <- df_comp$ID_Site[duplicated(df_comp$ID_Site)]
+#length(ID_Site_dupliques)
+
+lignes_dupliquees <- subset(df_comp, duplicated(ID_Site) & duplicated(clay))
+
+lignes_unique <- unique(lignes_dupliquees$ID_Site )
+#length(lignes_unique)
+# nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)
+
+dupliquees <- duplicated(df_comp$ID_Site)
+df_comp <- df_comp[!dupliquees, ]
+df_comp=droplevels(df_comp)
+df_comp$clay <- as.numeric(df_comp$clay)
+df_comp$argile.0_30 <- as.numeric(df_comp$argile.0_30)
+
+```
+
+::: columns
+::: {.column width="60%"}
+-   Method ?
+
+-   Depth ?
+
+-   Measured values  CR = `r df_col[df_col$Variable=="clay","CR"]`
+
+```{r}
+  summary(df_comp$clay)
+```
+
+-   Extracted values
+
+```{r}
+  summary(df_comp$argile.0_30)
+```
+:::
+
+::: {.column width="40%"}
+\n\n\n
+
+```{r,fig.align='center',fig.height=5,fig.width=4}
+# graphique avec ggplot
+correlation <- cor(as.numeric(df_comp$clay), df_comp$argile.0_30)
+    p <- ggplot(df_comp, aes(x = clay, y = argile.0_30)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = FALSE, color = "red") + 
+      labs(subtitle =paste("R = ", round(correlation, 2)) ,x = "Clay measured values", y = "Clay extracted values") + 
+      theme_classic() 
+p
+```
+:::
+:::
+
+
+## Elevation
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "elevation",df = bdd,conv = 10, 
+                  tif_file_path ="C:/Users/diall/Downloads/datas/raster_modif/GMTED2010_Spatial.tif")
+
+summary(bdd$elevation)
+
+explo_num(nom_col = "elevation", titre = "Elevation")
+```

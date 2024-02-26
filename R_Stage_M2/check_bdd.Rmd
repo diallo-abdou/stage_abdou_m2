@@ -1,0 +1,269 @@
+---
+title: 'Check BDD LandWorm V1.9'
+author: "Abdourahmane Diallo"
+date: "2024-22-02"
+output:
+  html_document:
+    code_download: yes
+    toc: yes
+    toc_float: yes
+    code_fold: hide
+    warning: no
+    message: no
+    theme: united
+    number_sections: yes
+    sec_number_suffix: '.   '
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
+                      fig.align='center',fig.height=4)
+library(openxlsx)
+library(readxl)
+library(knitr)
+```
+
+
+# Exploration
+
+## Database import
+
+-   Import of database **LandWorm_dataset_site_V1.9.xlsx** version **V1.9** (february 22, 2024)
+
+```{r,echo=TRUE}
+chemin_fichier_excel = "C:/Users/diall/Downloads/datas/LandWorm_dataset_site_V1.9.xlsx"
+bdd <- read.xlsx(chemin_fichier_excel, sheet = "Sheet1")
+```
+
+-   The database contains **`r nrow(bdd)`** rows and **`r ncol(bdd)`** columns
+
+## Focus on years
+
+-   Cleaning the Annee column: parfois années + jours et ou + mois
+
+```{r , echo=TRUE}
+bdd$Annee= as.factor(bdd$Annee)
+levels(bdd$Annee)
+```
+-   Pour le moment, je prend a chaque les les 4 chiffre de l'année
+```{r}
+bdd$Annee <- gsub("^(\\d{4}).*$", "\\1", bdd$Annee) # on prend uniquement les 04 premier chiffre
+bdd$Annee= as.factor(bdd$Annee)
+```
+
+
+
+
+## Focus on clcm_lvl1
+
+
+```{r, echo=TRUE}
+bdd$clcm_lvl1= as.factor(bdd$clcm_lvl1)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl1))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df,padding = 5)
+```
+
+-   Merging levels
+```{r, echo=TRUE}
+levels(bdd$clcm_lvl1)[levels(bdd$clcm_lvl1) == "1_Naturel"] <- "Forest and semi natural areas"
+levels(bdd$clcm_lvl1)[levels(bdd$clcm_lvl1) == "2_Agricole"] <- "Agricultural areas"
+
+bdd$clcm_lvl1= as.factor(bdd$clcm_lvl1)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl1))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df,padding = 5)
+```
+
+-   Update **code_clcm_lvl1**
+```{r}
+bdd$code_clcm_lvl1 <- ifelse(bdd$clcm_lvl1 == "Forest and semi natural areas", 3, bdd$code_clcm_lvl1)
+
+bdd$code_clcm_lvl1 <- ifelse(bdd$clcm_lvl1 == "Agricultural areas", 2, bdd$code_clcm_lvl1)
+```
+
+
+
+
+
+## Focus on clcm_lvl2
+
+
+```{r, echo=TRUE}
+bdd$clcm_lvl2= as.factor(bdd$clcm_lvl2)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl2))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df,padding = 8)
+```
+
+-   Merging levels
+```{r, echo=TRUE}
+levels(bdd$clcm_lvl2)[levels(bdd$clcm_lvl2) == "21_Agricole ouvert"] <- "Arable land"
+
+bdd$clcm_lvl2= as.factor(bdd$clcm_lvl2)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl2))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df,padding = 5)
+```
+
+-   Update **code_clcm_lvl2**
+```{r}
+
+bdd$code_clcm_lvl2 <- ifelse(bdd$clcm_lvl2 == "Arable land", 21, bdd$code_clcm_lvl2)
+
+```
+
+
+
+
+## Focus on clcm_lvl3
+
+
+```{r, echo=TRUE, scrollable = TRUE}
+bdd$clcm_lvl3= as.factor(bdd$clcm_lvl3)
+summary_df <- as.data.frame(summary(bdd$clcm_lvl3))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df,padding = 5)
+
+```
+
+
+
+## Focus on protocols
+
+-   List of protocols available on the database
+
+```{r,echo=TRUE}
+bdd$Protocole = as.factor(bdd$Protocole)
+summary_df <- as.data.frame(summary(bdd$Protocole))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df,padding = 5)
+```
+
+-   **Merging levels** :
+
+    -   HS $=$ HS $+$ hand sorting
+
+    ```{r,echo=TRUE, result='hide'}
+    levels(bdd$Protocole)[levels(bdd$Protocole) == "hand sorting"] <- "HS"
+    bdd$Protocole = as.factor(bdd$Protocole)
+    summary_df <- as.data.frame(summary(bdd$Protocole))
+    colnames(summary_df) <- c("Numbers")
+    #kable(summary_df,padding = 5)
+    ```
+
+
+## Total abundance
+
+```{r,}
+summary(bdd$AB_tot) 
+#bdd <- subset(bdd, AB_tot <= 800)
+par(mfrow=c(1,2))
+
+# Boxplot
+  boxplot(bdd$AB_tot, col = 'blue', ylab = "Total abundance")
+  # Cleveland plot
+  dotchart(bdd$AB_tot, pch = 16, col = 'blue', xlab = "Total abundance")
+
+```
+**Quelques parcelles ont des valeurs un peu douteux**
+
+## Total biomass
+
+```{r}
+summary(bdd$BM_tot) 
+#bdd <- subset(bdd, AB_tot <= 800)
+par(mfrow=c(1,2))
+
+# Boxplot
+  boxplot(bdd$BM_tot, col = 'blue', ylab = "Total biomass")
+  # Cleveland plot
+  dotchart(bdd$BM_tot, pch = 16, col = 'blue', xlab = "Total biomass")
+
+```
+**Quelques parcelles ont des valeurs un peu douteux**
+
+
+## Sand
+
+```{r}
+bdd$sand=as.numeric(bdd$sand)
+summary(bdd$sand) 
+#bdd <- subset(bdd, AB_tot <= 800)
+par(mfrow=c(1,2))
+
+# Boxplot
+  boxplot(bdd$sand, col = 'blue', ylab = "sand")
+  # Cleveland plot
+  dotchart(bdd$sand, pch = 16, col = 'blue', xlab = "sand")
+
+```
+
+## Clay
+
+```{r}
+bdd$clay=as.numeric(bdd$clay)
+summary(bdd$clay) 
+#bdd <- subset(bdd, AB_tot <= 800)
+par(mfrow=c(1,2))
+
+# Boxplot
+  boxplot(bdd$clay, col = 'blue', ylab = "clay")
+  # Cleveland plot
+  dotchart(bdd$clay, pch = 16, col = 'blue', xlab = "clay")
+
+```
+**A verifier ?, beaucoup de valeur sont superieur a 100 **
+
+## Clay
+
+```{r}
+bdd$silt=as.numeric(bdd$silt)
+summary(bdd$silt) 
+#bdd <- subset(bdd, AB_tot <= 800)
+par(mfrow=c(1,2))
+
+# Boxplot
+  boxplot(bdd$silt, col = 'blue', ylab = "silt")
+  # Cleveland plot
+  dotchart(bdd$silt, pch = 16, col = 'blue', xlab = "silt")
+
+```
+
+
+
+## pH
+
+-   Hors chiffre 
+```{r}
+# les valeurs de la colonne ph_eau qui ne sont pas des chiffres ou supérieures à 14
+
+valeurs_bizarres <- subset(bdd, !(grepl("^\\d*\\.?\\d+$", ph_eau) | as.numeric(ph_eau) > 14 & is.na(ph_eau)))$ph_eau
+valeurs_bizarres
+df_comp=bdd
+df_comp <- df_comp[!grepl("[^0-9.]", df_comp$ph_eau), ]
+df_comp$ph_eau <- as.numeric(df_comp$ph_eau)
+```
+**Il y a `r length(valeurs_bizarres)` parcelles qui ont des pH qui ne sont pas des chiffre**.
+\n
+Dans mon cas, j'ai enlever ces 19 lignes.
+
+-   Valeurs superieur a 14
+```{r}
+summary(as.numeric(bdd$ph_eau))
+df_comp = df_comp[!df_comp$ph_eau== 44140.00,]
+```
+**Une parcelle est à $44140.00$**. 
+
+
+```{r}
+par(mfrow=c(1,2))
+
+# Boxplot
+  boxplot(df_comp$ph_eau, col = 'blue', ylab = "ph_eau")
+  # Cleveland plot
+  dotchart(df_comp$ph_eau, pch = 16, col = 'blue', xlab = "ph_eau")
+
+```

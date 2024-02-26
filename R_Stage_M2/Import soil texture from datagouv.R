@@ -42,3 +42,13 @@ for (tif_file_path in tif_file_paths) {
 # Add the extracted soil values as new columns to LandWorm_dataset_site_GPS
 LandWorm_dataset_site_GPS <- cbind(LandWorm_dataset_site_GPS, soil_values)
 
+
+# fghjkl ------------------------------------------------------------------
+
+ddfgh
+
+# Plan 
+
+-   Setting
+
+-   Database import

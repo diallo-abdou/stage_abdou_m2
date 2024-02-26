@@ -1,10 +1,16 @@
 
+
+
+
+
+
 # Comparaison raster origine et modifier ----------------------------------
 
 
 ### raster d'origine
+chemin_tif = "C:/Users/diall/Downloads/elevation/GMTED2010_Spatial.tif"
 tif_file_path_origine = "C:/Users/diall/Downloads/datas/raster_origine/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
-raster_ph_origine <- raster(tif_file_path_origine)
+raster_ph_origine <- raster(chemin_tif)
 
 # Obtenir la résolution du raster pH
 res(raster_ph_origine)
@@ -18,7 +24,7 @@ res(raster_ph_origine) * 111000 # Convertir la résolution en mètres
 
 (res(raster_ph_origine) * 111000) / 1000 # Convertir la résolution en kilomètres
 
-bdd <- extraction(nom_col = "ph_0_origine",df = bdd,conv = 10, 
+test <- extraction(nom_col = "ph_0_origine",df = bdd,conv = 10, 
                   tif_file_path = tif_file_path_origine)
 
 summary(bdd$ph_0_origine)
@@ -27,7 +33,7 @@ summary(bdd$ph_0_origine)
 
 
 ### raster reechantillonner
-tif_file_path_rech = "C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
+tif_file_path_rech = "C:/Users/diall/Downloads/datas/raster_modif/GMTED2010_Spatial.tif"
 raster_ph_rech <- raster(tif_file_path_rech)
 image(raster_ph_rech)
 
@@ -44,7 +50,7 @@ res(raster_ph_rech) * 111000 # Convertir la résolution en mètres
 (res(raster_ph_rech) * 111000) / 1000 # Convertir la résolution en kilomètres
 
 
-bdd <- extraction(nom_col = "ph_0_rech",df = bdd,conv = 10, 
+test <- extraction(nom_col = "alt",df = bdd,conv = 10, 
                   tif_file_path = tif_file_path_rech)
 
 summary(bdd$ph_0_rech)
@@ -89,13 +95,14 @@ tif_file_path= "https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V2/GLOBA
 tif_file_path= "https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V2/GLOBAL/climatologies/1981-2010/bio/CHELSA_bio18_1981-2010_V.2.1.tif"
 tif_file_path="https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V2/GLOBAL/climatologies/1981-2010/bio/CHELSA_kg3_1981-2010_V.2.1.tif"
 tif_file_path= "https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V2/GLOBAL/climatologies/1981-2010/bio/CHELSA_bio10_1981-2010_V.2.1.tif"
+tif_file_path="C:/Users/diall/Downloads/datas/raster_modif/sable.0_5.tif"
 raster_reference <- raster(tif_file_path)
 attributes(raster_reference)
 res(raster_reference)
 crs(raster_reference)
 projection(raster_reference)
 
-image(raster_reference)
+plot(raster_reference)
 
 
 # Charger le deuxième fichier raster que vous souhaitez aligner sur la résolution du raster de référence
