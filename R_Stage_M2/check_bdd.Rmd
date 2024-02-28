@@ -13,6 +13,7 @@ output:
     theme: united
     number_sections: yes
     sec_number_suffix: '.   '
+    cache: true
   pdf_document:
     toc: yes
 ---
@@ -20,6 +21,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
                       fig.align='center',fig.height=4)
+rm(list=ls(all=TRUE))  # Reset the working environment
 library(openxlsx)
 library(readxl)
 library(knitr)
@@ -39,6 +41,15 @@ bdd <- read.xlsx(chemin_fichier_excel, sheet = "Sheet1")
 
 -   The database contains **`r nrow(bdd)`** rows and **`r ncol(bdd)`** columns
 
+
+## Porgrame
+
+```{r,echo=TRUE}
+bdd$Programme=as.factor(bdd$Programme)
+sort(levels(bdd$Programme))
+levels(bdd$Programme)[levels(bdd$Programme) == "CA 45"] <- "CA_45"
+```
+
 ## Focus on years
 
 -   Cleaning the Annee column: parfois années + jours et ou + mois
@@ -47,7 +58,7 @@ bdd <- read.xlsx(chemin_fichier_excel, sheet = "Sheet1")
 bdd$Annee= as.factor(bdd$Annee)
 levels(bdd$Annee)
 ```
--   Pour le moment, je prend a chaque les les 4 chiffre de l'année
+-   Pour le moment, je prend a chaque fois les 4 chiffre de l'année
 ```{r}
 bdd$Annee <- gsub("^(\\d{4}).*$", "\\1", bdd$Annee) # on prend uniquement les 04 premier chiffre
 bdd$Annee= as.factor(bdd$Annee)
@@ -55,6 +66,18 @@ bdd$Annee= as.factor(bdd$Annee)
 
 
 
+
+
+## Date de prevelment
+
+```{r}
+# bdd$Date_Prelevement
+
+filtre_date <- subset(bdd, !is.na(Date_Prelevement) & !grepl("^\\d{2}/\\d{2}/\\d{4}$", Date_Prelevement))$Date_Prelevement
+
+filtre_date[c(1,5,10,79,101,112,195,240,243,454,473,475,485,627,655,680)]
+
+```
 
 ## Focus on clcm_lvl1
 
@@ -186,7 +209,7 @@ par(mfrow=c(1,2))
 **Quelques parcelles ont des valeurs un peu douteux**
 
 
-## Sand
+## sand
 
 ```{r}
 bdd$sand=as.numeric(bdd$sand)
@@ -201,7 +224,7 @@ par(mfrow=c(1,2))
 
 ```
 
-## Clay
+## clay
 
 ```{r}
 bdd$clay=as.numeric(bdd$clay)
@@ -217,7 +240,7 @@ par(mfrow=c(1,2))
 ```
 **A verifier ?, beaucoup de valeur sont superieur a 100 **
 
-## Clay
+## silt
 
 ```{r}
 bdd$silt=as.numeric(bdd$silt)
@@ -267,3 +290,56 @@ par(mfrow=c(1,2))
   dotchart(df_comp$ph_eau, pch = 16, col = 'blue', xlab = "ph_eau")
 
 ```
+
+## C_tot
+```{r}
+summary(as.numeric(bdd$c_tot))
+#plot(as.numeric(bdd$c_tot))
+par(mfrow=c(1,2))
+
+# Boxplot
+  boxplot(as.numeric(bdd$c_tot), col = 'blue', ylab = "c_tot")
+  # Cleveland plot
+  dotchart(as.numeric(bdd$c_tot), pch = 16, col = 'blue', xlab = "c_tot")
+
+```
+**Valeurs superieurs à 100 ?, unités ?,... **
+
+## C_org
+```{r}
+summary(as.numeric(bdd$c_org))
+#plot(as.numeric(bdd$c_org))
+par(mfrow=c(1,2))
+
+# Boxplot
+  boxplot(as.numeric(bdd$c_org), col = 'blue', ylab = "c_org")
+  # Cleveland plot
+  dotchart(as.numeric(bdd$c_org), pch = 16, col = 'blue', xlab = "c_org")
+
+```
+
+**Valeurs superieurs à 100 ?, unités ?,... **
+
+
+## om
+```{r}
+summary(as.numeric(bdd$om))
+#plot(as.numeric(bdd$om))
+par(mfrow=c(1,2))
+
+# Boxplot
+  boxplot(as.numeric(bdd$om), col = 'blue', ylab = "om")
+  # Cleveland plot
+  dotchart(as.numeric(bdd$om), pch = 16, col = 'blue', xlab = "om")
+
+```
+
+**Valeurs superieurs à 100 ?, unités ?,... **
+
+## ID
+```{r}
+# Check des doublons
+duplicated_rows <- subset(bdd, duplicated(bdd[, c("ID", "AB_tot", "BM_tot")]) | duplicated(bdd[, c("ID", "AB_tot", "BM_tot")], fromLast = TRUE))
+
+```
+

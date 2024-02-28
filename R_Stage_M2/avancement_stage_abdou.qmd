@@ -24,8 +24,6 @@ execute:
   cache: true
 ---
 
-
-
 # Setting
 
 ```{r setup, include=FALSE,fig.align='center',message=FALSE,warning=FALSE,message=FALSE,echo=TRUE}
@@ -33,6 +31,7 @@ execute:
 # source("function_abdou.R")
 
 ```
+
 ## Packages
 
 ```{r,echo=TRUE}
@@ -88,6 +87,9 @@ execute:
   library(kableExtra)
   library(stringr)
   library(plotly)
+  library(PerformanceAnalytics)
+  library(usdm)
+
 
 
 ```
@@ -202,6 +204,41 @@ moyenne_val_extrct <- function(nom_col, vec_col, df=bdd) {
   df[[nom_col]] = round(df[[nom_col]],1)
   return(as.data.frame(df))
 }
+
+
+# tests de corrélation avec un seuil -----------------------------------------------
+cor_function_seuil <- function(data, seuil,affiche=FALSE) {
+  # Création d'un vecteur pour stocker les paires de variables corrélées
+  variables_corr <- c()
+  
+  # Boucle pour tester la corrélation entre chaque paire de variables
+  for (i in 1:(ncol(data) - 1)) {
+    for (j in (i + 1):ncol(data)) {
+      # Calcul de la corrélation entre les variables i et j
+      cor_value <- stats::cor(data[, i], data[, j], use = "na.or.complete")
+      
+      # Stockage du résultat dans le vecteur si supérieur au seuil
+      if (cor_value >= seuil | cor_value <= -seuil) {
+        if(affiche){
+        cat(
+          "***",
+          colnames(data)[i],
+          "  __est correlee a__  ",
+          colnames(data)[j],
+          "avec un R =",
+          cor_value,
+          "\n \n \n"
+        )
+      }
+        
+        variables_corr <-
+          c(variables_corr, colnames(data)[i], colnames(data)[j])
+      }
+    }
+  }
+  
+  return(variables_corr)
+}
 ```
 
 # Plan
@@ -237,16 +274,15 @@ col_en_factor = c("Programme","Annee","ID_Site","Code_Parcelle","postal_code","c
 bdd = conv_col(bdd, col_en_factor, "factor")
 ```
 
--   Data selection: EcoBioSoil = *"dc "*
+## Data selection: EcoBioSoil
 
-```{r,echo=TRUE}
+```{r,echo=FALSE}
 n_line=nrow(bdd)
 bdd$owner=as.factor(bdd$owner)
 summary_df <- as.data.frame(summary(bdd$owner))
 colnames(summary_df) <- c("Numbers")
 kable(summary_df)
 ```
-
 
 ```{r,echo=FALSE}
 bdd <- subset(bdd, owner == "dc")
@@ -255,8 +291,6 @@ bdd$owner=droplevels(bdd$owner)
 ```
 
 -   The database therefore changes from **`r n_line`** to **`r nrow(bdd)`** observations.
-
-
 
 # Database exploration
 
@@ -299,6 +333,7 @@ bdd <- bdd %>%filter(!is.na(gps_x) & !is.na(gps_y))
 -   We delete the *NA* lines in the GPS coordinates
 -   The database therefore changes from **`r n_line`** to **`r nrow(bdd)`** observations.
 -   Merging database and climat database
+
 ```{r, echo=TRUE}
 # Ajout variables climatiques (voir chunk extraction données climatiques)
 chemin_fichier <- "C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/datas/bdd_climat_ok.rds"
@@ -341,8 +376,8 @@ bdd <- droplevels(bdd)
 
 ## Focus on years
 
--   Cleaning the Annee column
-<br/>
+-   Cleaning the Annee column 
+<br/> 
 <!--
 ```{r , echo=TRUE}
 # levels(bdd$Annee) # parfois années et jours et ou mois
@@ -361,6 +396,7 @@ summary_df <- as.data.frame(summary(bdd$Annee))
 colnames(summary_df) <- c("Numbers")
 kable(summary_df)
 ```
+
 
 <!-- 
 -   We remove all the years before **1990** and the NA 
@@ -422,10 +458,13 @@ colnames(summary_df) <- c("Numbers")
 kable(summary_df,padding = 5)
 ```
 
+
 <!--
 -   Selection of protocols: **F_HS, FHS, hand sorting, HS**
 -->
+
 -   Selection of protocols: **F_HS, HS**
+
 ```{r,echo=TRUE}
 n_ligne = nrow(bdd)
 #select_protocole =c("F_HS", "FHS", "hand sorting" ,"HS")
@@ -439,6 +478,7 @@ kable(summary_df,padding = 5)
 ```
 
 -   The database therefore changes from **`r n_ligne`** to **`r nrow(bdd)`** observations.
+
 
 <!--
 -   Merging levels :
@@ -456,11 +496,9 @@ kable(summary_df,padding = 5)
     ```
 -->
 
-
 ## Focus on clcm_lvl1
 
 -   CR of clcm_lvl1 = **`r df_col[df_col$Variable=="clcm_lvl1","CR"]`** (`r length(levels(bdd$clcm_lvl1))` levels)
-
 
 ```{r, echo=TRUE}
 bdd$clcm_lvl1= as.factor(bdd$clcm_lvl1)
@@ -470,6 +508,7 @@ colnames(summary_df) <- c("Numbers")
 ```
 
 -   Merging levels
+
 ```{r, echo=TRUE}
 levels(bdd$clcm_lvl1)[levels(bdd$clcm_lvl1) == "1_Naturel"] <- "Forest and semi natural areas"
 levels(bdd$clcm_lvl1)[levels(bdd$clcm_lvl1) == "2_Agricole"] <- "Agricultural areas"
@@ -481,6 +520,7 @@ kable(summary_df,padding = 5)
 ```
 
 -   Update **code_clcm_lvl1**
+
 ```{r, echo=TRUE}
 #bdd$code_clcm_lvl1 = as.factor(bdd$code_clcm_lvl1)
 
@@ -490,8 +530,6 @@ bdd$code_clcm_lvl1 <- ifelse(bdd$clcm_lvl1 == "Agricultural areas", 2, bdd$code_
 ```
 
 -   For the moment, we will keep the NA of **clcm_lvl1**
-
-
 
 ## Focus on clcm_lvl2
 
@@ -505,6 +543,7 @@ colnames(summary_df) <- c("Numbers")
 ```
 
 -   Merging levels
+
 ```{r, echo=TRUE}
 levels(bdd$clcm_lvl2)[levels(bdd$clcm_lvl2) == "21_Agricole ouvert"] <- "Arable land"
 
@@ -515,6 +554,7 @@ kable(summary_df,padding = 5)
 ```
 
 -   Update **code_clcm_lvl2**
+
 ```{r, echo=TRUE}
 
 bdd$code_clcm_lvl2 <- ifelse(bdd$clcm_lvl2 == "Arable land", 21, bdd$code_clcm_lvl2)
@@ -525,7 +565,6 @@ bdd$code_clcm_lvl2 <- ifelse(bdd$clcm_lvl2 == "Arable land", 21, bdd$code_clcm_l
 
 -   CR of clcm_lvl3 = **`r df_col[df_col$Variable=="clcm_lvl3","CR"]`** (`r length(levels(bdd$clcm_lvl3))` levels)
 
-
 ```{r, echo=TRUE, scrollable = TRUE}
 bdd$clcm_lvl3= as.factor(bdd$clcm_lvl3)
 summary_df <- as.data.frame(summary(bdd$clcm_lvl3))
@@ -535,6 +574,8 @@ kable(summary_df,padding = 5)
 ```
 
 ## Land use selection (clcm_lvl3)
+
+
 <!--
 -   **Broad-leaved forest** 
 -   **Coniferous forest** 
@@ -564,7 +605,8 @@ colnames(summary_df) <- c("Numbers")
 kable(summary_df)
 
 ```
-- **Maybe, we can merge the three types of forest ?**
+
+-   **Maybe, we can merge the three types of forest ?**
 
 ## Land use & protocol overview
 
@@ -596,6 +638,9 @@ explo_num(nom_col = "BM_tot", titre = "Total biomass",)
 
 
 -->
+
+
+
 <!--
 ## Total richness calculation method
 
@@ -679,6 +724,7 @@ ab_sans_bm <- subset(bdd, BM_tot == 0 & AB_tot != 0) # 1 parcelles
 
 ```
 
+
 <!--
 ## Total richness (CR = 100 % )
 
@@ -687,246 +733,8 @@ summary(bdd$Richesse_tot)
 #bdd <- subset(bdd, Richesse_tot <= 2000)
 explo_num(nom_col = "Richesse_tot", titre = "Total richness",)
 ```
-
-
-
-
-
-
-
-
 -->
 
-# Soil data extraction
-
-```{r}
-# Calcul des distances euclidiennes entre les sites
-distances <- dist(cbind(bdd$gps_x, bdd$gps_y))
-distance_moyenne <- mean(distances)
-# distance_moyenne
-
-```
-
-<!--
-## The source database ([openlandmap](https://openlandmap.org/?center=25,39&zoom=4&opacity=72&base=OpenStreetMap&layer=lc_glc.fcs30d&time=2022){target="_blank"})
-
-```{r,echo=TRUE}
-chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
-pedo <- read.xlsx(chemin_fichier_excel, sheet = "pedo")
-
-# Fusion des cellules des colonnes avec des éléments dupliqués
-for (col in names(pedo)) {
-  pedo[[col]] <- ifelse(duplicated(pedo[[col]]), "", pedo[[col]])
-}
-
-#tableau avec kableExtra et centrage du contenu des cellules
-kableExtra::kable(pedo) %>%
-  kableExtra::kable_styling() %>%
-  kableExtra::column_spec(1:ncol(pedo))  # Centrer le contenu de toutes les colonnes
-```
-
-\n
-
--   Average values between surface (0 cm) and 30 cm depth
-
-
-
-
-## Changing the resolution ![](https://logowik.com/content/uploads/images/python.jpg){width="200"}
-
--   Long compilation time in R
-
--   GDAL module with the resampleAlg = bilinear method
-
--   Resolution = 0.0083 = 30 arc-second \~ 1km
-
-    ```{r}
-    test_resolution = bdd
-    tif_file_path_origine = "C:/Users/diall/Downloads/datas/raster_origine/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
-    raster_ph_origine <- raster(tif_file_path_origine)
-    test_resolution <- extraction(nom_col = "ph_10_origine",df = test_resolution,conv = 10, 
-                      tif_file_path = tif_file_path_origine)
-
-
-    tif_file_path_rech = "C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
-    raster_ph_rech <- raster(tif_file_path_rech)
-    test_resolution <- extraction(nom_col = "ph_10_rech",df = test_resolution,conv = 10, 
-                      tif_file_path = tif_file_path_rech)
-
-    par(mforw=c(1,2))
-    image(raster_ph_origine,main="pH at 10cm: original raster (0.002)")
-    image(raster_ph_rech, main = "pH at 10cm: raster modify (0.008)")
-
-
-    bdd_echan = test_resolution
-    bdd_echan <- bdd_echan %>%filter(!is.na(ph_10_origine) & !is.na(ph_10_rech))
-
-    # graphique avec ggplot
-        # coefficient de corrélation
-    correlation <- cor(as.numeric(bdd_echan$ph_10_origine), bdd_echan$ph_10_rech)
-    p <- ggplot(bdd_echan, aes(x = ph_10_origine, y = ph_10_rech)) +
-      geom_point() + # Ajout des points
-      geom_smooth(method = "lm", se = FALSE, color = "red") + 
-      labs(subtitle = paste("R = ", round(correlation, 2)),
-           x = "Original pH", y = "Resampled pH") + 
-      theme_classic() 
-
-    p
-
-    ```
-
-
-
--->
-
-
-## Soil organic carbone (g/kg)
-
-```{r,fig.align='center',fig.height=8}
-bdd <- extraction(nom_col = "c_orga_0",df = bdd,conv = 5, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b0..0cm_1950..2017_v0.2.tif")
-bdd <- extraction(nom_col = "c_orga_10",df = bdd,conv = 5, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b10..10cm_1950..2017_v0.2.tif")
-bdd <- extraction(nom_col = "c_orga_30",df = bdd,conv = 5, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b30..30cm_1950..2017_v0.2.tif")
-bdd = moyenne_val_extrct(nom_col = "c_orga_0_a_30", vec_col = c("c_orga_0","c_orga_10","c_orga_30"),df=bdd)
-
-
-indice_max <- which.max(bdd$c_orga_0_a_30)
-bdd <- bdd[-indice_max, ]
-
-
-summary(bdd$c_orga_0_a_30)
-explo_num(nom_col = "c_orga_0_a_30", titre = "C. organic")
-```
-
-## pH
-**Extracted values**
-```{r,fig.align='center',fig.height=8}
-bdd <- extraction(nom_col = "ph_0",df = bdd,conv = 10, 
-                  tif_file_path ="C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif")
-
-bdd <- extraction(nom_col = "ph_10" ,df = bdd,conv = 10, 
-                  tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif")
-bdd <- extraction(nom_col = "ph_30" ,df = bdd,conv = 10, 
-                  tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b30..30cm_1950..2017_v0.2.tif")
-bdd = moyenne_val_extrct(nom_col = "ph_0_a_30", vec_col = c("ph_0","ph_10","ph_30"),df=bdd)
-# summary(bdd$ph_0_a_30)
-
-explo_num(nom_col = "ph_0_a_30", titre = "pH (0 - 30 cm)")
-```
-
-**Measured values & extracted values**
-
--   Clean pH column
-```{r,echo=TRUE}
-# On recupere les deux colonnes du pH
-df_comp=bdd[, c("ID", "ID_Site","ph_eau","ph_0_a_30" )]
-df_comp =df_comp[complete.cases(df_comp$ph_eau),] 
-df_comp =df_comp[complete.cases(df_comp$ph_0_a_30),] 
-df_comp <- df_comp[!grepl("[^0-9.]", df_comp$ph_eau), ]
-df_comp$ph_eau <- as.numeric(df_comp$ph_eau)
-df_comp$ph_0_a_30 <- as.numeric(df_comp$ph_0_a_30)
-
-
-df_comp = df_comp[!df_comp$ph_eau== 44140.00,]
-df_comp = df_comp[!df_comp$ph_eau== "NA",]
-df_comp = df_comp[!df_comp$ph_0_a_30== "NA",]
-df_comp = droplevels(df_comp)
-```
-
-
-```{r,echo=TRUE}
-ID_Site_dupliques <- df_comp$ID_Site[duplicated(df_comp$ID_Site)]
-#length(ID_Site_dupliques)
-
-lignes_dupliquees <- subset(df_comp, duplicated(ID_Site) & duplicated(ph_eau))
-
-lignes_unique <- unique(lignes_dupliquees$ID_Site )
-#length(lignes_unique)
-
-# nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)
-
-
-dupliquees <- duplicated(df_comp$ID_Site)
-df_comp <- df_comp[!dupliquees, ]
-df_comp=droplevels(df_comp)
-
-# correlation <- cor.test(df_comp$ph_eau, df_comp$ph_0_a_30,method = "pearson")
-#resultat_test <- t.test(df_comp$ph_eau, df_comp$ph_0_a_30)
-
-df_comp$ph_eau <- as.numeric(df_comp$ph_eau)
-df_comp$ph_0_a_30 <- as.numeric(df_comp$ph_0_a_30)
-
-```
-
-<!-- <br/>  -->
-
-::: columns
-::: {.column width="60%"}
--   Method ?
-
--   Depth ?
-
--   Measured values (CR = `r df_col[df_col$Variable=="ph_eau","CR"]`)
-
-```{r}
-  summary(df_comp$ph_eau)
-```
-
--   Extracted values
-
-```{r}
-  summary(df_comp$ph_0_a_30)
-```
-:::
-
-::: {.column width="40%"}
-```{r,fig.align='center',fig.height=5,fig.width=4}
-    correlation <- cor(as.numeric(df_comp$ph_eau), df_comp$ph_0_a_30)
-# graphique avec ggplot
-    p <- ggplot(df_comp, aes(x = ph_eau, y = ph_0_a_30)) +
-      geom_point() + # Ajout des points
-      geom_smooth(method = "lm", se = FALSE, color = "red") + 
-      labs(subtitle =paste("R = ", round(correlation, 2)),x = "pH measured values", y = "pH extracted values") + 
-      theme_classic() 
-p
-```
-:::
-:::
-
-
-
-<!--
-## Bulk density (kg / m-cube)
-
-```{r,fig.align='center',fig.height=8}
-bdd <- extraction(nom_col = "d_ap_0",df = bdd,conv = 10, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_bulkdens.fineearth_usda.4a1h_m_250m_b0..0cm_1950..2017_v0.2.tif")
-bdd <- extraction(nom_col = "d_ap_10",df = bdd,conv = 10, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_bulkdens.fineearth_usda.4a1h_m_250m_b10..10cm_1950..2017_v0.2.tif")
-bdd <- extraction(nom_col = "d_ap_30",df = bdd,conv = 10, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_bulkdens.fineearth_usda.4a1h_m_250m_b30..30cm_1950..2017_v0.2.tif")
-bdd = moyenne_val_extrct(nom_col = "d_ap_0_a_30", vec_col = c("d_ap_0","d_ap_10","d_ap_30"),bdd)
-summary(bdd$d_ap_0_a_30)
-explo_num(nom_col = "d_ap_0_a_30", titre = "Bulk density (0 - 30 cm)")
-```
-
-
-## Sand content (% kg/kg)
-
-```{r,fig.align='center',fig.height=8}
-bdd <- extraction(nom_col = "sable_0",df = bdd,conv = 1, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_sand.wfraction_usda.3a1a1a_m_250m_b0..0cm_1950..2017_v0.2.tif")
-bdd <- extraction(nom_col = "sable_10",df = bdd,conv = 1, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_sand.wfraction_usda.3a1a1a_m_250m_b10..10cm_1950..2017_v0.2.tif")
-bdd <- extraction(nom_col = "sable_30",df = bdd,conv = 1, 
-      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_sand.wfraction_usda.3a1a1a_m_250m_b30..30cm_1950..2017_v0.2.tif")
-bdd = moyenne_val_extrct(nom_col = "sable_0_a_30", vec_col = c("sable_0","sable_10","sable_30"),df=bdd)
-summary(bdd$sable_0_a_30)
-explo_num(nom_col = "sable_0_a_30", titre = "Sand (0 - 30 cm)")
-```
--->
 
 
 <!--
@@ -948,8 +756,9 @@ df_col = df_col[df_col$Variables != "Total",]
 kable(df_col, caption = " ", col.width = c("75%", "25%"))
 ```
 
-
 -->
+
+
 
 <!--
 # Climate data extraction
@@ -1102,6 +911,11 @@ explo_num(nom_col = "bio12", titre = "Précipitat°.")
 
 
 
+-->
+
+
+
+<!--
 # Questions
 
 ```{r}
@@ -1153,13 +967,242 @@ lignes_unique <- unique(lignes_dupliquees$ID_Site)
 -->
 
 
+# Soil data extraction
 
 ```{r}
+# Calcul des distances euclidiennes entre les sites
+distances <- dist(cbind(bdd$gps_x, bdd$gps_y))
+distance_moyenne <- mean(distances)
+# distance_moyenne
+
 df_col= taux_completion(bdd,FALSE,trie = TRUE)
 df_col = df_col[df_col$Variables != "Total",]
 ```
 
+<!--
+## The source database ([openlandmap](https://openlandmap.org/?center=25,39&zoom=4&opacity=72&base=OpenStreetMap&layer=lc_glc.fcs30d&time=2022){target="_blank"})
+
+```{r,echo=TRUE}
+chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
+pedo <- read.xlsx(chemin_fichier_excel, sheet = "pedo")
+
+# Fusion des cellules des colonnes avec des éléments dupliqués
+for (col in names(pedo)) {
+  pedo[[col]] <- ifelse(duplicated(pedo[[col]]), "", pedo[[col]])
+}
+
+#tableau avec kableExtra et centrage du contenu des cellules
+kableExtra::kable(pedo) %>%
+  kableExtra::kable_styling() %>%
+  kableExtra::column_spec(1:ncol(pedo))  # Centrer le contenu de toutes les colonnes
+```
+
+\n
+-   Average values between surface (0 cm) and 30 cm depth
+
+
+
+
+## Changing the resolution ![](https://logowik.com/content/uploads/images/python.jpg){width="200"}
+
+-   Long compilation time in R
+
+-   GDAL module with the resampleAlg = bilinear method
+
+-   Resolution = 0.0083 = 30 arc-second \~ 1km
+
+    ```{r}
+    test_resolution = bdd
+    tif_file_path_origine = "C:/Users/diall/Downloads/datas/raster_origine/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
+    raster_ph_origine <- raster(tif_file_path_origine)
+    test_resolution <- extraction(nom_col = "ph_10_origine",df = test_resolution,conv = 10, 
+                      tif_file_path = tif_file_path_origine)
+
+
+    tif_file_path_rech = "C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
+    raster_ph_rech <- raster(tif_file_path_rech)
+    test_resolution <- extraction(nom_col = "ph_10_rech",df = test_resolution,conv = 10, 
+                      tif_file_path = tif_file_path_rech)
+
+    par(mforw=c(1,2))
+    image(raster_ph_origine,main="pH at 10cm: original raster (0.002)")
+    image(raster_ph_rech, main = "pH at 10cm: raster modify (0.008)")
+
+
+    bdd_echan = test_resolution
+    bdd_echan <- bdd_echan %>%filter(!is.na(ph_10_origine) & !is.na(ph_10_rech))
+
+    # graphique avec ggplot
+        # coefficient de corrélation
+    correlation <- cor(as.numeric(bdd_echan$ph_10_origine), bdd_echan$ph_10_rech)
+    p <- ggplot(bdd_echan, aes(x = ph_10_origine, y = ph_10_rech)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = FALSE, color = "red") + 
+      labs(subtitle = paste("R = ", round(correlation, 2)),
+           x = "Original pH", y = "Resampled pH") + 
+      theme_classic() 
+
+    p
+
+    ```
+
+
+
+-->
+
+## Soil organic carbone (g/kg)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "c_orga_0",df = bdd,conv = 5, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b0..0cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "c_orga_10",df = bdd,conv = 5, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b10..10cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "c_orga_30",df = bdd,conv = 5, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b30..30cm_1950..2017_v0.2.tif")
+bdd = moyenne_val_extrct(nom_col = "c_orga_0_a_30", vec_col = c("c_orga_0","c_orga_10","c_orga_30"),df=bdd)
+
+
+indice_max <- which.max(bdd$c_orga_0_a_30)
+bdd <- bdd[-indice_max, ]
+
+
+summary(bdd$c_orga_0_a_30)
+explo_num(nom_col = "c_orga_0_a_30", titre = "C. organic")
+```
+
+## pH
+
+**Extracted values**
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "ph_0",df = bdd,conv = 10, 
+                  tif_file_path ="C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif")
+
+bdd <- extraction(nom_col = "ph_10" ,df = bdd,conv = 10, 
+                  tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "ph_30" ,df = bdd,conv = 10, 
+                  tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b30..30cm_1950..2017_v0.2.tif")
+bdd = moyenne_val_extrct(nom_col = "ph_0_a_30", vec_col = c("ph_0","ph_10","ph_30"),df=bdd)
+# summary(bdd$ph_0_a_30)
+
+explo_num(nom_col = "ph_0_a_30", titre = "pH (0 - 30 cm)")
+```
+
+**Measured values & extracted values**
+
+-   Clean pH column
+
+```{r,echo=TRUE}
+# On recupere les deux colonnes du pH
+df_comp=bdd[, c("ID", "ID_Site","ph_eau","ph_0_a_30" )]
+df_comp =df_comp[complete.cases(df_comp$ph_eau),] 
+df_comp =df_comp[complete.cases(df_comp$ph_0_a_30),] 
+df_comp <- df_comp[!grepl("[^0-9.]", df_comp$ph_eau), ]
+df_comp$ph_eau <- as.numeric(df_comp$ph_eau)
+df_comp$ph_0_a_30 <- as.numeric(df_comp$ph_0_a_30)
+
+
+df_comp = df_comp[!df_comp$ph_eau== 44140.00,]
+df_comp = df_comp[!df_comp$ph_eau== "NA",]
+df_comp = df_comp[!df_comp$ph_0_a_30== "NA",]
+df_comp = droplevels(df_comp)
+```
+
+```{r,echo=TRUE}
+ID_Site_dupliques <- df_comp$ID_Site[duplicated(df_comp$ID_Site)]
+#length(ID_Site_dupliques)
+
+lignes_dupliquees <- subset(df_comp, duplicated(ID_Site) & duplicated(ph_eau))
+
+lignes_unique <- unique(lignes_dupliquees$ID_Site )
+#length(lignes_unique)
+
+# nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)
+
+
+dupliquees <- duplicated(df_comp$ID_Site)
+df_comp <- df_comp[!dupliquees, ]
+df_comp=droplevels(df_comp)
+
+# correlation <- cor.test(df_comp$ph_eau, df_comp$ph_0_a_30,method = "pearson")
+#resultat_test <- t.test(df_comp$ph_eau, df_comp$ph_0_a_30)
+
+df_comp$ph_eau <- as.numeric(df_comp$ph_eau)
+df_comp$ph_0_a_30 <- as.numeric(df_comp$ph_0_a_30)
+
+```
+
+<!-- <br/>  -->
+
+::: columns
+::: {.column width="60%"}
+-   Method ?
+
+-   Depth ?
+
+-   Measured values (CR = `r df_col[df_col$Variable=="ph_eau","CR"]`)
+
+```{r}
+  summary(df_comp$ph_eau)
+```
+
+-   Extracted values
+
+```{r}
+  summary(df_comp$ph_0_a_30)
+```
+:::
+
+::: {.column width="40%"}
+```{r,fig.align='center',fig.height=5,fig.width=4}
+    correlation <- cor(as.numeric(df_comp$ph_eau), df_comp$ph_0_a_30)
+# graphique avec ggplot
+    p <- ggplot(df_comp, aes(x = ph_eau, y = ph_0_a_30)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = FALSE, color = "red") + 
+      labs(subtitle =paste("R = ", round(correlation, 2)),x = "pH measured values", y = "pH extracted values") + 
+      theme_classic() 
+p
+```
+:::
+:::
+
+<!--
+## Bulk density (kg / m-cube)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "d_ap_0",df = bdd,conv = 10, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_bulkdens.fineearth_usda.4a1h_m_250m_b0..0cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "d_ap_10",df = bdd,conv = 10, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_bulkdens.fineearth_usda.4a1h_m_250m_b10..10cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "d_ap_30",df = bdd,conv = 10, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_bulkdens.fineearth_usda.4a1h_m_250m_b30..30cm_1950..2017_v0.2.tif")
+bdd = moyenne_val_extrct(nom_col = "d_ap_0_a_30", vec_col = c("d_ap_0","d_ap_10","d_ap_30"),bdd)
+summary(bdd$d_ap_0_a_30)
+explo_num(nom_col = "d_ap_0_a_30", titre = "Bulk density (0 - 30 cm)")
+```
+
+
+## Sand content (% kg/kg)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = "sable_0",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_sand.wfraction_usda.3a1a1a_m_250m_b0..0cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "sable_10",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_sand.wfraction_usda.3a1a1a_m_250m_b10..10cm_1950..2017_v0.2.tif")
+bdd <- extraction(nom_col = "sable_30",df = bdd,conv = 1, 
+      tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_sand.wfraction_usda.3a1a1a_m_250m_b30..30cm_1950..2017_v0.2.tif")
+bdd = moyenne_val_extrct(nom_col = "sable_0_a_30", vec_col = c("sable_0","sable_10","sable_30"),df=bdd)
+summary(bdd$sable_0_a_30)
+explo_num(nom_col = "sable_0_a_30", titre = "Sand (0 - 30 cm)")
+```
+
+
+
+-->
+
 ## Sand
+
 **Extracted values (g/kg, 0 - 30 cm)**
 
 ```{r,fig.align='center',fig.height=8}
@@ -1179,10 +1222,10 @@ bdd = moyenne_val_extrct(nom_col = "sable.0_30", vec_col = c("sable.0_5","sable.
 explo_num(nom_col = "sable.0_30", titre = "Sand extracted values")
 ```
 
-
 **Measured values & extracted values**
 
 -   Clean sand column
+
 ```{r,echo=TRUE}
 # On recupere les deux colonnes du pH
 df_comp=bdd[, c("ID", "ID_Site","sand","sable.0_30" )]
@@ -1197,7 +1240,6 @@ df_comp = df_comp[!df_comp$sand== "NA",]
 df_comp = df_comp[!df_comp$sable.0_30== "NaN",]
 df_comp = droplevels(df_comp)
 ```
-
 
 ```{r,echo=TRUE}
 # -   Deleting duplicate measured values
@@ -1219,14 +1261,13 @@ df_comp$sable.0_30 <- as.numeric(df_comp$sable.0_30)
 
 ```
 
-
 ::: columns
 ::: {.column width="60%"}
 -   Method ?
 
 -   Depth ?
 
--   Measured values  (CR = `r df_col[df_col$Variable=="sand","CR"]`)
+-   Measured values (CR = `r df_col[df_col$Variable=="sand","CR"]`)
 
 ```{r}
   summary(df_comp$sand)
@@ -1256,6 +1297,7 @@ p
 :::
 
 ## Silt
+
 **Extracted values (g/kg, 0 - 30 cm)**
 
 ```{r,fig.align='center',fig.height=8}
@@ -1295,7 +1337,6 @@ df_comp = df_comp[!df_comp$limon.0_30== "NaN",]
 df_comp = droplevels(df_comp)
 ```
 
-
 ```{r,echo=TRUE}
 # -   Deleting duplicate measured values
 
@@ -1323,7 +1364,7 @@ df_comp$limon.0_30 <- as.numeric(df_comp$limon.0_30)
 
 -   Depth ?
 
--   Measured values  CR = `r df_col[df_col$Variable=="silt","CR"]`
+-   Measured values (CR = `r df_col[df_col$Variable=="silt","CR"]`)
 
 ```{r}
   summary(df_comp$silt)
@@ -1352,7 +1393,6 @@ p
 :::
 :::
 
-
 ## Clay
 
 **Extracted values (g/kg, 0 - 30 cm)**
@@ -1374,8 +1414,7 @@ summary(bdd$argile.0_30)
 explo_num(nom_col = "argile.0_30", titre = "Clay extracted values")
 ```
 
-**Measured values & extracted values**
--   Clean clay column
+**Measured values & extracted values** - Clean clay column
 
 ```{r,echo=TRUE}
 # On recupere les deux colonnes du pH
@@ -1391,7 +1430,6 @@ df_comp = df_comp[!df_comp$clay== "NA",]
 df_comp = df_comp[!df_comp$argile.0_30== "NaN",]
 df_comp = droplevels(df_comp)
 ```
-
 
 ```{r,echo=TRUE}
 # -   Deleting duplicate measured values
@@ -1419,7 +1457,7 @@ df_comp$argile.0_30 <- as.numeric(df_comp$argile.0_30)
 
 -   Depth ?
 
--   Measured values  CR = `r df_col[df_col$Variable=="clay","CR"]`
+-   Measured values (CR = `r df_col[df_col$Variable=="clay","CR"]`)
 
 ```{r}
   summary(df_comp$clay)
@@ -1448,14 +1486,406 @@ p
 :::
 :::
 
-
 ## Elevation
 
 ```{r,fig.align='center',fig.height=8}
-bdd <- extraction(nom_col = "elevation",df = bdd,conv = 10, 
+bdd <- extraction(nom_col = "elevation",df = bdd,conv = 1, 
                   tif_file_path ="C:/Users/diall/Downloads/datas/raster_modif/GMTED2010_Spatial.tif")
 
 summary(bdd$elevation)
 
-explo_num(nom_col = "elevation", titre = "Elevation")
+explo_num(nom_col = "elevation", titre = "elevation")
 ```
+
+
+<!--
+## pH_H2O_CaCl 
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = 'jrc_pH_H2O_CaCl', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/pH_H2O_CaCl.tif')
+
+summary(bdd$jrc_pH_H2O_CaCl)
+
+explo_num(nom_col = 'jrc_pH_H2O_CaCl', titre = 'jrc_pH_H2O_CaCl')
+```
+
+## pH_H2O 
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = 'jrc_pH_H2O', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/pH_H2O.tif')
+
+summary(bdd$jrc_pH_H2O)
+
+explo_num(nom_col = 'jrc_pH_H2O', titre = 'jrc_pH_H2O')
+
+df_comp=bdd[, c("ID", "ID_Site","ph_eau","jrc_pH_H2O" )]
+df_comp =df_comp[complete.cases(df_comp$ph_eau),] 
+df_comp =df_comp[complete.cases(df_comp$jrc_pH_H2O),] 
+df_comp <- df_comp[!grepl("[^0-9.]", df_comp$ph_eau), ]
+df_comp$ph_eau <- as.numeric(df_comp$ph_eau)
+df_comp$jrc_pH_H2O <- as.numeric(df_comp$jrc_pH_H2O)
+
+
+df_comp = df_comp[!df_comp$ph_eau== 44140.00,]
+df_comp = df_comp[!df_comp$ph_eau== "NA",]
+df_comp = df_comp[!df_comp$jrc_pH_H2O== "NA",]
+df_comp = droplevels(df_comp)
+
+correlation <- cor(as.numeric(df_comp$ph_eau), df_comp$jrc_pH_H2O)
+```
+
+## pH_CaCl 
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = 'jrc_pH_CaCl', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/pH_CaCl.tif')
+
+summary(bdd$jrc_pH_CaCl)
+
+explo_num(nom_col = 'jrc_pH_CaCl', titre = 'jrc_pH_CaCl')
+```
+
+-->
+
+
+## Phosphore (P, mg/kg)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = 'P', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/P.tif')
+
+summary(bdd$P)
+
+explo_num(nom_col = 'P', titre = 'P')
+```
+
+## Azote (N, g/kg)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = 'N', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/N.tif')
+
+summary(bdd$N)
+
+explo_num(nom_col = 'N', titre = 'N')
+```
+
+## Potassium (K, mg/kg)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = 'K', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/K.tif')
+
+summary(bdd$K)
+
+explo_num(nom_col = 'K', titre = 'K')
+```
+
+## C/N
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = 'CN', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/CN.tif')
+
+summary(bdd$CN)
+
+explo_num(nom_col = 'CN', titre = 'CN')
+```
+
+## Capacité d'échange de cations (CEC, cmol/kg)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = 'CEC', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/CEC.tif')
+
+summary(bdd$CEC)
+
+explo_num(nom_col = 'CEC', titre = 'CEC')
+```
+
+## Carbonates de calcium (CaCO3, g/kg)
+
+```{r,fig.align='center',fig.height=8}
+bdd <- extraction(nom_col = 'CaCO3', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/CaCO3.tif')
+
+summary(bdd$CaCO3)
+
+explo_num(nom_col = 'CaCO3', titre = 'CaCO3')
+```
+
+# Analyses explorations
+
+## Réduction du jeu de donnée
+
+```{r,echo=TRUE,fig.height=8,fig.show='animate',fig.align='center'}
+id_col=c("ID","Programme","Annee","ID_Site","Protocole")
+
+vdt_col=c("AB_tot", "BM_tot", "Richesse_tot")
+
+land_cover_col=c("clcm_lvl3")
+
+topo_col=c("elevation","gps_x","gps_y")
+
+
+soil_col=c("ph_0_a_30","sable.0_30","limon.0_30","argile.0_30","c_orga_0_a_30","P","N","K","CN","CEC","CaCO3")
+
+
+climate_col=c()
+for (i in 1:19){
+  climate_col=c(climate_col, paste0("bio",i) )
+}
+climate_col=c(climate_col,"cmi_mean","gdd0","gdd10","hurs_mean","pet_penman_mean")
+
+bdd_explo= bdd[,c(id_col,vdt_col,land_cover_col,topo_col,soil_col,climate_col)]
+# str(bdd_explo)
+bdd_explo$ID = as.factor(bdd_explo$ID)
+
+
+# Renome
+new_soil_col=c("pH","sand","silt","clay","C","P","N","K","CN","CEC","CaCO3")
+bdd_explo <- rename(bdd_explo, !!setNames(soil_col, new_soil_col))
+
+cl_original <- levels(bdd_explo$clcm_lvl3)
+new_cl <- c("blf", "cf", "gua", "mf", "ng", "nial", "p", "v")
+bdd_explo$clcm_lvl3 <- factor(bdd_explo$clcm_lvl3, levels = cl_original, labels = new_cl)
+
+bdd_explo <- bdd_explo %>% 
+  rename(clc3 = clcm_lvl3)
+bdd_explo <- bdd_explo %>% 
+  rename(PET = pet_penman_mean)
+
+
+col_graph=c(vdt_col,land_cover_col,topo_col,new_soil_col,climate_col)
+# for (i in names(bdd_explo[,col_graph])){
+#   par(mfrow=c(2,2))
+#   plot(bdd_explo[[i]], main=i)
+# }
+
+
+# STANDARIZATION
+# names(bdd_explo)
+var_quanti = c(topo_col,new_soil_col,climate_col)
+for (col in var_quanti) {
+  bdd_explo[[col]] <- scale(bdd_explo[[col]])
+}
+summary(bdd_explo[, var_quanti])
+```
+
+## Test de correlation : intra catégories
+
+-   **Topographie**
+
+Elevation est corrélé a gps_x mais on garde les deux pour le moment.
+
+```{r,echo=FALSE,fig.align='center'}
+# ggpairs(bdd_explo[,topo_col])
+correlation_matrix <- cor(bdd_explo[,topo_col],use = "na.or.complete")
+# 
+corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 1,number.cex = 1)
+
+```
+
+
+<br/>
+-   **Soil data**
+
+```{r,echo=FALSE}
+# ggpairs(bdd_explo[,new_soil_col])
+soil_sup=c("sand")
+```
+
+::: columns
+::: {.column width="25%"}
+<br/>
+Colonnes supprimée : *`r soil_sup`*
+:::
+
+::: {.column width="75%"}
+
+```{r,echo=FALSE,fig.height=6,fig.width=9,fig.align='right'}
+correlation_matrix <- cor(bdd_explo[,new_soil_col],use = "na.or.complete")
+corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 1,number.cex = 0.7)
+
+bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), soil_sup)]
+```
+:::
+:::
+
+
+
+<br/>
+-   **Climat data**
+
+```{r,echo=FALSE,out.height="100%",out.width="100%"}
+# correlation_matrix <- cor(bdd_explo[,climate_col],use = "na.or.complete")
+# 
+# chemin="C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/R_Stage_M2/graphes/climat_corrplot.png"
+# png(chemin, width = 2000, height = 1000,res = 110)
+# 
+# 
+# corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 1,number.cex = 0.7,mar = c(0,0,0,0))
+# 
+# dev.off()
+# ![](graphes/climat_corrplot.png)
+
+
+# cor_function_seuil(data = bdd_explo[,climate_col], seuil = 0.7)
+climat_sup=c("bio2","bio4","bio5","bio6","bio7","bio10","bio11","bio13","bio16","bio17","bio18","bio19","gdd0","gdd10", "cmi_mean")
+```
+
+::: columns
+::: {.column width="25%"}
+<br/>
+Colonnes supprimmées :*`r climat_sup`*
+:::
+
+::: {.column width="75%"}
+```{r,echo=FALSE,fig.height=7,fig.width=9,fig.align='right'}
+climat_selec = climate_col[!climate_col %in% climat_sup]
+# ggpairs(bdd_explo[,climat_selec])
+correlation_matrix <- cor(bdd_explo[,climat_selec],use = "na.or.complete")
+corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 1,number.cex = 0.9,mar = c(0,0,0,0))
+
+bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), climat_sup)]
+```
+:::
+:::
+
+
+
+## Test de correlation : inter catégories
+-   On enleve gps_x et gps_y
+```{r,echo=FALSE}
+# correlation_matrix <- cor(bdd_explo[,10:31],use = "na.or.complete")
+# corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 0.5,number.cex = 0.5,mar = c(0,0,0,0))
+
+var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio9",
+      "bio12","bio14","bio15","hurs_mean","PET")
+# 
+# correlation_matrix <- cor(bdd_explo[,var],use = "na.or.complete")
+# 
+# chemin="C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/R_Stage_M2/graphes/interC_corrplot.png"
+# png(chemin, width = 1200, height = 1000,res = 110)
+# 
+# 
+# corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 1,number.cex = 0.7,mar = c(0,0,0,0))
+# 
+# dev.off()
+
+
+bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), c("gps_x","gps_y"))]
+```
+
+![](graphes/interC_corrplot.png) {width="1200",aligne="center"}
+
+
+
+## VIF
+```{r}
+var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio9",
+      "bio12","bio14","bio15","hurs_mean", "PET")
+#usdm::vif(bdd_explo[,var])
+#usdm::vifcor(bdd_explo[,var], th = 0.9, keep = NULL, method = 'pearson')
+usdm::vifstep(bdd_explo[,var], th = 10, keep = NULL, method = 'pearson')
+# -   On enleve "bio14" car la plus forte VIF
+bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), c("bio14"))]
+```
+
+
+```{r}
+# names(bdd_explo)
+bdd_explo <- dummy_cols(bdd_explo, select_columns = c("clc3"))
+# head(bdd_explo)
+
+# usdm::vifstep(bdd_explo[,10:36], th = 10, keep = NULL, method = 'pearson')
+# usdm::vif(bdd_explo[,10:36])
+# usdm::vifcor(bdd_explo[,10:36], th = 0.9, keep = NULL, method = 'pearson')
+# summary(bdd_explo$clc3)
+```
+
+
+## ACP
+```{r}
+# On supprime les lignes avec des NA dans toutes les colonnes sauf BM_tot
+# colSums(is.na(bdd_explo))
+bdd_explo <- bdd_explo[apply(bdd_explo[, !colnames(bdd_explo) %in% "BM_tot"], 1, function(x) all(!is.na(x))), ]
+# colSums(is.na(bdd_explo))
+
+
+var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio9","bio12","bio15","hurs_mean", "PET")
+
+data_acp = bdd_explo[, var]
+acp0 <- PCA(data_acp, graph = FALSE)
+
+
+## Choix du nombre d'axes
+acp0$eig
+fviz_eig(acp0, addlabels = TRUE) # on prend les trois premiers axes
+contrib_axes <- acp0$var$contrib[, 1:3]  # 3 premiers axes
+contrib_axes <- round(contrib_axes, 3)   # Plus facile a lire
+fviz_contrib(acp0, choice = "var", axes = 1)
+fviz_contrib(acp0, choice = "var", axes = 2)
+fviz_contrib(acp0, choice = "var", axes = 3)
+
+seuil <- 1 / ncol(data_acp) * 100
+lignes_superieures <- rownames(contrib_axes)[apply(contrib_axes, 1,
+                                                   function(x)
+                                                     any(x >= seuil))]
+var [! var %in% lignes_superieures]
+
+#  **** En consderant les deux premiers axes:
+#le Phosphore_.P._g.kg et le C_N et le pH ne sont pas trés influant
+
+
+
+
+
+# coloree les variables selon leurs contributions aux axes
+fviz_pca_var(
+  axes = c(1, 2),
+  acp0,
+  col.var = "contrib",
+  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+  repel = TRUE
+) # evite le chevauchement de texte
+
+
+# Suppression de Limon fin
+
+#Suppression de Argiles
+
+
+coul = c("yellow", "green", "violet", "blue", "black", "red")
+fviz_pca_ind(
+  axes = c(1, 2),
+  acp0,
+  geom.ind = "text",
+  pointshape = 21,
+  pointsize = 2,
+  #palette = coul,
+  palette = "viridis",
+  addEllipses = TRUE,
+  legend.title = "CLC",
+  fill.ind = bdd_explo$clc3
+)
+fviz_pca_ind(
+  axes = c(1, 2),
+  acp0,
+  geom.ind = "point",
+  pointshape = 21,
+  pointsize = 2,
+  palette = "viridis",
+  addEllipses = TRUE,
+  legend.title = "CLC",
+  fill.ind = bdd_explo$clc3
+)
+```
+
+
+```{r}
+# Classification
+class1 = HCPC(acp0)
+plot(class1$call$t$inert.gain, type = "s")
+#Je choisis finalement 4 groupes
+class1 = HCPC(acp0, nb.clust = 4)
+fviz_dend(class1)
+fviz_cluster(class1)
+fviz_cluster(class1, ellipse.type = "norm", ellipse.level = 0.8)    #Groupes
+```
+
+## Questions
+

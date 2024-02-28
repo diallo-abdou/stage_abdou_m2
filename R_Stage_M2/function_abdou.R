@@ -1,16 +1,59 @@
 
+df= bdd_explo
+df$BM_tot=NULL
+df=drop_na(df)
+names(df)
+rdadoubs=rda(df[,c(6,7)],df[,8:30]) # VARIABLE A EXPLIQUER ET VARIABLE EXPLICATIVE
+#if env is not standardized, you can add 'scale=TRUE' in the rda() formula
+rdadoubs 
+#what is the percentage of variance of the fish data which is explained by the environment?
+#test the RDA with vegan:
+
+
+# L ENV EXLIQUE 70% DES POISSON
+# LA SOMME DE EIG CONTRAINT DONE 0.35 ET 0.14 DES NON CONTRAINTE
+# AJOUT DES % DES DEUX (PAR RAPPORT A CONTRAINTE ET PAR RAPPORT AU TOTAL)
 
 
 
+anova.cca(rdadoubs) #with vegan
 
+# SIGNIFICATIF
+
+#test the colinearity between explanoatory variables ? All number must be smaller than 10, otherwise remove one of the parameter
+test=vif.cca(rdadoubs) 
+test
+#what's wrong? what can you do?
+
+
+# SEUIF VIF = 10
+
+#perform the RDA with selection of explanatory variables 
+rdadoubs=rda(fish~.,env)
+rdadoubs=rda(df[,c(6,7)]~.,df[,8:30])
+ordistep(rdadoubs,perm.max=500)
+#allow to check which variables would be selected. Control if they are correlated ?
+#select ("oxy","alt","bdo","dfs"): what's wrong?
+#I propose to select :
+selected=env[,c("oxy","alt","bdo")]
+selected= as.data.frame(scale(selected, center=TRUE, scale=TRUE))
+rdadoubs=rda(fish,selected)
+rdadoubs
+
+
+# L ENV EXLIQUE 57% DES POISSON
+
+#test the colinearity between parameters. 
+test=vif.cca(rdadoubs) 
+test
 
 # Comparaison raster origine et modifier ----------------------------------
 
 
 ### raster d'origine
 chemin_tif = "C:/Users/diall/Downloads/elevation/GMTED2010_Spatial.tif"
-tif_file_path_origine = "C:/Users/diall/Downloads/datas/raster_origine/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
-raster_ph_origine <- raster(chemin_tif)
+tif_file_path_origine = "C:/Users/diall/Downloads/octop_V121.asc"
+raster_ph_origine <- raster(tif_file_path_origine)
 
 # Obtenir la résolution du raster pH
 res(raster_ph_origine)
@@ -134,6 +177,34 @@ pourcentage_lignes_non_na <- (nb_lignes_non_na / total_lignes) * 100
 print(pourcentage_lignes_non_na)
 
 
+
+
+
+# production code ---------------------------------------------------------
+
+# Liste des chemins des fichiers TIFF
+chemins_tif <- c(
+  "C:/Users/diall/Downloads/datas/raster_modif/elevation.tif",
+  "C:/Users/diall/Downloads/datas/raster_modif/pH_H2O_CaCl.tif",
+  "C:/Users/diall/Downloads/datas/raster_modif/pH_H2O.tif",
+  "C:/Users/diall/Downloads/datas/raster_modif/pH_CaCl.tif",
+  "C:/Users/diall/Downloads/datas/raster_modif/P.tif",
+  "C:/Users/diall/Downloads/datas/raster_modif/N.tif",
+  "C:/Users/diall/Downloads/datas/raster_modif/K.tif",
+  "C:/Users/diall/Downloads/datas/raster_modif/CN.tif",
+  "C:/Users/diall/Downloads/datas/raster_modif/CEC.tif",
+  "C:/Users/diall/Downloads/datas/raster_modif/CaCO3.tif"
+)
+
+
+for (chemin in chemins_tif) {
+  nom_col <- gsub(".*/([^/]*)\\.tif", "\\1", chemin)  # Extraire le nom de la variable à partir du chemin
+  cat("\n##", nom_col, "\n\n```{r,fig.align='center',fig.height=8}\n")
+  nom_col=paste0("jrc_",nom_col)
+  cat("bdd <- extraction(nom_col = '", nom_col, "', df = bdd, conv = 1, tif_file_path = '", chemin, "')\n\n", sep = "")
+  cat("summary(bdd$", nom_col, ")\n\n", sep = "")
+  cat("explo_num(nom_col = '", nom_col, "', titre = '", nom_col, "')\n", "```\n", sep = "")
+}
 
 #                   STAGE Abdou modèle prédictif vdt                           #
 
@@ -315,7 +386,7 @@ cor_function_seuil <- function(data, seuil) {
   for (i in 1:(ncol(data) - 1)) {
     for (j in (i + 1):ncol(data)) {
       # Calcul de la corrélation entre les variables i et j
-      cor_value <- cor(data[, i], data[, j], method = "spearman")
+      cor_value <- stats::cor(data[, i], data[, j], use = "na.or.complete")
       
       # Stockage du résultat dans le vecteur si supérieur au seuil
       if (cor_value >= seuil | cor_value <= -seuil) {

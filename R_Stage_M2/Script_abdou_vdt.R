@@ -171,6 +171,8 @@ summary(tiga_c[, c(67:81)])
 
 
 # Centree et reduire
+var_quanti <- names(tiga_c[, c(67:81)]) # var expli quanti
+
 for (col in var_quanti) {
   tiga_c[[col]] <- scale(tiga_c[[col]])
 }
@@ -2085,100 +2087,4 @@ perform_block_cross_validation(data = tiga_f, num_blocks = 10, block_size = 39,
 
 
 
-# Extraction des predictors + moyennes -----------------------------------------------
 
-extraction <- function(nom_col, tif_file_path, bdd, conv = 1) {
-  # Lire le fichier raster
-  raster_data <- raster(tif_file_path)
-  
-  # Créer un dataframe pour stocker les valeurs extraites
-  df <- data.frame(gps_x = bdd$gps_x, gps_y = bdd$gps_y)
-  proj4Str <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-  # Transformer les coordonnées GPS en système de coordonnées du raster
-  gps_coords_sp <- SpatialPoints(df, proj4string = CRS(proj4Str))
-  gps_coords_proj <- spTransform(gps_coords_sp, crs(raster_data))
-  
-  # Extraire les valeurs du raster 
-  values <- raster::extract(raster_data, gps_coords_proj)
-  
-  # Ajout les valeurs extraites comme nouvelles colonnes a bdd
-  bdd[[basename(nom_col)]] <- values / conv
-  
-  return(bdd)
-}
-
-moyenne_val_extrct <- function(nom_col, vec_col, bdd) {
-  bdd[[nom_col]] <- rowMeans(as.matrix(bdd[, vec_col, drop = FALSE]), na.rm = TRUE)
-  bdd[[nom_col]] = round(bdd[[nom_col]],1)
-  return(as.data.frame(bdd))
-}
-
-
-
-# Utilisation de la fonction extraction 
-
-bdd <- extraction(nom_col = "ph_0", 
-                  tif_file_path = "C:/Users/diall/Downloads/sol_ph.h2o_usda.4c1a2a_m_250m_b0..0cm_1950..2017_v0.2.tif", 
-                  bdd,conv = 10)
-head(bdd$ph_0)
-
-bdd <- extraction(nom_col = "ph_10", 
-                  tif_file_path = "C:/Users/diall/Downloads/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif", 
-                  bdd,conv = 10)
-head(bdd$ph_10)
-
-bdd <- extraction(nom_col = "ph_30", 
-                  tif_file_path = "C:/Users/diall/Downloads/sol_ph.h2o_usda.4c1a2a_m_250m_b30..30cm_1950..2017_v0.2.tif", 
-                  bdd,conv = 10)
-head(bdd$ph_30)
-
-bdd = moyenne_val_extrct(nom_col = "ph_0_a_30", vec_col = c("ph_0","ph_10","ph_30"),bdd)
-
-head(bdd$ph_0_a_30)
-
-summary(df/10)
-
-length(bdd$ph_eau)
-nrow(bdd)
-test_ph= cbind(bdd$ph_eau, df)
-head(test_ph)
-
-colnames(test_ph)[colnames(test_ph) == "bdd$ph_eau"] <- "ph_eau"
-
-test_ph$ph_eau_extract= test_ph$sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif/10
-test_ph=test_ph[,-c(4)]
-
-test_ph=bdd[, c("ph_eau","ph_0_a_30" )]
-test_ph =test_ph[complete.cases(test_ph$ph_eau),] 
-test_ph =test_ph[complete.cases(test_ph$ph_0_a_30),] 
-test_ph <- test_ph[!grepl("[^0-9.]", test_ph$ph_eau), ]
-test_ph$ph_eau <- as.numeric(test_ph$ph_eau)
-test_ph$ph_0_a_30 <- as.numeric(test_ph$ph_0_a_30)
-
-
-test_ph = test_ph[!test_ph$ph_eau== 44140.00,]
-test_ph = droplevels(test_ph)
-summary(test_ph)
-
-plot(test_ph$ph_0_a_30 ~test_ph$ph_eau)
-cor(test_ph$ph_0_a_30, test_ph$ph_eau)
-
-
-
-library(ggplot2)
-
-# Créer le graphique avec ggplot
-p <- ggplot(test_ph, aes(x = ph_eau, y = ph_0_a_30)) +
-  geom_point() + # Ajouter les points
-  geom_smooth(method = "lm", se = FALSE, color = "red") + # Ajouter la ligne de régression
-  labs(x = "pH Eau", y = "pH Eau Extract") + # Définir les étiquettes des axes
-  theme_classic() # Utiliser un thème minimal
-
-# Calculer le coefficient de corrélation
-correlation <- cor(as.numeric(test_ph$ph_eau), test_ph$ph_0_a_30)
-
-# Ajouter le coefficient de corrélation au graphique
-p <- p + annotate("text", x = max(test_ph$ph_eau) - 0.5, y = min(test_ph$ph_0_a_30) + 0.1, 
-                  label = paste("Corrélation:", round(correlation, 2)), color = "blue")
-
-p

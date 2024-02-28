@@ -423,7 +423,7 @@ Abdourahmane Diallo
 </section>
 <section id="packages" class="slide level2" data-number="1.1">
 <h2><span class="header-section-number">1.1</span> Packages</h2>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-1_4fb2a0f3846227b4fdef2436d0eb7e07">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-1_a296f276399d1729307dd0c181fc953c">
 <details>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a>  <span class="fu">library</span>(tidyverse)</span>
@@ -477,13 +477,15 @@ Abdourahmane Diallo
 <span id="cb1-49"><a href="#cb1-49"></a>  <span class="fu">library</span>(knitr)</span>
 <span id="cb1-50"><a href="#cb1-50"></a>  <span class="fu">library</span>(kableExtra)</span>
 <span id="cb1-51"><a href="#cb1-51"></a>  <span class="fu">library</span>(stringr)</span>
-<span id="cb1-52"><a href="#cb1-52"></a>  <span class="fu">library</span>(plotly)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-52"><a href="#cb1-52"></a>  <span class="fu">library</span>(plotly)</span>
+<span id="cb1-53"><a href="#cb1-53"></a>  <span class="fu">library</span>(PerformanceAnalytics)</span>
+<span id="cb1-54"><a href="#cb1-54"></a>  <span class="fu">library</span>(usdm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
 <section id="functions" class="slide level2" data-number="1.2">
 <h2><span class="header-section-number">1.2</span> Functions</h2>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-2_d1d7acb09c36cac970b923f58154e65d">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-2_5459ad8b27158a0ca66587eee23cc219">
 <details>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="do">## Identification des NA dans un df -----------------------------------------------</span></span>
@@ -591,7 +593,42 @@ Abdourahmane Diallo
 <span id="cb2-103"><a href="#cb2-103"></a>  df[[nom_col]] <span class="ot">&lt;-</span> <span class="fu">rowMeans</span>(<span class="fu">as.matrix</span>(df[, vec_col, <span class="at">drop =</span> <span class="cn">FALSE</span>]), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb2-104"><a href="#cb2-104"></a>  df[[nom_col]] <span class="ot">=</span> <span class="fu">round</span>(df[[nom_col]],<span class="dv">1</span>)</span>
 <span id="cb2-105"><a href="#cb2-105"></a>  <span class="fu">return</span>(<span class="fu">as.data.frame</span>(df))</span>
-<span id="cb2-106"><a href="#cb2-106"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-106"><a href="#cb2-106"></a>}</span>
+<span id="cb2-107"><a href="#cb2-107"></a></span>
+<span id="cb2-108"><a href="#cb2-108"></a></span>
+<span id="cb2-109"><a href="#cb2-109"></a><span class="co"># tests de corrélation avec un seuil -----------------------------------------------</span></span>
+<span id="cb2-110"><a href="#cb2-110"></a>cor_function_seuil <span class="ot">&lt;-</span> <span class="cf">function</span>(data, seuil,<span class="at">affiche=</span><span class="cn">FALSE</span>) {</span>
+<span id="cb2-111"><a href="#cb2-111"></a>  <span class="co"># Création d'un vecteur pour stocker les paires de variables corrélées</span></span>
+<span id="cb2-112"><a href="#cb2-112"></a>  variables_corr <span class="ot">&lt;-</span> <span class="fu">c</span>()</span>
+<span id="cb2-113"><a href="#cb2-113"></a>  </span>
+<span id="cb2-114"><a href="#cb2-114"></a>  <span class="co"># Boucle pour tester la corrélation entre chaque paire de variables</span></span>
+<span id="cb2-115"><a href="#cb2-115"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(<span class="fu">ncol</span>(data) <span class="sc">-</span> <span class="dv">1</span>)) {</span>
+<span id="cb2-116"><a href="#cb2-116"></a>    <span class="cf">for</span> (j <span class="cf">in</span> (i <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span><span class="fu">ncol</span>(data)) {</span>
+<span id="cb2-117"><a href="#cb2-117"></a>      <span class="co"># Calcul de la corrélation entre les variables i et j</span></span>
+<span id="cb2-118"><a href="#cb2-118"></a>      cor_value <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">cor</span>(data[, i], data[, j], <span class="at">use =</span> <span class="st">"na.or.complete"</span>)</span>
+<span id="cb2-119"><a href="#cb2-119"></a>      </span>
+<span id="cb2-120"><a href="#cb2-120"></a>      <span class="co"># Stockage du résultat dans le vecteur si supérieur au seuil</span></span>
+<span id="cb2-121"><a href="#cb2-121"></a>      <span class="cf">if</span> (cor_value <span class="sc">&gt;=</span> seuil <span class="sc">|</span> cor_value <span class="sc">&lt;=</span> <span class="sc">-</span>seuil) {</span>
+<span id="cb2-122"><a href="#cb2-122"></a>        <span class="cf">if</span>(affiche){</span>
+<span id="cb2-123"><a href="#cb2-123"></a>        <span class="fu">cat</span>(</span>
+<span id="cb2-124"><a href="#cb2-124"></a>          <span class="st">"***"</span>,</span>
+<span id="cb2-125"><a href="#cb2-125"></a>          <span class="fu">colnames</span>(data)[i],</span>
+<span id="cb2-126"><a href="#cb2-126"></a>          <span class="st">"  __est correlee a__  "</span>,</span>
+<span id="cb2-127"><a href="#cb2-127"></a>          <span class="fu">colnames</span>(data)[j],</span>
+<span id="cb2-128"><a href="#cb2-128"></a>          <span class="st">"avec un R ="</span>,</span>
+<span id="cb2-129"><a href="#cb2-129"></a>          cor_value,</span>
+<span id="cb2-130"><a href="#cb2-130"></a>          <span class="st">"</span><span class="sc">\n</span><span class="st"> </span><span class="sc">\n</span><span class="st"> </span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb2-131"><a href="#cb2-131"></a>        )</span>
+<span id="cb2-132"><a href="#cb2-132"></a>      }</span>
+<span id="cb2-133"><a href="#cb2-133"></a>        </span>
+<span id="cb2-134"><a href="#cb2-134"></a>        variables_corr <span class="ot">&lt;-</span></span>
+<span id="cb2-135"><a href="#cb2-135"></a>          <span class="fu">c</span>(variables_corr, <span class="fu">colnames</span>(data)[i], <span class="fu">colnames</span>(data)[j])</span>
+<span id="cb2-136"><a href="#cb2-136"></a>      }</span>
+<span id="cb2-137"><a href="#cb2-137"></a>    }</span>
+<span id="cb2-138"><a href="#cb2-138"></a>  }</span>
+<span id="cb2-139"><a href="#cb2-139"></a>  </span>
+<span id="cb2-140"><a href="#cb2-140"></a>  <span class="fu">return</span>(variables_corr)</span>
+<span id="cb2-141"><a href="#cb2-141"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section></section>
@@ -608,6 +645,7 @@ Abdourahmane Diallo
 </ul>
 </section>
 
+<section>
 <section id="database-import" class="title-slide slide level1 center" data-number="3">
 <h1><span class="header-section-number">3</span> Database import</h1>
 <ul>
@@ -616,18 +654,10 @@ Abdourahmane Diallo
 <ul>
 <li>The database contains <strong>8019</strong> rows and <strong>481</strong> columns</li>
 </ul>
-<ul>
-<li>Data selection: EcoBioSoil = <em>“dc”</em></li>
-</ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-5_b4f21b9fe90f675f903ee8f3910d69ec">
-<details>
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>n_line<span class="ot">=</span><span class="fu">nrow</span>(bdd)</span>
-<span id="cb3-2"><a href="#cb3-2"></a>bdd<span class="sc">$</span>owner<span class="ot">=</span><span class="fu">as.factor</span>(bdd<span class="sc">$</span>owner)</span>
-<span id="cb3-3"><a href="#cb3-3"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>owner))</span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="fu">kable</span>(summary_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
+</section>
+<section id="data-selection-ecobiosoil" class="slide level2" data-number="3.1">
+<h2><span class="header-section-number">3.1</span> Data selection: EcoBioSoil</h2>
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-5_0e2d0f97418896e262980e68c25c749c">
 <div class="cell-output-display">
 <table data-quarto-postprocess="true">
 <thead>
@@ -670,8 +700,7 @@ Abdourahmane Diallo
 <ul>
 <li>The database therefore changes from <strong>8019</strong> to <strong>5520</strong> observations.</li>
 </ul>
-</section>
-
+</section></section>
 <section>
 <section id="database-exploration" class="title-slide slide level1 center" data-number="4">
 <h1><span class="header-section-number">4</span> Database exploration</h1>
@@ -684,10 +713,10 @@ Abdourahmane Diallo
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-7_42d927389792fa96cab1c23078a9dd84">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>df_col<span class="ot">=</span><span class="fu">taux_completion</span>(bdd,<span class="cn">TRUE</span>,<span class="at">trie=</span><span class="cn">FALSE</span>)</span>
-<span id="cb4-2"><a href="#cb4-2"></a>df_col <span class="ot">=</span> df_col[df_col<span class="sc">$</span>Variables <span class="sc">!=</span> <span class="st">"Total"</span>,]</span>
-<span id="cb4-3"><a href="#cb4-3"></a><span class="co">#print("table")</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="fu">kable</span>(df_col, <span class="at">caption =</span> <span class="st">""</span>, <span class="at">col.width =</span> <span class="fu">c</span>(<span class="st">"75%"</span>, <span class="st">"25%"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>df_col<span class="ot">=</span><span class="fu">taux_completion</span>(bdd,<span class="cn">TRUE</span>,<span class="at">trie=</span><span class="cn">FALSE</span>)</span>
+<span id="cb3-2"><a href="#cb3-2"></a>df_col <span class="ot">=</span> df_col[df_col<span class="sc">$</span>Variables <span class="sc">!=</span> <span class="st">"Total"</span>,]</span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="co">#print("table")</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="fu">kable</span>(df_col, <span class="at">caption =</span> <span class="st">""</span>, <span class="at">col.width =</span> <span class="fu">c</span>(<span class="st">"75%"</span>, <span class="st">"25%"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table data-quarto-postprocess="true">
@@ -746,8 +775,8 @@ Abdourahmane Diallo
 </div>
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># cat(                                                    )</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="co"># head(bdd[, "ID"])</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># cat(                                                    )</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="co"># head(bdd[, "ID"])</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
@@ -3145,13 +3174,13 @@ Abdourahmane Diallo
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-9_aaba9597cd5192a336654ce75c68c167">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>n_line<span class="ot">=</span> <span class="fu">nrow</span>(bdd)</span>
-<span id="cb6-2"><a href="#cb6-2"></a>bdd<span class="sc">$</span>gps_x <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">"[^0-9.-]"</span>, <span class="st">""</span>, bdd<span class="sc">$</span>gps_x))</span>
-<span id="cb6-3"><a href="#cb6-3"></a>bdd<span class="sc">$</span>gps_y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">"[^0-9.-]"</span>, <span class="st">""</span>, bdd<span class="sc">$</span>gps_y))</span>
-<span id="cb6-4"><a href="#cb6-4"></a>bdd <span class="ot">&lt;-</span> bdd[<span class="fu">complete.cases</span>(bdd<span class="sc">$</span>gps_x, bdd<span class="sc">$</span>gps_y), ]</span>
-<span id="cb6-5"><a href="#cb6-5"></a>bdd <span class="ot">&lt;-</span> bdd <span class="sc">%&gt;%</span><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(gps_x) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(gps_y))</span>
-<span id="cb6-6"><a href="#cb6-6"></a><span class="co">#sum(is.na(bdd$gps_x))</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="co">#sum(is.na(bdd$gps_y))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>n_line<span class="ot">=</span> <span class="fu">nrow</span>(bdd)</span>
+<span id="cb5-2"><a href="#cb5-2"></a>bdd<span class="sc">$</span>gps_x <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">"[^0-9.-]"</span>, <span class="st">""</span>, bdd<span class="sc">$</span>gps_x))</span>
+<span id="cb5-3"><a href="#cb5-3"></a>bdd<span class="sc">$</span>gps_y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">"[^0-9.-]"</span>, <span class="st">""</span>, bdd<span class="sc">$</span>gps_y))</span>
+<span id="cb5-4"><a href="#cb5-4"></a>bdd <span class="ot">&lt;-</span> bdd[<span class="fu">complete.cases</span>(bdd<span class="sc">$</span>gps_x, bdd<span class="sc">$</span>gps_y), ]</span>
+<span id="cb5-5"><a href="#cb5-5"></a>bdd <span class="ot">&lt;-</span> bdd <span class="sc">%&gt;%</span><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(gps_x) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(gps_y))</span>
+<span id="cb5-6"><a href="#cb5-6"></a><span class="co">#sum(is.na(bdd$gps_x))</span></span>
+<span id="cb5-7"><a href="#cb5-7"></a><span class="co">#sum(is.na(bdd$gps_y))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <ul>
@@ -3162,20 +3191,20 @@ Abdourahmane Diallo
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-10_1da8b8ab5688204542bc2d28b903faf1">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># Ajout variables climatiques (voir chunk extraction données climatiques)</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a>chemin_fichier <span class="ot">&lt;-</span> <span class="st">"C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/datas/bdd_climat_ok.rds"</span></span>
-<span id="cb7-3"><a href="#cb7-3"></a><span class="co"># saveRDS(bdd_climat_ok, chemin_fichier)</span></span>
-<span id="cb7-4"><a href="#cb7-4"></a>bdd_climat_ok <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(chemin_fichier)</span>
-<span id="cb7-5"><a href="#cb7-5"></a>df_fusion <span class="ot">&lt;-</span> <span class="fu">subset</span>(bdd_climat_ok, <span class="at">select =</span> <span class="sc">-</span><span class="fu">c</span>(gps_x, gps_y))</span>
-<span id="cb7-6"><a href="#cb7-6"></a></span>
-<span id="cb7-7"><a href="#cb7-7"></a>rows_not_in_df_fusion <span class="ot">&lt;-</span> <span class="fu">anti_join</span>(bdd, df_fusion, <span class="at">by =</span> <span class="st">"ID"</span>)</span>
-<span id="cb7-8"><a href="#cb7-8"></a>merged_df <span class="ot">&lt;-</span> <span class="fu">merge</span>(bdd, df_fusion, <span class="at">by =</span> <span class="st">"ID"</span>)</span>
-<span id="cb7-9"><a href="#cb7-9"></a></span>
-<span id="cb7-10"><a href="#cb7-10"></a>ids_not_matching <span class="ot">&lt;-</span> <span class="fu">anti_join</span>( merged_df,bdd, <span class="at">by =</span> <span class="st">"ID"</span>)</span>
-<span id="cb7-11"><a href="#cb7-11"></a></span>
-<span id="cb7-12"><a href="#cb7-12"></a>bdd <span class="ot">=</span> merged_df</span>
-<span id="cb7-13"><a href="#cb7-13"></a></span>
-<span id="cb7-14"><a href="#cb7-14"></a><span class="co">#bdd &lt;- cbind(bdd, df_fusion) # all = TRUE pour garder toutes les lignes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="co"># Ajout variables climatiques (voir chunk extraction données climatiques)</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a>chemin_fichier <span class="ot">&lt;-</span> <span class="st">"C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/datas/bdd_climat_ok.rds"</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="co"># saveRDS(bdd_climat_ok, chemin_fichier)</span></span>
+<span id="cb6-4"><a href="#cb6-4"></a>bdd_climat_ok <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(chemin_fichier)</span>
+<span id="cb6-5"><a href="#cb6-5"></a>df_fusion <span class="ot">&lt;-</span> <span class="fu">subset</span>(bdd_climat_ok, <span class="at">select =</span> <span class="sc">-</span><span class="fu">c</span>(gps_x, gps_y))</span>
+<span id="cb6-6"><a href="#cb6-6"></a></span>
+<span id="cb6-7"><a href="#cb6-7"></a>rows_not_in_df_fusion <span class="ot">&lt;-</span> <span class="fu">anti_join</span>(bdd, df_fusion, <span class="at">by =</span> <span class="st">"ID"</span>)</span>
+<span id="cb6-8"><a href="#cb6-8"></a>merged_df <span class="ot">&lt;-</span> <span class="fu">merge</span>(bdd, df_fusion, <span class="at">by =</span> <span class="st">"ID"</span>)</span>
+<span id="cb6-9"><a href="#cb6-9"></a></span>
+<span id="cb6-10"><a href="#cb6-10"></a>ids_not_matching <span class="ot">&lt;-</span> <span class="fu">anti_join</span>( merged_df,bdd, <span class="at">by =</span> <span class="st">"ID"</span>)</span>
+<span id="cb6-11"><a href="#cb6-11"></a></span>
+<span id="cb6-12"><a href="#cb6-12"></a>bdd <span class="ot">=</span> merged_df</span>
+<span id="cb6-13"><a href="#cb6-13"></a></span>
+<span id="cb6-14"><a href="#cb6-14"></a><span class="co">#bdd &lt;- cbind(bdd, df_fusion) # all = TRUE pour garder toutes les lignes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
@@ -3184,14 +3213,14 @@ Abdourahmane Diallo
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-11_469f4af22c0ee707b25715a01d28812d">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>n_ligne<span class="ot">=</span> <span class="fu">nrow</span>(bdd)</span>
-<span id="cb8-2"><a href="#cb8-2"></a>df_coord <span class="ot">&lt;-</span> bdd[, <span class="fu">c</span>(<span class="st">"gps_x"</span>, <span class="st">"gps_y"</span>)] <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">gps_x =</span> <span class="fu">as.numeric</span>(gps_x),<span class="at">gps_y =</span> <span class="fu">as.numeric</span>(gps_y))</span>
-<span id="cb8-3"><a href="#cb8-3"></a></span>
-<span id="cb8-4"><a href="#cb8-4"></a>df_coord<span class="sc">$</span>num_ligne <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">nrow</span>(df_coord))</span>
-<span id="cb8-5"><a href="#cb8-5"></a>carte <span class="ot">&lt;-</span> <span class="fu">leaflet</span>(df_coord) <span class="sc">%&gt;%</span></span>
-<span id="cb8-6"><a href="#cb8-6"></a>  <span class="fu">addTiles</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb8-7"><a href="#cb8-7"></a>  <span class="fu">addCircleMarkers</span>(<span class="at">lng =</span> <span class="sc">~</span>gps_x, <span class="at">lat =</span> <span class="sc">~</span>gps_y, <span class="at">radius =</span> <span class="fl">0.8</span>, <span class="at">fillOpacity =</span> <span class="fl">0.8</span>, <span class="at">fillColor =</span> <span class="st">"blue"</span>)</span>
-<span id="cb8-8"><a href="#cb8-8"></a>carte</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>n_ligne<span class="ot">=</span> <span class="fu">nrow</span>(bdd)</span>
+<span id="cb7-2"><a href="#cb7-2"></a>df_coord <span class="ot">&lt;-</span> bdd[, <span class="fu">c</span>(<span class="st">"gps_x"</span>, <span class="st">"gps_y"</span>)] <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">gps_x =</span> <span class="fu">as.numeric</span>(gps_x),<span class="at">gps_y =</span> <span class="fu">as.numeric</span>(gps_y))</span>
+<span id="cb7-3"><a href="#cb7-3"></a></span>
+<span id="cb7-4"><a href="#cb7-4"></a>df_coord<span class="sc">$</span>num_ligne <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">nrow</span>(df_coord))</span>
+<span id="cb7-5"><a href="#cb7-5"></a>carte <span class="ot">&lt;-</span> <span class="fu">leaflet</span>(df_coord) <span class="sc">%&gt;%</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a>  <span class="fu">addTiles</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb7-7"><a href="#cb7-7"></a>  <span class="fu">addCircleMarkers</span>(<span class="at">lng =</span> <span class="sc">~</span>gps_x, <span class="at">lat =</span> <span class="sc">~</span>gps_y, <span class="at">radius =</span> <span class="fl">0.8</span>, <span class="at">fillOpacity =</span> <span class="fl">0.8</span>, <span class="at">fillColor =</span> <span class="st">"blue"</span>)</span>
+<span id="cb7-8"><a href="#cb7-8"></a>carte</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div class="leaflet html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-22bd15048f9ca00eaf31" style="width:960px;height:480px;"></div>
@@ -3224,10 +3253,10 @@ Abdourahmane Diallo
 <div class="cell" data-scrollable="true" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-14_6afaab3423d959a700fa3c42d3293ddb">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>bdd<span class="sc">$</span>Annee<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>Annee)</span>
-<span id="cb9-2"><a href="#cb9-2"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>Annee))</span>
-<span id="cb9-3"><a href="#cb9-3"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
-<span id="cb9-4"><a href="#cb9-4"></a><span class="fu">kable</span>(summary_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>bdd<span class="sc">$</span>Annee<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>Annee)</span>
+<span id="cb8-2"><a href="#cb8-2"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>Annee))</span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="fu">kable</span>(summary_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table data-quarto-postprocess="true">
@@ -3989,10 +4018,10 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-19_59694e3353390b2171f8e7e8f064fe6c">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>bdd<span class="sc">$</span>Protocole <span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>Protocole)</span>
-<span id="cb10-2"><a href="#cb10-2"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>Protocole))</span>
-<span id="cb10-3"><a href="#cb10-3"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
-<span id="cb10-4"><a href="#cb10-4"></a><span class="fu">kable</span>(summary_df,<span class="at">padding =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>bdd<span class="sc">$</span>Protocole <span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>Protocole)</span>
+<span id="cb9-2"><a href="#cb9-2"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>Protocole))</span>
+<span id="cb9-3"><a href="#cb9-3"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="fu">kable</span>(summary_df,<span class="at">padding =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table data-quarto-postprocess="true">
@@ -4038,15 +4067,15 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-20_95969338fd95937954c4f99a0858e881">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>n_ligne <span class="ot">=</span> <span class="fu">nrow</span>(bdd)</span>
-<span id="cb11-2"><a href="#cb11-2"></a><span class="co">#select_protocole =c("F_HS", "FHS", "hand sorting" ,"HS")</span></span>
-<span id="cb11-3"><a href="#cb11-3"></a>select_protocole <span class="ot">=</span><span class="fu">c</span>(<span class="st">"F_HS"</span>, <span class="st">"HS"</span>)</span>
-<span id="cb11-4"><a href="#cb11-4"></a>bdd <span class="ot">&lt;-</span> bdd[bdd<span class="sc">$</span>Protocole <span class="sc">%in%</span> select_protocole, ]</span>
-<span id="cb11-5"><a href="#cb11-5"></a>bdd<span class="ot">=</span><span class="fu">droplevels</span>(bdd)</span>
-<span id="cb11-6"><a href="#cb11-6"></a>bdd<span class="sc">$</span>Protocole <span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>Protocole)</span>
-<span id="cb11-7"><a href="#cb11-7"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>Protocole))</span>
-<span id="cb11-8"><a href="#cb11-8"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
-<span id="cb11-9"><a href="#cb11-9"></a><span class="fu">kable</span>(summary_df,<span class="at">padding =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>n_ligne <span class="ot">=</span> <span class="fu">nrow</span>(bdd)</span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="co">#select_protocole =c("F_HS", "FHS", "hand sorting" ,"HS")</span></span>
+<span id="cb10-3"><a href="#cb10-3"></a>select_protocole <span class="ot">=</span><span class="fu">c</span>(<span class="st">"F_HS"</span>, <span class="st">"HS"</span>)</span>
+<span id="cb10-4"><a href="#cb10-4"></a>bdd <span class="ot">&lt;-</span> bdd[bdd<span class="sc">$</span>Protocole <span class="sc">%in%</span> select_protocole, ]</span>
+<span id="cb10-5"><a href="#cb10-5"></a>bdd<span class="ot">=</span><span class="fu">droplevels</span>(bdd)</span>
+<span id="cb10-6"><a href="#cb10-6"></a>bdd<span class="sc">$</span>Protocole <span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>Protocole)</span>
+<span id="cb10-7"><a href="#cb10-7"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>Protocole))</span>
+<span id="cb10-8"><a href="#cb10-8"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
+<span id="cb10-9"><a href="#cb10-9"></a><span class="fu">kable</span>(summary_df,<span class="at">padding =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table data-quarto-postprocess="true">
@@ -4131,10 +4160,10 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-22_811eecdb847214633f5e787735d54083">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>bdd<span class="sc">$</span>clcm_lvl1<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl1)</span>
-<span id="cb12-2"><a href="#cb12-2"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl1))</span>
-<span id="cb12-3"><a href="#cb12-3"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
-<span id="cb12-4"><a href="#cb12-4"></a><span class="co"># kable(summary_df,padding = 5)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>bdd<span class="sc">$</span>clcm_lvl1<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl1)</span>
+<span id="cb11-2"><a href="#cb11-2"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl1))</span>
+<span id="cb11-3"><a href="#cb11-3"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
+<span id="cb11-4"><a href="#cb11-4"></a><span class="co"># kable(summary_df,padding = 5)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <ul>
@@ -4143,13 +4172,13 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-23_71d9e3119b21fcd74bda13870007283e">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl1)[<span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl1) <span class="sc">==</span> <span class="st">"1_Naturel"</span>] <span class="ot">&lt;-</span> <span class="st">"Forest and semi natural areas"</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a><span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl1)[<span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl1) <span class="sc">==</span> <span class="st">"2_Agricole"</span>] <span class="ot">&lt;-</span> <span class="st">"Agricultural areas"</span></span>
-<span id="cb13-3"><a href="#cb13-3"></a></span>
-<span id="cb13-4"><a href="#cb13-4"></a>bdd<span class="sc">$</span>clcm_lvl1<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl1)</span>
-<span id="cb13-5"><a href="#cb13-5"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl1))</span>
-<span id="cb13-6"><a href="#cb13-6"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
-<span id="cb13-7"><a href="#cb13-7"></a><span class="fu">kable</span>(summary_df,<span class="at">padding =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl1)[<span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl1) <span class="sc">==</span> <span class="st">"1_Naturel"</span>] <span class="ot">&lt;-</span> <span class="st">"Forest and semi natural areas"</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl1)[<span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl1) <span class="sc">==</span> <span class="st">"2_Agricole"</span>] <span class="ot">&lt;-</span> <span class="st">"Agricultural areas"</span></span>
+<span id="cb12-3"><a href="#cb12-3"></a></span>
+<span id="cb12-4"><a href="#cb12-4"></a>bdd<span class="sc">$</span>clcm_lvl1<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl1)</span>
+<span id="cb12-5"><a href="#cb12-5"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl1))</span>
+<span id="cb12-6"><a href="#cb12-6"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
+<span id="cb12-7"><a href="#cb12-7"></a><span class="fu">kable</span>(summary_df,<span class="at">padding =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table data-quarto-postprocess="true">
@@ -4188,11 +4217,11 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-24_d1ed5bd74d817a77d31d239b63129533">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co">#bdd$code_clcm_lvl1 = as.factor(bdd$code_clcm_lvl1)</span></span>
-<span id="cb14-2"><a href="#cb14-2"></a></span>
-<span id="cb14-3"><a href="#cb14-3"></a>bdd<span class="sc">$</span>code_clcm_lvl1 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(bdd<span class="sc">$</span>clcm_lvl1 <span class="sc">==</span> <span class="st">"Forest and semi natural areas"</span>, <span class="dv">3</span>, bdd<span class="sc">$</span>code_clcm_lvl1)</span>
-<span id="cb14-4"><a href="#cb14-4"></a></span>
-<span id="cb14-5"><a href="#cb14-5"></a>bdd<span class="sc">$</span>code_clcm_lvl1 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(bdd<span class="sc">$</span>clcm_lvl1 <span class="sc">==</span> <span class="st">"Agricultural areas"</span>, <span class="dv">2</span>, bdd<span class="sc">$</span>code_clcm_lvl1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="co">#bdd$code_clcm_lvl1 = as.factor(bdd$code_clcm_lvl1)</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a></span>
+<span id="cb13-3"><a href="#cb13-3"></a>bdd<span class="sc">$</span>code_clcm_lvl1 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(bdd<span class="sc">$</span>clcm_lvl1 <span class="sc">==</span> <span class="st">"Forest and semi natural areas"</span>, <span class="dv">3</span>, bdd<span class="sc">$</span>code_clcm_lvl1)</span>
+<span id="cb13-4"><a href="#cb13-4"></a></span>
+<span id="cb13-5"><a href="#cb13-5"></a>bdd<span class="sc">$</span>code_clcm_lvl1 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(bdd<span class="sc">$</span>clcm_lvl1 <span class="sc">==</span> <span class="st">"Agricultural areas"</span>, <span class="dv">2</span>, bdd<span class="sc">$</span>code_clcm_lvl1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <ul>
@@ -4207,10 +4236,10 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-25_4db5979366606fbe9e9330396066c68e">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a>bdd<span class="sc">$</span>clcm_lvl2<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl2)</span>
-<span id="cb15-2"><a href="#cb15-2"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl2))</span>
-<span id="cb15-3"><a href="#cb15-3"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
-<span id="cb15-4"><a href="#cb15-4"></a><span class="co"># kable(summary_df,padding = 8)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>bdd<span class="sc">$</span>clcm_lvl2<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl2)</span>
+<span id="cb14-2"><a href="#cb14-2"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl2))</span>
+<span id="cb14-3"><a href="#cb14-3"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
+<span id="cb14-4"><a href="#cb14-4"></a><span class="co"># kable(summary_df,padding = 8)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <ul>
@@ -4219,12 +4248,12 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-26_8874e16979c8630580ff03e6edf51b58">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl2)[<span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl2) <span class="sc">==</span> <span class="st">"21_Agricole ouvert"</span>] <span class="ot">&lt;-</span> <span class="st">"Arable land"</span></span>
-<span id="cb16-2"><a href="#cb16-2"></a></span>
-<span id="cb16-3"><a href="#cb16-3"></a>bdd<span class="sc">$</span>clcm_lvl2<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl2)</span>
-<span id="cb16-4"><a href="#cb16-4"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl2))</span>
-<span id="cb16-5"><a href="#cb16-5"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
-<span id="cb16-6"><a href="#cb16-6"></a><span class="fu">kable</span>(summary_df,<span class="at">padding =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl2)[<span class="fu">levels</span>(bdd<span class="sc">$</span>clcm_lvl2) <span class="sc">==</span> <span class="st">"21_Agricole ouvert"</span>] <span class="ot">&lt;-</span> <span class="st">"Arable land"</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a></span>
+<span id="cb15-3"><a href="#cb15-3"></a>bdd<span class="sc">$</span>clcm_lvl2<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl2)</span>
+<span id="cb15-4"><a href="#cb15-4"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl2))</span>
+<span id="cb15-5"><a href="#cb15-5"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
+<span id="cb15-6"><a href="#cb15-6"></a><span class="fu">kable</span>(summary_df,<span class="at">padding =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table data-quarto-postprocess="true">
@@ -4291,7 +4320,7 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-27_bf5303f15a3e3bef70cda901048b01bc">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a>bdd<span class="sc">$</span>code_clcm_lvl2 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(bdd<span class="sc">$</span>clcm_lvl2 <span class="sc">==</span> <span class="st">"Arable land"</span>, <span class="dv">21</span>, bdd<span class="sc">$</span>code_clcm_lvl2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a>bdd<span class="sc">$</span>code_clcm_lvl2 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(bdd<span class="sc">$</span>clcm_lvl2 <span class="sc">==</span> <span class="st">"Arable land"</span>, <span class="dv">21</span>, bdd<span class="sc">$</span>code_clcm_lvl2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
@@ -4303,10 +4332,10 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-scrollable="true" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-28_ecb77b2517701f17d5006d6da5c0e7e3">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a>bdd<span class="sc">$</span>clcm_lvl3<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl3)</span>
-<span id="cb18-2"><a href="#cb18-2"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl3))</span>
-<span id="cb18-3"><a href="#cb18-3"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
-<span id="cb18-4"><a href="#cb18-4"></a><span class="fu">kable</span>(summary_df,<span class="at">padding =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a>bdd<span class="sc">$</span>clcm_lvl3<span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl3)</span>
+<span id="cb17-2"><a href="#cb17-2"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl3))</span>
+<span id="cb17-3"><a href="#cb17-3"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
+<span id="cb17-4"><a href="#cb17-4"></a><span class="fu">kable</span>(summary_df,<span class="at">padding =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table data-quarto-postprocess="true">
@@ -4440,16 +4469,16 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-29_93921dc886b25552652e02ed1b89a132">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a>select_os<span class="ot">=</span> <span class="fu">c</span>(<span class="st">"Broad-leaved forest"</span>, <span class="st">"Coniferous forest"</span>, <span class="st">"Mixed forest"</span>, </span>
-<span id="cb19-2"><a href="#cb19-2"></a><span class="st">"Pastures, meadows and other permanent grasslands under agricultural use"</span>, <span class="st">"Non-irrigated arable land"</span>, </span>
-<span id="cb19-3"><a href="#cb19-3"></a><span class="st">"Vineyards"</span>,<span class="st">"Green urban areas"</span>,<span class="st">"Natural grasslands"</span>)</span>
-<span id="cb19-4"><a href="#cb19-4"></a></span>
-<span id="cb19-5"><a href="#cb19-5"></a>bdd <span class="ot">&lt;-</span> bdd[bdd<span class="sc">$</span>clcm_lvl3 <span class="sc">%in%</span> select_os, ]</span>
-<span id="cb19-6"><a href="#cb19-6"></a>bdd<span class="ot">=</span><span class="fu">droplevels</span>(bdd)</span>
-<span id="cb19-7"><a href="#cb19-7"></a>bdd<span class="sc">$</span>clcm_lvl3 <span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl3)</span>
-<span id="cb19-8"><a href="#cb19-8"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl3))</span>
-<span id="cb19-9"><a href="#cb19-9"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
-<span id="cb19-10"><a href="#cb19-10"></a><span class="fu">kable</span>(summary_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a>select_os<span class="ot">=</span> <span class="fu">c</span>(<span class="st">"Broad-leaved forest"</span>, <span class="st">"Coniferous forest"</span>, <span class="st">"Mixed forest"</span>, </span>
+<span id="cb18-2"><a href="#cb18-2"></a><span class="st">"Pastures, meadows and other permanent grasslands under agricultural use"</span>, <span class="st">"Non-irrigated arable land"</span>, </span>
+<span id="cb18-3"><a href="#cb18-3"></a><span class="st">"Vineyards"</span>,<span class="st">"Green urban areas"</span>,<span class="st">"Natural grasslands"</span>)</span>
+<span id="cb18-4"><a href="#cb18-4"></a></span>
+<span id="cb18-5"><a href="#cb18-5"></a>bdd <span class="ot">&lt;-</span> bdd[bdd<span class="sc">$</span>clcm_lvl3 <span class="sc">%in%</span> select_os, ]</span>
+<span id="cb18-6"><a href="#cb18-6"></a>bdd<span class="ot">=</span><span class="fu">droplevels</span>(bdd)</span>
+<span id="cb18-7"><a href="#cb18-7"></a>bdd<span class="sc">$</span>clcm_lvl3 <span class="ot">=</span> <span class="fu">as.factor</span>(bdd<span class="sc">$</span>clcm_lvl3)</span>
+<span id="cb18-8"><a href="#cb18-8"></a>summary_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">summary</span>(bdd<span class="sc">$</span>clcm_lvl3))</span>
+<span id="cb18-9"><a href="#cb18-9"></a><span class="fu">colnames</span>(summary_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Numbers"</span>)</span>
+<span id="cb18-10"><a href="#cb18-10"></a><span class="fu">kable</span>(summary_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table data-quarto-postprocess="true">
@@ -4507,9 +4536,9 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 <div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-30_e5747fb5d86f449367421c85fef7d49c">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># kable (table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)</span></span>
-<span id="cb20-2"><a href="#cb20-2"></a><span class="co"># kable (table(bdd$clcm_lvl2, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)</span></span>
-<span id="cb20-3"><a href="#cb20-3"></a><span class="fu">kable</span> (<span class="fu">table</span>(bdd<span class="sc">$</span>clcm_lvl3, bdd<span class="sc">$</span>Protocole,<span class="at">exclude =</span> <span class="cn">NULL</span>), <span class="at">align =</span> <span class="st">"c"</span>, <span class="at">format =</span> <span class="st">"pipe"</span>, <span class="at">padding =</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="co"># kable (table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)</span></span>
+<span id="cb19-2"><a href="#cb19-2"></a><span class="co"># kable (table(bdd$clcm_lvl2, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)</span></span>
+<span id="cb19-3"><a href="#cb19-3"></a><span class="fu">kable</span> (<span class="fu">table</span>(bdd<span class="sc">$</span>clcm_lvl3, bdd<span class="sc">$</span>Protocole,<span class="at">exclude =</span> <span class="cn">NULL</span>), <span class="at">align =</span> <span class="st">"c"</span>, <span class="at">format =</span> <span class="st">"pipe"</span>, <span class="at">padding =</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table>
@@ -4635,321 +4664,6 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 :::
 :::
 
-
-
-
-
-
-
-
-
--->
-</section></section>
-<section>
-<section id="soil-data-extraction" class="title-slide slide level1 center" data-number="5">
-<h1><span class="header-section-number">5</span> Soil data extraction</h1>
-
-<!--
-## The source database ([openlandmap](https://openlandmap.org/?center=25,39&zoom=4&opacity=72&base=OpenStreetMap&layer=lc_glc.fcs30d&time=2022){target="_blank"})
-
-
-::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-35_bc0fa219b7be7fc2d6f3c8b0715232c5'}
-
-```{.r .cell-code}
-chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
-pedo <- read.xlsx(chemin_fichier_excel, sheet = "pedo")
-
-# Fusion des cellules des colonnes avec des éléments dupliqués
-for (col in names(pedo)) {
-  pedo[[col]] <- ifelse(duplicated(pedo[[col]]), "", pedo[[col]])
-}
-
-#tableau avec kableExtra et centrage du contenu des cellules
-kableExtra::kable(pedo) %>%
-  kableExtra::kable_styling() %>%
-  kableExtra::column_spec(1:ncol(pedo))  # Centrer le contenu de toutes les colonnes
-```
-
-::: {.cell-output-display}
-
-`````{=html}
-
-<table class="table" data-quarto-postprocess="true" style="margin-left: auto; margin-right: auto;">
-<thead>
-<tr class="header">
-<th style="text-align: left;" data-quarto-table-cell-role="th">Source</th>
-<th style="text-align: left;" data-quarto-table-cell-role="th">DB.name</th>
-<th style="text-align: left;" data-quarto-table-cell-role="th">Categories</th>
-<th style="text-align: left;" data-quarto-table-cell-role="th">Variables</th>
-<th style="text-align: left;" data-quarto-table-cell-role="th">Units</th>
-<th style="text-align: left;" data-quarto-table-cell-role="th">Formats</th>
-<th style="text-align: left;" data-quarto-table-cell-role="th">Periods</th>
-<th style="text-align: left;" data-quarto-table-cell-role="th">Resolution</th>
-<th style="text-align: left;" data-quarto-table-cell-role="th">References</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;">Fourcade et al., 2022</td>
-<td style="text-align: left;">OpenLandMap </td>
-<td style="text-align: left;">soil data</td>
-<td style="text-align: left;">pH</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">.tif</td>
-<td style="text-align: left;">1950 - 2017</td>
-<td style="text-align: left;">250 m</td>
-<td style="text-align: left;">https://zenodo.org/records/2525664</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Bulk density</td>
-<td style="text-align: left;">kg / m-cube</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">https://zenodo.org/records/2525665</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Carbone content</td>
-<td style="text-align: left;">g/kg</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">https://zenodo.org/records/2525553</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">BDD / BDAT</td>
-<td style="text-align: left;">Data gouv</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Sand</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">NA</td>
-<td style="text-align: left;">90 m</td>
-<td style="text-align: left;">https://doi.org/10.57745/N4E4NE</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Clay</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Silt</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Salako et al., 2023</td>
-<td style="text-align: left;">USGS-NASA</td>
-<td style="text-align: left;">spatial data</td>
-<td style="text-align: left;">Elevation</td>
-<td style="text-align: left;">NA</td>
-<td style="text-align: left;">.shp</td>
-<td style="text-align: left;">2010</td>
-<td style="text-align: left;">1 km</td>
-<td style="text-align: left;">https://www.usgs.gov/centers/eros/science/usgs-eros-archive-digital-elevation-global-multi-resolution-terrain-elevation</td>
-</tr>
-</tbody>
-</table>
-
-
-`````
-
-:::
-:::
-
-
-\n
-
--   Average values between surface (0 cm) and 30 cm depth
-
-
-
-
-## Changing the resolution ![](https://logowik.com/content/uploads/images/python.jpg){width="200"}
-
--   Long compilation time in R
-
--   GDAL module with the resampleAlg = bilinear method
-
--   Resolution = 0.0083 = 30 arc-second \~ 1km
-
-
-    ::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-36_96b04c3515a0490f940417efe3ac86d9'}
-    ::: {.cell-output-display}
-    ![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-36-1.png){width=960}
-    :::
-    
-    ::: {.cell-output-display}
-    ![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-36-2.png){width=960}
-    :::
-    
-    ::: {.cell-output-display}
-    ![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-36-3.png){width=960}
-    :::
-    :::
-
-
-
-
--->
-</section>
-<section id="soil-organic-carbone-gkg" class="slide level2" data-number="5.1">
-<h2><span class="header-section-number">5.1</span> Soil organic carbone (g/kg)</h2>
-<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-37_91bd3f080716ddd85d5b90c6bd107263">
-<div class="cell-output cell-output-stdout">
-<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
- 0.2000  0.5000  0.6000  0.6656  0.8000  2.6000       9 </code></pre>
-</div>
-
-</div>
-<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-37-1.png" width="960" class="r-stretch quarto-figure-center"></section>
-<section id="ph" class="slide level2" data-number="5.2">
-<h2><span class="header-section-number">5.2</span> pH</h2>
-<p><strong>Extracted values</strong></p>
-<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-38_e42b1d4f76328c58fb4bbc66c1ea804c">
-<div class="cell-output-display">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-38-1.png" width="960"></p>
-</figure>
-</div>
-</div>
-</div>
-<p><strong>Measured values &amp; extracted values</strong></p>
-<ul>
-<li>Clean pH column</li>
-</ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-39_05661b640252cc1f474e428c3ac4fd5f">
-<details>
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="co"># On recupere les deux colonnes du pH</span></span>
-<span id="cb22-2"><a href="#cb22-2"></a>df_comp<span class="ot">=</span>bdd[, <span class="fu">c</span>(<span class="st">"ID"</span>, <span class="st">"ID_Site"</span>,<span class="st">"ph_eau"</span>,<span class="st">"ph_0_a_30"</span> )]</span>
-<span id="cb22-3"><a href="#cb22-3"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>ph_eau),] </span>
-<span id="cb22-4"><a href="#cb22-4"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>ph_0_a_30),] </span>
-<span id="cb22-5"><a href="#cb22-5"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[^0-9.]"</span>, df_comp<span class="sc">$</span>ph_eau), ]</span>
-<span id="cb22-6"><a href="#cb22-6"></a>df_comp<span class="sc">$</span>ph_eau <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>ph_eau)</span>
-<span id="cb22-7"><a href="#cb22-7"></a>df_comp<span class="sc">$</span>ph_0_a_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>ph_0_a_30)</span>
-<span id="cb22-8"><a href="#cb22-8"></a></span>
-<span id="cb22-9"><a href="#cb22-9"></a></span>
-<span id="cb22-10"><a href="#cb22-10"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>ph_eau<span class="sc">==</span> <span class="fl">44140.00</span>,]</span>
-<span id="cb22-11"><a href="#cb22-11"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>ph_eau<span class="sc">==</span> <span class="st">"NA"</span>,]</span>
-<span id="cb22-12"><a href="#cb22-12"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>ph_0_a_30<span class="sc">==</span> <span class="st">"NA"</span>,]</span>
-<span id="cb22-13"><a href="#cb22-13"></a>df_comp <span class="ot">=</span> <span class="fu">droplevels</span>(df_comp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-</div>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-40_a72be28d5fd031c9c3229b6c59fb10de">
-<details>
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a>ID_Site_dupliques <span class="ot">&lt;-</span> df_comp<span class="sc">$</span>ID_Site[<span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)]</span>
-<span id="cb23-2"><a href="#cb23-2"></a><span class="co">#length(ID_Site_dupliques)</span></span>
-<span id="cb23-3"><a href="#cb23-3"></a></span>
-<span id="cb23-4"><a href="#cb23-4"></a>lignes_dupliquees <span class="ot">&lt;-</span> <span class="fu">subset</span>(df_comp, <span class="fu">duplicated</span>(ID_Site) <span class="sc">&amp;</span> <span class="fu">duplicated</span>(ph_eau))</span>
-<span id="cb23-5"><a href="#cb23-5"></a></span>
-<span id="cb23-6"><a href="#cb23-6"></a>lignes_unique <span class="ot">&lt;-</span> <span class="fu">unique</span>(lignes_dupliquees<span class="sc">$</span>ID_Site )</span>
-<span id="cb23-7"><a href="#cb23-7"></a><span class="co">#length(lignes_unique)</span></span>
-<span id="cb23-8"><a href="#cb23-8"></a></span>
-<span id="cb23-9"><a href="#cb23-9"></a><span class="co"># nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)</span></span>
-<span id="cb23-10"><a href="#cb23-10"></a></span>
-<span id="cb23-11"><a href="#cb23-11"></a></span>
-<span id="cb23-12"><a href="#cb23-12"></a>dupliquees <span class="ot">&lt;-</span> <span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)</span>
-<span id="cb23-13"><a href="#cb23-13"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span>dupliquees, ]</span>
-<span id="cb23-14"><a href="#cb23-14"></a>df_comp<span class="ot">=</span><span class="fu">droplevels</span>(df_comp)</span>
-<span id="cb23-15"><a href="#cb23-15"></a></span>
-<span id="cb23-16"><a href="#cb23-16"></a><span class="co"># correlation &lt;- cor.test(df_comp$ph_eau, df_comp$ph_0_a_30,method = "pearson")</span></span>
-<span id="cb23-17"><a href="#cb23-17"></a><span class="co">#resultat_test &lt;- t.test(df_comp$ph_eau, df_comp$ph_0_a_30)</span></span>
-<span id="cb23-18"><a href="#cb23-18"></a></span>
-<span id="cb23-19"><a href="#cb23-19"></a>df_comp<span class="sc">$</span>ph_eau <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>ph_eau)</span>
-<span id="cb23-20"><a href="#cb23-20"></a>df_comp<span class="sc">$</span>ph_0_a_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>ph_0_a_30)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-</div>
-<!-- <br/>  -->
-<div class="columns">
-<div class="column" style="width:60%;">
-<ul>
-<li><p>Method ?</p></li>
-<li><p>Depth ?</p></li>
-<li><p>Measured values (CR = 54.1%)</p></li>
-</ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-41_38713d565892a13537e2983ce1af3c3e">
-<div class="cell-output cell-output-stdout">
-<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-  4.000   6.600   7.650   7.329   8.150   8.900 </code></pre>
-</div>
-</div>
-<ul>
-<li>Extracted values</li>
-</ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-42_745919c438ee571f1fff0349d0deffe7">
-<div class="cell-output cell-output-stdout">
-<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-  5.200   6.300   6.800   6.697   7.100   7.900 </code></pre>
-</div>
-</div>
-</div><div class="column" style="width:40%;">
-<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-43_268e7e48a6cd5111fe0cc123db165280">
-<div class="cell-output-display">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-43-1.png" width="384"></p>
-</figure>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!--
-## Bulk density (kg / m-cube)
-
-
-::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-44_24d69ee2e75cf3da81d3e0a1a275d3c9'}
-::: {.cell-output .cell-output-stdout}
-```
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-  10.00   13.20   13.60   13.54   13.90   15.80       9 
-```
-:::
-
-::: {.cell-output-display}
-![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-44-1.png){fig-align='center' width=960}
-:::
-:::
-
-
-
-## Sand content (% kg/kg)
-
-
-::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-45_6c09aebad1ee6306dd2460c90cc9795b'}
-::: {.cell-output .cell-output-stdout}
-```
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-   7.00   25.70   31.30   32.44   38.30   67.00       9 
-```
-:::
-
-::: {.cell-output-display}
-![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-45-1.png){fig-align='center' width=960}
-:::
-:::
-
 -->
 <!--
 # Synthèse du taux de remplissage
@@ -4957,7 +4671,7 @@ kableExtra::kable(pedo) %>%
 ## Complete columns
 
 
-::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-46_ba0441a00a5af56d8a8168edd56aec59'}
+::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-34_0cf879a5f7c2543d2e84cbcff9f62ddf'}
 
 ```{.r .cell-code}
 df_col=taux_completion(bdd,TRUE,trie=FALSE)
@@ -5415,7 +5129,7 @@ kable(df_col, caption = " ", col.width = c("75%", "25%"))
 </tr>
 </tbody>
 </table>
-````` ::: ::: ## Non-complete columns ::: {.cell scrollable='true' hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-47_8f77de7ecbe8989f994f528076b6bac1'} ::: {.cell-output-display} `````{=html}
+````` ::: ::: ## Non-complete columns ::: {.cell scrollable='true' hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-35_435d99bccf57fe48e36e870a6d6e2536'} ::: {.cell-output-display} `````{=html}
 <table data-quarto-postprocess="true">
 <thead>
 <tr class="header">
@@ -5426,1187 +5140,1127 @@ kable(df_col, caption = " ", col.width = c("75%", "25%"))
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">1</td>
+<td style="text-align: left;">74</td>
 <td style="text-align: left;">AB_Lumbricus_castaneus</td>
 <td style="text-align: left;">99.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">2</td>
+<td style="text-align: left;">236</td>
 <td style="text-align: left;">ai</td>
 <td style="text-align: left;">99.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">3</td>
-<td style="text-align: left;">ph_0</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">4</td>
-<td style="text-align: left;">ph_10</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">5</td>
-<td style="text-align: left;">ph_30</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">6</td>
-<td style="text-align: left;">ph_0_a_30</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">7</td>
-<td style="text-align: left;">d_ap_0</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">8</td>
-<td style="text-align: left;">d_ap_10</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">9</td>
-<td style="text-align: left;">d_ap_30</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">10</td>
-<td style="text-align: left;">d_ap_0_a_30</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">11</td>
-<td style="text-align: left;">sable_0</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">12</td>
-<td style="text-align: left;">sable_10</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">13</td>
-<td style="text-align: left;">sable_30</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">14</td>
-<td style="text-align: left;">sable_0_a_30</td>
-<td style="text-align: left;">99.7%</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">15</td>
+<td style="text-align: left;">98</td>
 <td style="text-align: left;">AB_Aporrectodea_icterica</td>
 <td style="text-align: left;">99.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">16</td>
+<td style="text-align: left;">100</td>
 <td style="text-align: left;">AB_Lumbricus_terrestris</td>
 <td style="text-align: left;">99.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">17</td>
+<td style="text-align: left;">89</td>
 <td style="text-align: left;">BM_Lumbricus_castaneus</td>
 <td style="text-align: left;">98.7%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">18</td>
+<td style="text-align: left;">71</td>
 <td style="text-align: left;">AB_Aporrectodea_rosea</td>
 <td style="text-align: left;">98.4%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">19</td>
+<td style="text-align: left;">68</td>
 <td style="text-align: left;">AB_Aporrectodea_caliginosa</td>
 <td style="text-align: left;">98.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">20</td>
+<td style="text-align: left;">114</td>
 <td style="text-align: left;">BM_Lumbricus_terrestris</td>
 <td style="text-align: left;">97.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">21</td>
+<td style="text-align: left;">112</td>
 <td style="text-align: left;">BM_Aporrectodea_icterica</td>
 <td style="text-align: left;">97.7%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">22</td>
+<td style="text-align: left;">86</td>
 <td style="text-align: left;">BM_Aporrectodea_rosea</td>
 <td style="text-align: left;">96.4%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">23</td>
+<td style="text-align: left;">77</td>
 <td style="text-align: left;">AB_Octolasion_cyaneum</td>
 <td style="text-align: left;">95.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">24</td>
+<td style="text-align: left;">92</td>
 <td style="text-align: left;">BM_Octolasion_cyaneum</td>
 <td style="text-align: left;">95.1%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">25</td>
+<td style="text-align: left;">80</td>
 <td style="text-align: left;">AB_Satchellius_mammalis</td>
 <td style="text-align: left;">94.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">26</td>
+<td style="text-align: left;">95</td>
 <td style="text-align: left;">BM_Satchellius_mammalis</td>
 <td style="text-align: left;">93.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">27</td>
+<td style="text-align: left;">128</td>
 <td style="text-align: left;">AB_Aporrectodea_longa_longa</td>
 <td style="text-align: left;">93.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">28</td>
+<td style="text-align: left;">129</td>
 <td style="text-align: left;">AB_Aporrectodea_nocturna</td>
 <td style="text-align: left;">92.7%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">29</td>
+<td style="text-align: left;">97</td>
 <td style="text-align: left;">AB_Aporrectodea_giardi</td>
 <td style="text-align: left;">92.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">30</td>
+<td style="text-align: left;">152</td>
 <td style="text-align: left;">BM_Aporrectodea_nocturna</td>
 <td style="text-align: left;">92.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">31</td>
+<td style="text-align: left;">111</td>
 <td style="text-align: left;">BM_Aporrectodea_giardi</td>
 <td style="text-align: left;">91.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">32</td>
+<td style="text-align: left;">83</td>
 <td style="text-align: left;">BM_Aporrectodea_caliginosa</td>
 <td style="text-align: left;">90.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">33</td>
+<td style="text-align: left;">76</td>
 <td style="text-align: left;">AB_Murchieona_muldali</td>
 <td style="text-align: left;">88.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">34</td>
+<td style="text-align: left;">91</td>
 <td style="text-align: left;">BM_Murchieona_muldali</td>
 <td style="text-align: left;">88.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">35</td>
+<td style="text-align: left;">151</td>
 <td style="text-align: left;">BM_Aporrectodea_longa_longa</td>
 <td style="text-align: left;">87.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">36</td>
+<td style="text-align: left;">116</td>
 <td style="text-align: left;">BM_Allolobophora_chlorotica_chlorotica</td>
 <td style="text-align: left;">87.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">37</td>
+<td style="text-align: left;">141</td>
 <td style="text-align: left;">AB_Lumbricus_rubellus_castanoides</td>
 <td style="text-align: left;">85.4%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">38</td>
+<td style="text-align: left;">164</td>
 <td style="text-align: left;">BM_Lumbricus_rubellus_castanoides</td>
 <td style="text-align: left;">85.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">39</td>
+<td style="text-align: left;">142</td>
 <td style="text-align: left;">AB_Lumbricus_sp</td>
 <td style="text-align: left;">84.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">40</td>
+<td style="text-align: left;">137</td>
 <td style="text-align: left;">AB_indéterminable</td>
 <td style="text-align: left;">84.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">41</td>
+<td style="text-align: left;">160</td>
 <td style="text-align: left;">BM_indéterminable</td>
 <td style="text-align: left;">84.5%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">42</td>
+<td style="text-align: left;">165</td>
 <td style="text-align: left;">BM_Lumbricus_sp</td>
 <td style="text-align: left;">84%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">43</td>
+<td style="text-align: left;">69</td>
 <td style="text-align: left;">AB_Aporrectodea_caliginosa_meridionalis</td>
 <td style="text-align: left;">82.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">44</td>
+<td style="text-align: left;">84</td>
 <td style="text-align: left;">BM_Aporrectodea_caliginosa_meridionalis</td>
 <td style="text-align: left;">81.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">45</td>
+<td style="text-align: left;">143</td>
 <td style="text-align: left;">AB_Octolasion_sp</td>
 <td style="text-align: left;">81.1%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">46</td>
+<td style="text-align: left;">166</td>
 <td style="text-align: left;">BM_Octolasion_sp</td>
 <td style="text-align: left;">81.1%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">47</td>
+<td style="text-align: left;">132</td>
 <td style="text-align: left;">AB_Aporrectodea_sp</td>
 <td style="text-align: left;">79.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">48</td>
+<td style="text-align: left;">155</td>
 <td style="text-align: left;">BM_Aporrectodea_sp</td>
 <td style="text-align: left;">79.1%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">49</td>
+<td style="text-align: left;">103</td>
 <td style="text-align: left;">AB_Lumbricus_rubellus_rubellus</td>
 <td style="text-align: left;">78.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">50</td>
+<td style="text-align: left;">117</td>
 <td style="text-align: left;">BM_Lumbricus_rubellus_rubellus</td>
 <td style="text-align: left;">78.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">51</td>
+<td style="text-align: left;">62</td>
 <td style="text-align: left;">Code_Parcelle</td>
 <td style="text-align: left;">75.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">52</td>
+<td style="text-align: left;">35</td>
 <td style="text-align: left;">clay</td>
 <td style="text-align: left;">70.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">53</td>
+<td style="text-align: left;">135</td>
 <td style="text-align: left;">AB_Dendrobaena_sp</td>
 <td style="text-align: left;">69.4%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">54</td>
+<td style="text-align: left;">158</td>
 <td style="text-align: left;">BM_Dendrobaena_sp</td>
 <td style="text-align: left;">69.4%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">55</td>
+<td style="text-align: left;">125</td>
 <td style="text-align: left;">AB_Allolobophora_chlorotica_postepheba</td>
 <td style="text-align: left;">68.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">56</td>
+<td style="text-align: left;">148</td>
 <td style="text-align: left;">BM_Allolobophora_chlorotica_postepheba</td>
 <td style="text-align: left;">68.6%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">57</td>
+<td style="text-align: left;">271</td>
 <td style="text-align: left;">gddlgd5</td>
 <td style="text-align: left;">67.1%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">58</td>
+<td style="text-align: left;">274</td>
 <td style="text-align: left;">gdgfgd5</td>
 <td style="text-align: left;">67.1%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">59</td>
+<td style="text-align: left;">29</td>
 <td style="text-align: left;">fine_sand</td>
 <td style="text-align: left;">66.5%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">60</td>
+<td style="text-align: left;">30</td>
 <td style="text-align: left;">coarse_sand</td>
 <td style="text-align: left;">66.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">61</td>
+<td style="text-align: left;">32</td>
 <td style="text-align: left;">fine_silt</td>
 <td style="text-align: left;">66.5%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">62</td>
+<td style="text-align: left;">33</td>
 <td style="text-align: left;">coarse_silt</td>
 <td style="text-align: left;">66.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">63</td>
+<td style="text-align: left;">126</td>
 <td style="text-align: left;">AB_Allolobophora_sp</td>
 <td style="text-align: left;">66.4%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">64</td>
+<td style="text-align: left;">149</td>
 <td style="text-align: left;">BM_Allolobophora_sp</td>
 <td style="text-align: left;">66.4%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">65</td>
+<td style="text-align: left;">101</td>
 <td style="text-align: left;">AB_Lumbricus_festivus</td>
 <td style="text-align: left;">64.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">66</td>
+<td style="text-align: left;">115</td>
 <td style="text-align: left;">BM_Lumbricus_festivus</td>
 <td style="text-align: left;">64.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">67</td>
+<td style="text-align: left;">70</td>
 <td style="text-align: left;">AB_Aporrectodea_cupulifera</td>
 <td style="text-align: left;">64.4%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">68</td>
+<td style="text-align: left;">85</td>
 <td style="text-align: left;">BM_Aporrectodea_cupulifera</td>
 <td style="text-align: left;">64.4%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">69</td>
+<td style="text-align: left;">138</td>
 <td style="text-align: left;">AB_Indéterminable</td>
 <td style="text-align: left;">64.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">70</td>
+<td style="text-align: left;">161</td>
 <td style="text-align: left;">BM_Indéterminable</td>
 <td style="text-align: left;">64.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">71</td>
+<td style="text-align: left;">75</td>
 <td style="text-align: left;">AB_Lumbricus_friendi</td>
 <td style="text-align: left;">61.7%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">72</td>
+<td style="text-align: left;">90</td>
 <td style="text-align: left;">BM_Lumbricus_friendi</td>
 <td style="text-align: left;">60.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">73</td>
+<td style="text-align: left;">105</td>
 <td style="text-align: left;">AB_Lumbricus_centralis</td>
 <td style="text-align: left;">58.4%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">74</td>
+<td style="text-align: left;">127</td>
 <td style="text-align: left;">AB_Aporrectodea_indéterminable</td>
 <td style="text-align: left;">58.4%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">75</td>
+<td style="text-align: left;">150</td>
 <td style="text-align: left;">BM_Aporrectodea_indéterminable</td>
 <td style="text-align: left;">58.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">76</td>
+<td style="text-align: left;">118</td>
 <td style="text-align: left;">BM_Lumbricus_centralis</td>
 <td style="text-align: left;">58%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">77</td>
+<td style="text-align: left;">73</td>
 <td style="text-align: left;">AB_Eiseniella_tetraedra</td>
 <td style="text-align: left;">57.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">78</td>
+<td style="text-align: left;">88</td>
 <td style="text-align: left;">BM_Eiseniella_tetraedra</td>
 <td style="text-align: left;">57.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">79</td>
+<td style="text-align: left;">177</td>
 <td style="text-align: left;">AB_Proctodrilus_antipai_antipai</td>
 <td style="text-align: left;">57.1%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">80</td>
+<td style="text-align: left;">182</td>
 <td style="text-align: left;">BM_Proctodrilus_antipai_antipai</td>
 <td style="text-align: left;">57%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">81</td>
+<td style="text-align: left;">108</td>
 <td style="text-align: left;">AB_Octolasion_lacteum_lacteum</td>
 <td style="text-align: left;">56.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">82</td>
+<td style="text-align: left;">120</td>
 <td style="text-align: left;">BM_Octolasion_lacteum_lacteum</td>
 <td style="text-align: left;">56.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">83</td>
+<td style="text-align: left;">176</td>
 <td style="text-align: left;">AB_Eisenia_andrei</td>
 <td style="text-align: left;">55.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">84</td>
+<td style="text-align: left;">181</td>
 <td style="text-align: left;">BM_Eisenia_andrei</td>
 <td style="text-align: left;">55.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">85</td>
+<td style="text-align: left;">26</td>
 <td style="text-align: left;">om</td>
 <td style="text-align: left;">55%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">86</td>
+<td style="text-align: left;">136</td>
 <td style="text-align: left;">AB_Eisenia_fetida</td>
 <td style="text-align: left;">54.8%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">87</td>
+<td style="text-align: left;">159</td>
 <td style="text-align: left;">BM_Eisenia_fetida</td>
 <td style="text-align: left;">54.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">88</td>
+<td style="text-align: left;">22</td>
 <td style="text-align: left;">ph_eau</td>
 <td style="text-align: left;">54.6%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">89</td>
+<td style="text-align: left;">65</td>
 <td style="text-align: left;">BM_tot</td>
 <td style="text-align: left;">52%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">90</td>
+<td style="text-align: left;">217</td>
 <td style="text-align: left;">AB_Eisenia_fetida_indéterminable</td>
 <td style="text-align: left;">51.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">91</td>
+<td style="text-align: left;">219</td>
 <td style="text-align: left;">BM_Eisenia_fetida_indéterminable</td>
 <td style="text-align: left;">51.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">92</td>
+<td style="text-align: left;">25</td>
 <td style="text-align: left;">n_tot</td>
 <td style="text-align: left;">50.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">93</td>
+<td style="text-align: left;">188</td>
 <td style="text-align: left;">AB_Microscolex_phosphoreus</td>
 <td style="text-align: left;">50.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">94</td>
+<td style="text-align: left;">190</td>
 <td style="text-align: left;">BM_Microscolex_phosphoreus</td>
 <td style="text-align: left;">50.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">95</td>
+<td style="text-align: left;">133</td>
 <td style="text-align: left;">AB_Aporrectodea_trapezoides</td>
 <td style="text-align: left;">50%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">96</td>
+<td style="text-align: left;">156</td>
 <td style="text-align: left;">BM_Aporrectodea_trapezoides</td>
 <td style="text-align: left;">50%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">97</td>
+<td style="text-align: left;">130</td>
 <td style="text-align: left;">AB_Aporrectodea_ripicola</td>
 <td style="text-align: left;">49.4%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">98</td>
+<td style="text-align: left;">153</td>
 <td style="text-align: left;">BM_Aporrectodea_ripicola</td>
 <td style="text-align: left;">49.4%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">99</td>
+<td style="text-align: left;">16</td>
 <td style="text-align: left;">land_cover_detail</td>
 <td style="text-align: left;">46.5%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">100</td>
+<td style="text-align: left;">144</td>
 <td style="text-align: left;">AB_Prosellodrilus_amplisetosus_amplisetosus</td>
 <td style="text-align: left;">46.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">101</td>
+<td style="text-align: left;">167</td>
 <td style="text-align: left;">BM_Prosellodrilus_amplisetosus_amplisetosus</td>
 <td style="text-align: left;">46.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">102</td>
+<td style="text-align: left;">139</td>
 <td style="text-align: left;">AB_Lumbricus_castaneus_disjonctus</td>
 <td style="text-align: left;">44.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">103</td>
+<td style="text-align: left;">162</td>
 <td style="text-align: left;">BM_Lumbricus_castaneus_disjonctus</td>
 <td style="text-align: left;">44.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">105</td>
+<td style="text-align: left;">109</td>
 <td style="text-align: left;">AB_Microscolex_dubius</td>
 <td style="text-align: left;">41.7%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">106</td>
+<td style="text-align: left;">121</td>
 <td style="text-align: left;">BM_Microscolex_dubius</td>
 <td style="text-align: left;">41.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">107</td>
+<td style="text-align: left;">24</td>
 <td style="text-align: left;">c_org</td>
 <td style="text-align: left;">41.1%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">108</td>
+<td style="text-align: left;">72</td>
 <td style="text-align: left;">AB_Dendrobaena_octaedra</td>
 <td style="text-align: left;">37.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">109</td>
+<td style="text-align: left;">87</td>
 <td style="text-align: left;">BM_Dendrobaena_octaedra</td>
 <td style="text-align: left;">37.8%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">110</td>
+<td style="text-align: left;">99</td>
 <td style="text-align: left;">AB_Aporrectodea_longa</td>
 <td style="text-align: left;">36.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">111</td>
+<td style="text-align: left;">113</td>
 <td style="text-align: left;">BM_Aporrectodea_longa</td>
 <td style="text-align: left;">36.8%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">112</td>
+<td style="text-align: left;">175</td>
 <td style="text-align: left;">AB_Dendrodrilus_rubidus</td>
 <td style="text-align: left;">36%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">113</td>
+<td style="text-align: left;">180</td>
 <td style="text-align: left;">BM_Dendrodrilus_rubidus</td>
 <td style="text-align: left;">36%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">114</td>
+<td style="text-align: left;">147</td>
 <td style="text-align: left;">AB_Scherotheca_sp</td>
 <td style="text-align: left;">33.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">115</td>
+<td style="text-align: left;">170</td>
 <td style="text-align: left;">BM_Scherotheca_sp</td>
 <td style="text-align: left;">33.8%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">116</td>
+<td style="text-align: left;">187</td>
 <td style="text-align: left;">AB_Aporrectodea_limicola</td>
 <td style="text-align: left;">33.1%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">117</td>
+<td style="text-align: left;">189</td>
 <td style="text-align: left;">BM_Aporrectodea_limicola</td>
 <td style="text-align: left;">33.1%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">118</td>
+<td style="text-align: left;">191</td>
 <td style="text-align: left;">AB_Lumbricus_friendi_lineatus</td>
 <td style="text-align: left;">32.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">119</td>
+<td style="text-align: left;">193</td>
 <td style="text-align: left;">BM_Lumbricus_friendi_lineatus</td>
 <td style="text-align: left;">32.7%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">120</td>
+<td style="text-align: left;">145</td>
 <td style="text-align: left;">AB_Prosellodrilus_sp</td>
 <td style="text-align: left;">31.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">121</td>
+<td style="text-align: left;">168</td>
 <td style="text-align: left;">BM_Prosellodrilus_sp</td>
 <td style="text-align: left;">31.7%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">122</td>
+<td style="text-align: left;">11</td>
 <td style="text-align: left;">Altitude</td>
 <td style="text-align: left;">30.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">123</td>
+<td style="text-align: left;">183</td>
 <td style="text-align: left;">AB_Eisenia_veneta</td>
 <td style="text-align: left;">29.8%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">124</td>
+<td style="text-align: left;">184</td>
 <td style="text-align: left;">BM_Eisenia_veneta</td>
 <td style="text-align: left;">29.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">125</td>
+<td style="text-align: left;">223</td>
 <td style="text-align: left;">AB_Prosellodrilus_occidentalis_occidentalis</td>
 <td style="text-align: left;">29.8%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">126</td>
+<td style="text-align: left;">264</td>
 <td style="text-align: left;">fcf</td>
 <td style="text-align: left;">29%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">127</td>
+<td style="text-align: left;">31</td>
 <td style="text-align: left;">sand</td>
 <td style="text-align: left;">28.7%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">128</td>
+<td style="text-align: left;">34</td>
 <td style="text-align: left;">silt</td>
 <td style="text-align: left;">28.7%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">129</td>
+<td style="text-align: left;">140</td>
 <td style="text-align: left;">AB_Lumbricus_meliboeus</td>
 <td style="text-align: left;">28.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">130</td>
+<td style="text-align: left;">163</td>
 <td style="text-align: left;">BM_Lumbricus_meliboeus</td>
 <td style="text-align: left;">28.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">131</td>
+<td style="text-align: left;">4</td>
 <td style="text-align: left;">Date_Prelevement</td>
 <td style="text-align: left;">27.8%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">132</td>
+<td style="text-align: left;">96</td>
 <td style="text-align: left;">AB_Aporrectodea_caliginosa_indéterminable</td>
 <td style="text-align: left;">27.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">133</td>
+<td style="text-align: left;">110</td>
 <td style="text-align: left;">BM_Aporrectodea_caliginosa_indéterminable</td>
 <td style="text-align: left;">27.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">134</td>
+<td style="text-align: left;">81</td>
 <td style="text-align: left;">AB_Scherotheca_savignyi_indéterminable</td>
 <td style="text-align: left;">24.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">135</td>
+<td style="text-align: left;">104</td>
 <td style="text-align: left;">AB_Prosellodrilus_fragilis_fragilis</td>
 <td style="text-align: left;">24.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">136</td>
+<td style="text-align: left;">225</td>
 <td style="text-align: left;">AB_Scherotheca_savignyi_savignyi</td>
 <td style="text-align: left;">24.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">137</td>
+<td style="text-align: left;">23</td>
 <td style="text-align: left;">c_tot</td>
 <td style="text-align: left;">24.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">138</td>
+<td style="text-align: left;">192</td>
 <td style="text-align: left;">AB_Octodrilus_complanatus</td>
 <td style="text-align: left;">24.5%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">139</td>
+<td style="text-align: left;">194</td>
 <td style="text-align: left;">BM_Octodrilus_complanatus</td>
 <td style="text-align: left;">24.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">140</td>
+<td style="text-align: left;">8</td>
 <td style="text-align: left;">postal_code</td>
 <td style="text-align: left;">24.4%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">141</td>
+<td style="text-align: left;">66</td>
 <td style="text-align: left;">AB_STAD_X</td>
 <td style="text-align: left;">23.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">142</td>
+<td style="text-align: left;">134</td>
 <td style="text-align: left;">AB_Aporrectodea_tuberculata</td>
 <td style="text-align: left;">23.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">143</td>
+<td style="text-align: left;">157</td>
 <td style="text-align: left;">BM_Aporrectodea_tuberculata</td>
 <td style="text-align: left;">23.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">144</td>
+<td style="text-align: left;">106</td>
 <td style="text-align: left;">AB_Lumbricus_rubellus_friendoides</td>
 <td style="text-align: left;">21.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">145</td>
+<td style="text-align: left;">226</td>
 <td style="text-align: left;">AB_Scherotheca_aquitana</td>
 <td style="text-align: left;">21.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">146</td>
+<td style="text-align: left;">227</td>
 <td style="text-align: left;">AB_Hemigastrodrilus_monicae</td>
 <td style="text-align: left;">21.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">147</td>
+<td style="text-align: left;">228</td>
 <td style="text-align: left;">AB_Proctodrilus_antipai_indéterminable</td>
 <td style="text-align: left;">21.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">148</td>
+<td style="text-align: left;">229</td>
 <td style="text-align: left;">AB_Prosellodrilus_amplisetosus</td>
 <td style="text-align: left;">21.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">149</td>
+<td style="text-align: left;">230</td>
 <td style="text-align: left;">AB_Prosellodrilus_praticola</td>
 <td style="text-align: left;">21.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">150</td>
+<td style="text-align: left;">231</td>
 <td style="text-align: left;">AB_Scherotheca_porotheca</td>
 <td style="text-align: left;">21.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">151</td>
+<td style="text-align: left;">107</td>
 <td style="text-align: left;">AB_Dendrodrilus_rubidus_subrubicundus</td>
 <td style="text-align: left;">21.7%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">152</td>
+<td style="text-align: left;">119</td>
 <td style="text-align: left;">BM_Dendrodrilus_rubidus_subrubicundus</td>
 <td style="text-align: left;">21.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">153</td>
+<td style="text-align: left;">174</td>
 <td style="text-align: left;">AB_Dendrobaena_attemsi</td>
 <td style="text-align: left;">21.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">154</td>
+<td style="text-align: left;">179</td>
 <td style="text-align: left;">BM_Dendrobaena_attemsi</td>
 <td style="text-align: left;">21.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">155</td>
+<td style="text-align: left;">6</td>
 <td style="text-align: left;">Modalite</td>
 <td style="text-align: left;">20.7%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">156</td>
+<td style="text-align: left;">36</td>
 <td style="text-align: left;">type_tillage</td>
 <td style="text-align: left;">19.1%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">157</td>
+<td style="text-align: left;">224</td>
 <td style="text-align: left;">AB_Allolobophora_burgondiae</td>
 <td style="text-align: left;">17.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">158</td>
+<td style="text-align: left;">46</td>
 <td style="text-align: left;">herbicide_freq</td>
 <td style="text-align: left;">16%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">159</td>
+<td style="text-align: left;">45</td>
 <td style="text-align: left;">insecticide_freq</td>
 <td style="text-align: left;">15%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">160</td>
+<td style="text-align: left;">215</td>
 <td style="text-align: left;">AB_Bimastos_eiseni</td>
 <td style="text-align: left;">14.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">161</td>
+<td style="text-align: left;">216</td>
 <td style="text-align: left;">BM_Bimastos_eiseni</td>
 <td style="text-align: left;">14.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">162</td>
+<td style="text-align: left;">185</td>
 <td style="text-align: left;">AB_Haplotaxis_sp</td>
 <td style="text-align: left;">14.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">163</td>
+<td style="text-align: left;">186</td>
 <td style="text-align: left;">BM_Haplotaxis_sp</td>
 <td style="text-align: left;">14.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">164</td>
+<td style="text-align: left;">7</td>
 <td style="text-align: left;">Bloc</td>
 <td style="text-align: left;">13.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">165</td>
+<td style="text-align: left;">79</td>
 <td style="text-align: left;">AB_Prosellodrilus_fragilis_indéterminable</td>
 <td style="text-align: left;">13.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">166</td>
+<td style="text-align: left;">94</td>
 <td style="text-align: left;">BM_Prosellodrilus_fragilis_indéterminable</td>
 <td style="text-align: left;">13.5%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">167</td>
+<td style="text-align: left;">200</td>
 <td style="text-align: left;">AB_Pheretima_indéterminable</td>
 <td style="text-align: left;">13.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">168</td>
+<td style="text-align: left;">208</td>
 <td style="text-align: left;">BM_Pheretima_indéterminable</td>
 <td style="text-align: left;">13.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">169</td>
+<td style="text-align: left;">196</td>
 <td style="text-align: left;">AB_Dendrobaena_cognettii</td>
 <td style="text-align: left;">12.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">170</td>
+<td style="text-align: left;">204</td>
 <td style="text-align: left;">BM_Dendrobaena_cognettii</td>
 <td style="text-align: left;">12.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">171</td>
+<td style="text-align: left;">44</td>
 <td style="text-align: left;">fungicide_freq</td>
 <td style="text-align: left;">12.1%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">172</td>
+<td style="text-align: left;">28</td>
 <td style="text-align: left;">cu_EDTA</td>
 <td style="text-align: left;">11.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">173</td>
+<td style="text-align: left;">38</td>
 <td style="text-align: left;">fertilisation</td>
 <td style="text-align: left;">11.1%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">174</td>
+<td style="text-align: left;">173</td>
 <td style="text-align: left;">AB_Avelona_ligra</td>
 <td style="text-align: left;">11.1%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">175</td>
+<td style="text-align: left;">178</td>
 <td style="text-align: left;">BM_Avelona_ligra</td>
 <td style="text-align: left;">11%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">176</td>
+<td style="text-align: left;">197</td>
 <td style="text-align: left;">AB_Dendrobaena_hortensis</td>
 <td style="text-align: left;">10.5%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">177</td>
+<td style="text-align: left;">205</td>
 <td style="text-align: left;">BM_Dendrobaena_hortensis</td>
 <td style="text-align: left;">10.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">178</td>
+<td style="text-align: left;">39</td>
 <td style="text-align: left;">ferti_min_product</td>
 <td style="text-align: left;">10.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">179</td>
+<td style="text-align: left;">41</td>
 <td style="text-align: left;">ferti_orga_product</td>
 <td style="text-align: left;">10%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">180</td>
+<td style="text-align: left;">27</td>
 <td style="text-align: left;">cu_tot</td>
 <td style="text-align: left;">9.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">181</td>
+<td style="text-align: left;">60</td>
 <td style="text-align: left;">grassland_type</td>
 <td style="text-align: left;">9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">182</td>
+<td style="text-align: left;">52</td>
 <td style="text-align: left;">rotation_plant_div</td>
 <td style="text-align: left;">8.1%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">183</td>
+<td style="text-align: left;">221</td>
 <td style="text-align: left;">AB_Microscolex_sp</td>
 <td style="text-align: left;">7.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">184</td>
+<td style="text-align: left;">222</td>
 <td style="text-align: left;">AB_Pheritima_Diffringens</td>
 <td style="text-align: left;">7.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">185</td>
+<td style="text-align: left;">218</td>
 <td style="text-align: left;">AB_Lumbricus_rubellus_indéterminable</td>
 <td style="text-align: left;">7.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">186</td>
+<td style="text-align: left;">220</td>
 <td style="text-align: left;">BM_Lumbricus_rubellus_indéterminable</td>
 <td style="text-align: left;">7.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">187</td>
+<td style="text-align: left;">49</td>
 <td style="text-align: left;">tfi_herbicide</td>
 <td style="text-align: left;">7.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">188</td>
+<td style="text-align: left;">67</td>
 <td style="text-align: left;">AB_Allolobophora_chlorotica_indéterminable</td>
 <td style="text-align: left;">6.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">189</td>
+<td style="text-align: left;">82</td>
 <td style="text-align: left;">BM_Allolobophora_chlorotica_indéterminable</td>
 <td style="text-align: left;">6.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">190</td>
+<td style="text-align: left;">131</td>
 <td style="text-align: left;">AB_Aporrectodea_rubra</td>
 <td style="text-align: left;">6.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">191</td>
+<td style="text-align: left;">146</td>
 <td style="text-align: left;">AB_Scherotheca_dinoscolex</td>
 <td style="text-align: left;">6.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">192</td>
+<td style="text-align: left;">154</td>
 <td style="text-align: left;">BM_Aporrectodea_rubra</td>
 <td style="text-align: left;">6.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">193</td>
+<td style="text-align: left;">169</td>
 <td style="text-align: left;">BM_Scherotheca_dinoscolex</td>
 <td style="text-align: left;">6.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">194</td>
+<td style="text-align: left;">265</td>
 <td style="text-align: left;">fgd</td>
 <td style="text-align: left;">6.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">195</td>
+<td style="text-align: left;">288</td>
 <td style="text-align: left;">lgd</td>
 <td style="text-align: left;">6.2%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">196</td>
+<td style="text-align: left;">55</td>
 <td style="text-align: left;">herbage_use</td>
 <td style="text-align: left;">5.7%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">197</td>
+<td style="text-align: left;">37</td>
 <td style="text-align: left;">tillage_frequency_intra</td>
 <td style="text-align: left;">5.6%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">198</td>
+<td style="text-align: left;">47</td>
 <td style="text-align: left;">molluscicide_freq</td>
 <td style="text-align: left;">5.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">199</td>
+<td style="text-align: left;">40</td>
 <td style="text-align: left;">ferti_min_qtty</td>
 <td style="text-align: left;">5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">200</td>
+<td style="text-align: left;">42</td>
 <td style="text-align: left;">ferti_orga_qtty</td>
 <td style="text-align: left;">5%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">201</td>
+<td style="text-align: left;">54</td>
 <td style="text-align: left;">crop_residues_management</td>
 <td style="text-align: left;">4.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">202</td>
+<td style="text-align: left;">50</td>
 <td style="text-align: left;">total_tfi</td>
 <td style="text-align: left;">4%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">203</td>
+<td style="text-align: left;">57</td>
 <td style="text-align: left;">herb_age</td>
 <td style="text-align: left;">3.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">204</td>
+<td style="text-align: left;">58</td>
 <td style="text-align: left;">animal_loading</td>
 <td style="text-align: left;">3.1%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">205</td>
+<td style="text-align: left;">51</td>
 <td style="text-align: left;">mecanical_weed_control</td>
 <td style="text-align: left;">3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">206</td>
+<td style="text-align: left;">53</td>
 <td style="text-align: left;">rotation_grassland</td>
 <td style="text-align: left;">2.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">207</td>
+<td style="text-align: left;">195</td>
 <td style="text-align: left;">AB_Dendrobaena_alpina_zeugochaeta</td>
 <td style="text-align: left;">2.6%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">208</td>
+<td style="text-align: left;">198</td>
 <td style="text-align: left;">AB_Eisenia_sp</td>
 <td style="text-align: left;">2.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">209</td>
+<td style="text-align: left;">199</td>
 <td style="text-align: left;">AB_Flabellodrilus_bartolii</td>
 <td style="text-align: left;">2.6%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">210</td>
+<td style="text-align: left;">201</td>
 <td style="text-align: left;">AB_Prosellodrilus_pyrenaicus</td>
 <td style="text-align: left;">2.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">211</td>
+<td style="text-align: left;">202</td>
 <td style="text-align: left;">AB_Scherotheca_nivicola</td>
 <td style="text-align: left;">2.6%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">212</td>
+<td style="text-align: left;">203</td>
 <td style="text-align: left;">BM_Dendrobaena_alpina_zeugochaeta</td>
 <td style="text-align: left;">2.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">213</td>
+<td style="text-align: left;">206</td>
 <td style="text-align: left;">BM_Eisenia_sp</td>
 <td style="text-align: left;">2.6%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">214</td>
+<td style="text-align: left;">207</td>
 <td style="text-align: left;">BM_Flabellodrilus_bartolii</td>
 <td style="text-align: left;">2.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">215</td>
+<td style="text-align: left;">209</td>
 <td style="text-align: left;">BM_Prosellodrilus_pyrenaicus</td>
 <td style="text-align: left;">2.6%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">216</td>
+<td style="text-align: left;">210</td>
 <td style="text-align: left;">BM_Scherotheca_nivicola</td>
 <td style="text-align: left;">2.6%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">217</td>
+<td style="text-align: left;">48</td>
 <td style="text-align: left;">tfi_insecticide</td>
 <td style="text-align: left;">2.4%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">218</td>
+<td style="text-align: left;">21</td>
 <td style="text-align: left;">ph_kcl</td>
 <td style="text-align: left;">2.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">219</td>
+<td style="text-align: left;">59</td>
 <td style="text-align: left;">trampling_nature</td>
 <td style="text-align: left;">1.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">220</td>
+<td style="text-align: left;">234</td>
 <td style="text-align: left;">AB_Octolasion_lacteum_gracile</td>
 <td style="text-align: left;">1.4%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">221</td>
+<td style="text-align: left;">235</td>
 <td style="text-align: left;">BM_Octolasion_lacteum_gracile</td>
 <td style="text-align: left;">1.4%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">222</td>
+<td style="text-align: left;">56</td>
 <td style="text-align: left;">mowing_frequency_yr</td>
 <td style="text-align: left;">1.2%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">223</td>
+<td style="text-align: left;">211</td>
 <td style="text-align: left;">AB_Aporrectodea_georgii</td>
 <td style="text-align: left;">0.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">224</td>
+<td style="text-align: left;">212</td>
 <td style="text-align: left;">AB_Panoniona_leoni</td>
 <td style="text-align: left;">0.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">225</td>
+<td style="text-align: left;">213</td>
 <td style="text-align: left;">BM_Aporrectodea_georgii</td>
 <td style="text-align: left;">0.9%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">226</td>
+<td style="text-align: left;">214</td>
 <td style="text-align: left;">BM_Panoniona_leoni</td>
 <td style="text-align: left;">0.9%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">227</td>
+<td style="text-align: left;">171</td>
 <td style="text-align: left;">AB_Scherotheca_rhodana</td>
 <td style="text-align: left;">0.8%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">228</td>
+<td style="text-align: left;">172</td>
 <td style="text-align: left;">BM_Scherotheca_rhodana</td>
 <td style="text-align: left;">0.8%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">229</td>
+<td style="text-align: left;">78</td>
 <td style="text-align: left;">AB_Octolasion_lacteum</td>
 <td style="text-align: left;">0.7%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">230</td>
+<td style="text-align: left;">93</td>
 <td style="text-align: left;">BM_Octolasion_lacteum</td>
 <td style="text-align: left;">0.7%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">231</td>
+<td style="text-align: left;">232</td>
 <td style="text-align: left;">AB_Orodrilus_paradoxus_paradoxus</td>
 <td style="text-align: left;">0.5%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">232</td>
+<td style="text-align: left;">233</td>
 <td style="text-align: left;">BM_Orodrilus_paradoxus_paradoxus</td>
 <td style="text-align: left;">0.5%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">233</td>
+<td style="text-align: left;">15</td>
 <td style="text-align: left;">clcm_lvl4</td>
 <td style="text-align: left;">0.3%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">234</td>
+<td style="text-align: left;">20</td>
 <td style="text-align: left;">code_clcm_lvl4</td>
 <td style="text-align: left;">0.3%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">235</td>
+<td style="text-align: left;">43</td>
 <td style="text-align: left;">ferti_orga_freq</td>
 <td style="text-align: left;">0.1%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">236</td>
+<td style="text-align: left;">269</td>
 <td style="text-align: left;">gddlgd0</td>
 <td style="text-align: left;">0%</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">237</td>
+<td style="text-align: left;">272</td>
 <td style="text-align: left;">gdgfgd0</td>
 <td style="text-align: left;">0%</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">238</td>
+<td style="text-align: left;">307</td>
 <td style="text-align: left;">swe</td>
 <td style="text-align: left;">0%</td>
 </tr>
@@ -6620,7 +6274,6 @@ kable(df_col, caption = " ", col.width = c("75%", "25%"))
 :::
 
 
-
 -->
 
 <!--
@@ -6628,7 +6281,7 @@ kable(df_col, caption = " ", col.width = c("75%", "25%"))
 ## The source database ([CHELSA V2](https://chelsa-climate.org/bioclim/){target="_blank"})
 
 
-::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-48_31988b43d7e4ee9800cc531ff21b016f'}
+::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-36_4864ef194a92260694c3f1451c6b1ab1'}
 
 ```{.r .cell-code}
 # Lire le fichier Excel
@@ -6733,7 +6386,7 @@ kableExtra::kable(climat) %>%
 -   Adding variables to the LANDWORM database
 
 
-::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-49_1ed5e1c3a07373634af43b8c453236ef'}
+::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-37_ea83c4866cbce161b13b72ce81fe86c5'}
 
 ```{.r .cell-code}
 liens_tif = read.table(file = "C:/Users/diall/Downloads/datas/envidatS3paths.txt")
@@ -6830,7 +6483,7 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 [Variable description](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf){target="_blank"}
 
 
-::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-50_a33f9cb7f9ba681854b832a0a4c9e8f1'}
+::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-38_5a11a6d088dfa258b87686f987c2f40e'}
 ::: {.cell-output .cell-output-stdout}
 ```
       ID                gps_x             gps_y             ai        
@@ -7003,7 +6656,7 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 -   Average annual air temperature (°C) = bio1
 
 
-::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-51_e1bba90cd6b24a80754095db106abceb'}
+::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-39_676b5a648270ccc69814d8c65a460c2a'}
 ::: {.cell-output .cell-output-stdout}
 ```
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -7012,7 +6665,7 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 :::
 
 ::: {.cell-output-display}
-![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-51-1.png){fig-align='center' width=960}
+![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-39-1.png){fig-align='center' width=960}
 :::
 :::
 
@@ -7022,7 +6675,7 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 -   Annual precipitation (kg/m²) = bio12
 
 
-::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-52_89dc2cf169624f60c56bfd2ad2a10e40'}
+::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-40_cc05622f05be54ce90da7849fe6768d6'}
 ::: {.cell-output .cell-output-stdout}
 ```
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -7031,7 +6684,7 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 :::
 
 ::: {.cell-output-display}
-![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-52-1.png){fig-align='center' width=960}
+![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-40-1.png){fig-align='center' width=960}
 :::
 :::
 
@@ -7039,10 +6692,12 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 
 
 
+-->
+<!--
 # Questions
 
 
-::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-53_be450f84595236addac85f2e23a26a60'}
+::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-41_01e4fea030a2d001781fa741285b7742'}
 
 :::
 
@@ -7082,15 +6737,440 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 
 
 -->
+</section></section>
+<section>
+<section id="soil-data-extraction" class="title-slide slide level1 center" data-number="5">
+<h1><span class="header-section-number">5</span> Soil data extraction</h1>
+
+<!--
+## The source database ([openlandmap](https://openlandmap.org/?center=25,39&zoom=4&opacity=72&base=OpenStreetMap&layer=lc_glc.fcs30d&time=2022){target="_blank"})
+
+
+::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-43_a33f214cc5b60c45dd76ecd391051c16'}
+
+```{.r .cell-code}
+chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
+pedo <- read.xlsx(chemin_fichier_excel, sheet = "pedo")
+
+# Fusion des cellules des colonnes avec des éléments dupliqués
+for (col in names(pedo)) {
+  pedo[[col]] <- ifelse(duplicated(pedo[[col]]), "", pedo[[col]])
+}
+
+#tableau avec kableExtra et centrage du contenu des cellules
+kableExtra::kable(pedo) %>%
+  kableExtra::kable_styling() %>%
+  kableExtra::column_spec(1:ncol(pedo))  # Centrer le contenu de toutes les colonnes
+```
+
+::: {.cell-output-display}
+
+`````{=html}
+
+<table class="table" data-quarto-postprocess="true" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Source</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">DB.name</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Categories</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Variables</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Units</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Formats</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Periods</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Resolution</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">References</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">X10</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Fourcade et al., 2022</td>
+<td style="text-align: left;">OpenLandMap </td>
+<td style="text-align: left;">soil data</td>
+<td style="text-align: left;">pH</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">.tif</td>
+<td style="text-align: left;">1950 - 2017</td>
+<td style="text-align: left;">250 m</td>
+<td style="text-align: left;">https://zenodo.org/records/2525664</td>
+<td style="text-align: left;">NA</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Carbone content</td>
+<td style="text-align: left;">g/kg</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">https://zenodo.org/records/2525553</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BDD / BDAT</td>
+<td style="text-align: left;">Data gouv</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Sand</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">NA</td>
+<td style="text-align: left;">90 m</td>
+<td style="text-align: left;">https://doi.org/10.57745/N4E4NE</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Clay</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Silt</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Salako et al., 2023</td>
+<td style="text-align: left;">USGS-NASA</td>
+<td style="text-align: left;">spatial data</td>
+<td style="text-align: left;">Elevation</td>
+<td style="text-align: left;">NA</td>
+<td style="text-align: left;">.shp</td>
+<td style="text-align: left;">2010</td>
+<td style="text-align: left;">1 km</td>
+<td style="text-align: left;">https://www.usgs.gov/centers/eros/science/usgs-eros-archive-digital-elevation-global-multi-resolution-terrain-elevation</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Rutgers et al., 2018</td>
+<td style="text-align: left;">JRC</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Capacité d'échange de cations (CEC)</td>
+<td style="text-align: left;">cmol·kg −1</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">2009/2012</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">https://www.sciencedirect.com/science/article/pii/S0016706119304768</td>
+<td style="text-align: left;">2 à 20 cm</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Rutgers et al., 2019</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Carbonates de calcium (CaCO 3 )</td>
+<td style="text-align: left;">g·kg −1</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">3 à 20 cm</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Rutgers et al., 2020</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Rapport C:N</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">4 à 20 cm</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Rutgers et al., 2021</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Azote (N)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">5 à 20 cm</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Rutgers et al., 2022</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Phosphore (P)</td>
+<td style="text-align: left;">mg·kg −1</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">6 à 20 cm</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Rutgers et al., 2023</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Potassium (K)</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">7 à 20 cm</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Rutgers et al., 2016</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> pH dans H 2 O</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">https://esdac.jrc.ec.europa.eu/search</td>
+<td style="text-align: left;">0 à 20 cm</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Bulk density</td>
+<td style="text-align: left;">kg / m-cube</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">https://zenodo.org/records/2525665</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Rutgers et al., 2017</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"> pH dans une solution de CaCl2</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">pH dans H 2 O moins pH dans Cacl 2</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+
+
+`````
+
+:::
+:::
+
+
+\n
+-   Average values between surface (0 cm) and 30 cm depth
+
+
+
+
+## Changing the resolution ![](https://logowik.com/content/uploads/images/python.jpg){width="200"}
+
+-   Long compilation time in R
+
+-   GDAL module with the resampleAlg = bilinear method
+
+-   Resolution = 0.0083 = 30 arc-second \~ 1km
+
+
+    ::: {.cell hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-44_184658a4808f1bc383e0e7dff09fafde'}
+    ::: {.cell-output-display}
+    ![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-44-1.png){width=960}
+    :::
+    
+    ::: {.cell-output-display}
+    ![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-44-2.png){width=960}
+    :::
+    
+    ::: {.cell-output-display}
+    ![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-44-3.png){width=960}
+    :::
+    :::
+
+
+
+
+-->
+</section>
+<section id="soil-organic-carbone-gkg" class="slide level2" data-number="5.1">
+<h2><span class="header-section-number">5.1</span> Soil organic carbone (g/kg)</h2>
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-45_fd3bc85241067b4d18decf4e824d3078">
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+ 0.2000  0.5000  0.6000  0.6656  0.8000  2.6000       9 </code></pre>
+</div>
+
+</div>
+<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-45-1.png" width="960" class="r-stretch quarto-figure-center"></section>
+<section id="ph" class="slide level2" data-number="5.2">
+<h2><span class="header-section-number">5.2</span> pH</h2>
+<p><strong>Extracted values</strong></p>
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-46_156da553ccf419cd4f97275af59c852f">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-46-1.png" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Measured values &amp; extracted values</strong></p>
+<ul>
+<li>Clean pH column</li>
+</ul>
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-47_a3ef5a7ec91931fd7b30eb113dcda6e5">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="co"># On recupere les deux colonnes du pH</span></span>
+<span id="cb21-2"><a href="#cb21-2"></a>df_comp<span class="ot">=</span>bdd[, <span class="fu">c</span>(<span class="st">"ID"</span>, <span class="st">"ID_Site"</span>,<span class="st">"ph_eau"</span>,<span class="st">"ph_0_a_30"</span> )]</span>
+<span id="cb21-3"><a href="#cb21-3"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>ph_eau),] </span>
+<span id="cb21-4"><a href="#cb21-4"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>ph_0_a_30),] </span>
+<span id="cb21-5"><a href="#cb21-5"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[^0-9.]"</span>, df_comp<span class="sc">$</span>ph_eau), ]</span>
+<span id="cb21-6"><a href="#cb21-6"></a>df_comp<span class="sc">$</span>ph_eau <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>ph_eau)</span>
+<span id="cb21-7"><a href="#cb21-7"></a>df_comp<span class="sc">$</span>ph_0_a_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>ph_0_a_30)</span>
+<span id="cb21-8"><a href="#cb21-8"></a></span>
+<span id="cb21-9"><a href="#cb21-9"></a></span>
+<span id="cb21-10"><a href="#cb21-10"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>ph_eau<span class="sc">==</span> <span class="fl">44140.00</span>,]</span>
+<span id="cb21-11"><a href="#cb21-11"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>ph_eau<span class="sc">==</span> <span class="st">"NA"</span>,]</span>
+<span id="cb21-12"><a href="#cb21-12"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>ph_0_a_30<span class="sc">==</span> <span class="st">"NA"</span>,]</span>
+<span id="cb21-13"><a href="#cb21-13"></a>df_comp <span class="ot">=</span> <span class="fu">droplevels</span>(df_comp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-48_40b273fa581f1ee3f472d055b3f6f197">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>ID_Site_dupliques <span class="ot">&lt;-</span> df_comp<span class="sc">$</span>ID_Site[<span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)]</span>
+<span id="cb22-2"><a href="#cb22-2"></a><span class="co">#length(ID_Site_dupliques)</span></span>
+<span id="cb22-3"><a href="#cb22-3"></a></span>
+<span id="cb22-4"><a href="#cb22-4"></a>lignes_dupliquees <span class="ot">&lt;-</span> <span class="fu">subset</span>(df_comp, <span class="fu">duplicated</span>(ID_Site) <span class="sc">&amp;</span> <span class="fu">duplicated</span>(ph_eau))</span>
+<span id="cb22-5"><a href="#cb22-5"></a></span>
+<span id="cb22-6"><a href="#cb22-6"></a>lignes_unique <span class="ot">&lt;-</span> <span class="fu">unique</span>(lignes_dupliquees<span class="sc">$</span>ID_Site )</span>
+<span id="cb22-7"><a href="#cb22-7"></a><span class="co">#length(lignes_unique)</span></span>
+<span id="cb22-8"><a href="#cb22-8"></a></span>
+<span id="cb22-9"><a href="#cb22-9"></a><span class="co"># nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)</span></span>
+<span id="cb22-10"><a href="#cb22-10"></a></span>
+<span id="cb22-11"><a href="#cb22-11"></a></span>
+<span id="cb22-12"><a href="#cb22-12"></a>dupliquees <span class="ot">&lt;-</span> <span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)</span>
+<span id="cb22-13"><a href="#cb22-13"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span>dupliquees, ]</span>
+<span id="cb22-14"><a href="#cb22-14"></a>df_comp<span class="ot">=</span><span class="fu">droplevels</span>(df_comp)</span>
+<span id="cb22-15"><a href="#cb22-15"></a></span>
+<span id="cb22-16"><a href="#cb22-16"></a><span class="co"># correlation &lt;- cor.test(df_comp$ph_eau, df_comp$ph_0_a_30,method = "pearson")</span></span>
+<span id="cb22-17"><a href="#cb22-17"></a><span class="co">#resultat_test &lt;- t.test(df_comp$ph_eau, df_comp$ph_0_a_30)</span></span>
+<span id="cb22-18"><a href="#cb22-18"></a></span>
+<span id="cb22-19"><a href="#cb22-19"></a>df_comp<span class="sc">$</span>ph_eau <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>ph_eau)</span>
+<span id="cb22-20"><a href="#cb22-20"></a>df_comp<span class="sc">$</span>ph_0_a_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>ph_0_a_30)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<!-- <br/>  -->
+<div class="columns">
+<div class="column" style="width:60%;">
+<ul>
+<li><p>Method ?</p></li>
+<li><p>Depth ?</p></li>
+<li><p>Measured values (CR = 54.6%)</p></li>
+</ul>
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-49_3622c1123a4a05635e4b7d56a7610cfb">
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  4.000   6.600   7.650   7.329   8.150   8.900 </code></pre>
+</div>
+</div>
+<ul>
+<li>Extracted values</li>
+</ul>
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-50_72918054a9691506935454cbdaf72e48">
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  5.200   6.300   6.800   6.698   7.100   7.900 </code></pre>
+</div>
+</div>
+</div><div class="column" style="width:40%;">
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-51_4b51095f7393580c1f3981d70066fa5a">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-51-1.png" width="384"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!--
+## Bulk density (kg / m-cube)
+
+
+::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-52_c1ba14d40860a637af861ebe64569686'}
+::: {.cell-output .cell-output-stdout}
+```
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+  10.00   13.20   13.60   13.54   13.90   15.80       9 
+```
+:::
+
+::: {.cell-output-display}
+![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-52-1.png){fig-align='center' width=960}
+:::
+:::
+
+
+
+## Sand content (% kg/kg)
+
+
+::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-53_4eb6e396bf2eaf9b60410b529b18b0c2'}
+::: {.cell-output .cell-output-stdout}
+```
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+   7.00   25.70   31.30   32.44   38.30   67.00       9 
+```
+:::
+
+::: {.cell-output-display}
+![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-53-1.png){fig-align='center' width=960}
+:::
+:::
+
+
+
+
+-->
 </section>
 <section id="sand" class="slide level2" data-number="5.3">
 <h2><span class="header-section-number">5.3</span> Sand</h2>
 <p><strong>Extracted values (g/kg, 0 - 30 cm)</strong></p>
-<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-55_069da8370b94eb0f4b56cc209f3d2f61">
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-54_4c6375e9bb004144e8f3e1258cbf8dfe">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-55-1.png" width="960"></p>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-54-1.png" width="960"></p>
 </figure>
 </div>
 </div>
@@ -7099,42 +7179,42 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 <ul>
 <li>Clean sand column</li>
 </ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-56_92c624ec372eab2d6026745acb441c51">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-55_c5de3074c5733f0e96e2c40f98849ae2">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="co"># On recupere les deux colonnes du pH</span></span>
-<span id="cb26-2"><a href="#cb26-2"></a>df_comp<span class="ot">=</span>bdd[, <span class="fu">c</span>(<span class="st">"ID"</span>, <span class="st">"ID_Site"</span>,<span class="st">"sand"</span>,<span class="st">"sable.0_30"</span> )]</span>
-<span id="cb26-3"><a href="#cb26-3"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>sand),] </span>
-<span id="cb26-4"><a href="#cb26-4"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30),] </span>
-<span id="cb26-5"><a href="#cb26-5"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[^0-9.]"</span>, df_comp<span class="sc">$</span>sand), ]</span>
-<span id="cb26-6"><a href="#cb26-6"></a>df_comp<span class="sc">$</span>sand <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>sand)</span>
-<span id="cb26-7"><a href="#cb26-7"></a>df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30)</span>
-<span id="cb26-8"><a href="#cb26-8"></a><span class="co"># colSums(is.na(df_comp))</span></span>
-<span id="cb26-9"><a href="#cb26-9"></a></span>
-<span id="cb26-10"><a href="#cb26-10"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>sand<span class="sc">==</span> <span class="st">"NA"</span>,]</span>
-<span id="cb26-11"><a href="#cb26-11"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30<span class="sc">==</span> <span class="st">"NaN"</span>,]</span>
-<span id="cb26-12"><a href="#cb26-12"></a>df_comp <span class="ot">=</span> <span class="fu">droplevels</span>(df_comp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="co"># On recupere les deux colonnes du pH</span></span>
+<span id="cb25-2"><a href="#cb25-2"></a>df_comp<span class="ot">=</span>bdd[, <span class="fu">c</span>(<span class="st">"ID"</span>, <span class="st">"ID_Site"</span>,<span class="st">"sand"</span>,<span class="st">"sable.0_30"</span> )]</span>
+<span id="cb25-3"><a href="#cb25-3"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>sand),] </span>
+<span id="cb25-4"><a href="#cb25-4"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30),] </span>
+<span id="cb25-5"><a href="#cb25-5"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[^0-9.]"</span>, df_comp<span class="sc">$</span>sand), ]</span>
+<span id="cb25-6"><a href="#cb25-6"></a>df_comp<span class="sc">$</span>sand <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>sand)</span>
+<span id="cb25-7"><a href="#cb25-7"></a>df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30)</span>
+<span id="cb25-8"><a href="#cb25-8"></a><span class="co"># colSums(is.na(df_comp))</span></span>
+<span id="cb25-9"><a href="#cb25-9"></a></span>
+<span id="cb25-10"><a href="#cb25-10"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>sand<span class="sc">==</span> <span class="st">"NA"</span>,]</span>
+<span id="cb25-11"><a href="#cb25-11"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30<span class="sc">==</span> <span class="st">"NaN"</span>,]</span>
+<span id="cb25-12"><a href="#cb25-12"></a>df_comp <span class="ot">=</span> <span class="fu">droplevels</span>(df_comp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-57_5c2957640f9f66aa738c7fc3c1272fa3">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-56_43c6c71205aeba57452dcc42b87b6c0c">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="co"># -   Deleting duplicate measured values</span></span>
-<span id="cb27-2"><a href="#cb27-2"></a></span>
-<span id="cb27-3"><a href="#cb27-3"></a>ID_Site_dupliques <span class="ot">&lt;-</span> df_comp<span class="sc">$</span>ID_Site[<span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)]</span>
-<span id="cb27-4"><a href="#cb27-4"></a><span class="co">#length(ID_Site_dupliques)</span></span>
-<span id="cb27-5"><a href="#cb27-5"></a></span>
-<span id="cb27-6"><a href="#cb27-6"></a>lignes_dupliquees <span class="ot">&lt;-</span> <span class="fu">subset</span>(df_comp, <span class="fu">duplicated</span>(ID_Site) <span class="sc">&amp;</span> <span class="fu">duplicated</span>(sand))</span>
-<span id="cb27-7"><a href="#cb27-7"></a></span>
-<span id="cb27-8"><a href="#cb27-8"></a>lignes_unique <span class="ot">&lt;-</span> <span class="fu">unique</span>(lignes_dupliquees<span class="sc">$</span>ID_Site )</span>
-<span id="cb27-9"><a href="#cb27-9"></a><span class="co">#length(lignes_unique)</span></span>
-<span id="cb27-10"><a href="#cb27-10"></a><span class="co"># nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)</span></span>
-<span id="cb27-11"><a href="#cb27-11"></a></span>
-<span id="cb27-12"><a href="#cb27-12"></a>dupliquees <span class="ot">&lt;-</span> <span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)</span>
-<span id="cb27-13"><a href="#cb27-13"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span>dupliquees, ]</span>
-<span id="cb27-14"><a href="#cb27-14"></a>df_comp<span class="ot">=</span><span class="fu">droplevels</span>(df_comp)</span>
-<span id="cb27-15"><a href="#cb27-15"></a>df_comp<span class="sc">$</span>sand <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>sand)</span>
-<span id="cb27-16"><a href="#cb27-16"></a>df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="co"># -   Deleting duplicate measured values</span></span>
+<span id="cb26-2"><a href="#cb26-2"></a></span>
+<span id="cb26-3"><a href="#cb26-3"></a>ID_Site_dupliques <span class="ot">&lt;-</span> df_comp<span class="sc">$</span>ID_Site[<span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)]</span>
+<span id="cb26-4"><a href="#cb26-4"></a><span class="co">#length(ID_Site_dupliques)</span></span>
+<span id="cb26-5"><a href="#cb26-5"></a></span>
+<span id="cb26-6"><a href="#cb26-6"></a>lignes_dupliquees <span class="ot">&lt;-</span> <span class="fu">subset</span>(df_comp, <span class="fu">duplicated</span>(ID_Site) <span class="sc">&amp;</span> <span class="fu">duplicated</span>(sand))</span>
+<span id="cb26-7"><a href="#cb26-7"></a></span>
+<span id="cb26-8"><a href="#cb26-8"></a>lignes_unique <span class="ot">&lt;-</span> <span class="fu">unique</span>(lignes_dupliquees<span class="sc">$</span>ID_Site )</span>
+<span id="cb26-9"><a href="#cb26-9"></a><span class="co">#length(lignes_unique)</span></span>
+<span id="cb26-10"><a href="#cb26-10"></a><span class="co"># nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)</span></span>
+<span id="cb26-11"><a href="#cb26-11"></a></span>
+<span id="cb26-12"><a href="#cb26-12"></a>dupliquees <span class="ot">&lt;-</span> <span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)</span>
+<span id="cb26-13"><a href="#cb26-13"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span>dupliquees, ]</span>
+<span id="cb26-14"><a href="#cb26-14"></a>df_comp<span class="ot">=</span><span class="fu">droplevels</span>(df_comp)</span>
+<span id="cb26-15"><a href="#cb26-15"></a>df_comp<span class="sc">$</span>sand <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>sand)</span>
+<span id="cb26-16"><a href="#cb26-16"></a>df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>sable<span class="fl">.0</span>_30)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="columns">
@@ -7144,7 +7224,7 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 <li><p>Depth ?</p></li>
 <li><p>Measured values (CR = 28.7%)</p></li>
 </ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-58_c3e2f55dfef4c24a464e2558b814c9f9">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-57_cee5d12928d2d1018cb81ba9923e068c">
 <div class="cell-output cell-output-stdout">
 <pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
    0.15   19.60   30.34   33.76   46.25   88.55 </code></pre>
@@ -7153,18 +7233,18 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 <ul>
 <li>Extracted values</li>
 </ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-59_6eb179113172b83c3db594de5d5fe083">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-58_19832199593895a65ad2ebf7f681a8ee">
 <div class="cell-output cell-output-stdout">
 <pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
    8.90   23.05   33.30   34.30   44.10   79.20 </code></pre>
 </div>
 </div>
 </div><div class="column" style="width:40%;">
-<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-60_fa3b52fafe59cd5b20e7f19733242b16">
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-59_3fd8f85765eb8fc3a895157646c02855">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-60-1.png" width="384"></p>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-59-1.png" width="384"></p>
 </figure>
 </div>
 </div>
@@ -7175,11 +7255,11 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 <section id="silt" class="slide level2" data-number="5.4">
 <h2><span class="header-section-number">5.4</span> Silt</h2>
 <p><strong>Extracted values (g/kg, 0 - 30 cm)</strong></p>
-<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-61_70843e12508f82206596c60bbf166ba5">
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-60_571badbbb66c2a880d24efedb914c97b">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-61-1.png" width="960"></p>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-60-1.png" width="960"></p>
 </figure>
 </div>
 </div>
@@ -7188,44 +7268,44 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 <ul>
 <li>Clean silt column</li>
 </ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-62_6541048e27401adc2cc8d1881fa9d8df">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-61_247a658e53897ca56c5acd9e8ec7e8d4">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="co"># On recupere les deux colonnes du pH</span></span>
-<span id="cb30-2"><a href="#cb30-2"></a>df_comp<span class="ot">=</span>bdd[, <span class="fu">c</span>(<span class="st">"ID"</span>, <span class="st">"ID_Site"</span>,<span class="st">"silt"</span>,<span class="st">"limon.0_30"</span> )]</span>
-<span id="cb30-3"><a href="#cb30-3"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>silt),] </span>
-<span id="cb30-4"><a href="#cb30-4"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30),] </span>
-<span id="cb30-5"><a href="#cb30-5"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[^0-9.]"</span>, df_comp<span class="sc">$</span>silt), ]</span>
-<span id="cb30-6"><a href="#cb30-6"></a>df_comp<span class="sc">$</span>silt <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>silt)</span>
-<span id="cb30-7"><a href="#cb30-7"></a>df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30)</span>
-<span id="cb30-8"><a href="#cb30-8"></a><span class="co"># colSums(is.na(df_comp))</span></span>
-<span id="cb30-9"><a href="#cb30-9"></a></span>
-<span id="cb30-10"><a href="#cb30-10"></a></span>
-<span id="cb30-11"><a href="#cb30-11"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>silt<span class="sc">==</span> <span class="st">"NA"</span>,]</span>
-<span id="cb30-12"><a href="#cb30-12"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30<span class="sc">==</span> <span class="st">"NaN"</span>,]</span>
-<span id="cb30-13"><a href="#cb30-13"></a>df_comp <span class="ot">=</span> <span class="fu">droplevels</span>(df_comp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a><span class="co"># On recupere les deux colonnes du pH</span></span>
+<span id="cb29-2"><a href="#cb29-2"></a>df_comp<span class="ot">=</span>bdd[, <span class="fu">c</span>(<span class="st">"ID"</span>, <span class="st">"ID_Site"</span>,<span class="st">"silt"</span>,<span class="st">"limon.0_30"</span> )]</span>
+<span id="cb29-3"><a href="#cb29-3"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>silt),] </span>
+<span id="cb29-4"><a href="#cb29-4"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30),] </span>
+<span id="cb29-5"><a href="#cb29-5"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[^0-9.]"</span>, df_comp<span class="sc">$</span>silt), ]</span>
+<span id="cb29-6"><a href="#cb29-6"></a>df_comp<span class="sc">$</span>silt <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>silt)</span>
+<span id="cb29-7"><a href="#cb29-7"></a>df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30)</span>
+<span id="cb29-8"><a href="#cb29-8"></a><span class="co"># colSums(is.na(df_comp))</span></span>
+<span id="cb29-9"><a href="#cb29-9"></a></span>
+<span id="cb29-10"><a href="#cb29-10"></a></span>
+<span id="cb29-11"><a href="#cb29-11"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>silt<span class="sc">==</span> <span class="st">"NA"</span>,]</span>
+<span id="cb29-12"><a href="#cb29-12"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30<span class="sc">==</span> <span class="st">"NaN"</span>,]</span>
+<span id="cb29-13"><a href="#cb29-13"></a>df_comp <span class="ot">=</span> <span class="fu">droplevels</span>(df_comp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-63_827b7e3ce2415326c3440a3d248f8f6b">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-62_b6597db8177fd339ea8f56a90dcf4674">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a><span class="co"># -   Deleting duplicate measured values</span></span>
-<span id="cb31-2"><a href="#cb31-2"></a></span>
-<span id="cb31-3"><a href="#cb31-3"></a>ID_Site_dupliques <span class="ot">&lt;-</span> df_comp<span class="sc">$</span>ID_Site[<span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)]</span>
-<span id="cb31-4"><a href="#cb31-4"></a><span class="co">#length(ID_Site_dupliques)</span></span>
-<span id="cb31-5"><a href="#cb31-5"></a></span>
-<span id="cb31-6"><a href="#cb31-6"></a>lignes_dupliquees <span class="ot">&lt;-</span> <span class="fu">subset</span>(df_comp, <span class="fu">duplicated</span>(ID_Site) <span class="sc">&amp;</span> <span class="fu">duplicated</span>(silt))</span>
-<span id="cb31-7"><a href="#cb31-7"></a></span>
-<span id="cb31-8"><a href="#cb31-8"></a>lignes_unique <span class="ot">&lt;-</span> <span class="fu">unique</span>(lignes_dupliquees<span class="sc">$</span>ID_Site )</span>
-<span id="cb31-9"><a href="#cb31-9"></a><span class="co">#length(lignes_unique)</span></span>
-<span id="cb31-10"><a href="#cb31-10"></a><span class="co"># nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)</span></span>
-<span id="cb31-11"><a href="#cb31-11"></a></span>
-<span id="cb31-12"><a href="#cb31-12"></a></span>
-<span id="cb31-13"><a href="#cb31-13"></a>dupliquees <span class="ot">&lt;-</span> <span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)</span>
-<span id="cb31-14"><a href="#cb31-14"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span>dupliquees, ]</span>
-<span id="cb31-15"><a href="#cb31-15"></a>df_comp<span class="ot">=</span><span class="fu">droplevels</span>(df_comp)</span>
-<span id="cb31-16"><a href="#cb31-16"></a>df_comp<span class="sc">$</span>silt <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>silt)</span>
-<span id="cb31-17"><a href="#cb31-17"></a>df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="co"># -   Deleting duplicate measured values</span></span>
+<span id="cb30-2"><a href="#cb30-2"></a></span>
+<span id="cb30-3"><a href="#cb30-3"></a>ID_Site_dupliques <span class="ot">&lt;-</span> df_comp<span class="sc">$</span>ID_Site[<span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)]</span>
+<span id="cb30-4"><a href="#cb30-4"></a><span class="co">#length(ID_Site_dupliques)</span></span>
+<span id="cb30-5"><a href="#cb30-5"></a></span>
+<span id="cb30-6"><a href="#cb30-6"></a>lignes_dupliquees <span class="ot">&lt;-</span> <span class="fu">subset</span>(df_comp, <span class="fu">duplicated</span>(ID_Site) <span class="sc">&amp;</span> <span class="fu">duplicated</span>(silt))</span>
+<span id="cb30-7"><a href="#cb30-7"></a></span>
+<span id="cb30-8"><a href="#cb30-8"></a>lignes_unique <span class="ot">&lt;-</span> <span class="fu">unique</span>(lignes_dupliquees<span class="sc">$</span>ID_Site )</span>
+<span id="cb30-9"><a href="#cb30-9"></a><span class="co">#length(lignes_unique)</span></span>
+<span id="cb30-10"><a href="#cb30-10"></a><span class="co"># nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)</span></span>
+<span id="cb30-11"><a href="#cb30-11"></a></span>
+<span id="cb30-12"><a href="#cb30-12"></a></span>
+<span id="cb30-13"><a href="#cb30-13"></a>dupliquees <span class="ot">&lt;-</span> <span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)</span>
+<span id="cb30-14"><a href="#cb30-14"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span>dupliquees, ]</span>
+<span id="cb30-15"><a href="#cb30-15"></a>df_comp<span class="ot">=</span><span class="fu">droplevels</span>(df_comp)</span>
+<span id="cb30-16"><a href="#cb30-16"></a>df_comp<span class="sc">$</span>silt <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>silt)</span>
+<span id="cb30-17"><a href="#cb30-17"></a>df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>limon<span class="fl">.0</span>_30)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="columns">
@@ -7233,9 +7313,9 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 <ul>
 <li><p>Method ?</p></li>
 <li><p>Depth ?</p></li>
-<li><p>Measured values CR = 28.7%</p></li>
+<li><p>Measured values (CR = 28.7%)</p></li>
 </ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-64_a17ff60d7cf02d4278d09d46751fdf6c">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-63_4b2eb8a1dd43e02cc803226e6f6aaa12">
 <div class="cell-output cell-output-stdout">
 <pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
    0.05   33.29   45.85   45.43   59.77   81.20 </code></pre>
@@ -7244,18 +7324,18 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 <ul>
 <li>Extracted values</li>
 </ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-65_1233ec9884835c1323ba1abcc229aa9c">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-64_3d42fb9a3fc811f20ce03d18f9e25c55">
 <div class="cell-output cell-output-stdout">
 <pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
   14.60   37.02   43.90   45.83   54.20   71.50 </code></pre>
 </div>
 </div>
 </div><div class="column" style="width:40%;">
-<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-66_0bc7b6b3f339c3352da430e27e087063">
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-65_e98746dbe5d751d0bcfd6d0a8e3adf0d">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-66-1.png" width="384"></p>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-65-1.png" width="384"></p>
 </figure>
 </div>
 </div>
@@ -7266,56 +7346,56 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 <section id="clay" class="slide level2" data-number="5.5">
 <h2><span class="header-section-number">5.5</span> Clay</h2>
 <p><strong>Extracted values (g/kg, 0 - 30 cm)</strong></p>
-<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-67_9dd7675ae54695b3f739c49fc7efa2ea">
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-66_5e5b629866286f6f10fdaf900e9146af">
 <div class="cell-output cell-output-stdout">
 <pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-   0.40   17.30   22.30   24.47   31.30   53.00      75 </code></pre>
+   0.40   17.30   22.30   24.47   31.30   53.00      74 </code></pre>
 </div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-67-1.png" width="960"></p>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-66-1.png" width="960"></p>
 </figure>
 </div>
 </div>
 </div>
 <p><strong>Measured values &amp; extracted values</strong> - Clean clay column</p>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-68_32d61785c83eec489374f64a5aad4f49">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-67_e7293cf02698c470ca688fce143868ea">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a><span class="co"># On recupere les deux colonnes du pH</span></span>
-<span id="cb35-2"><a href="#cb35-2"></a>df_comp<span class="ot">=</span>bdd[, <span class="fu">c</span>(<span class="st">"ID"</span>, <span class="st">"ID_Site"</span>,<span class="st">"clay"</span>,<span class="st">"argile.0_30"</span> )]</span>
-<span id="cb35-3"><a href="#cb35-3"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>clay),] </span>
-<span id="cb35-4"><a href="#cb35-4"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30),] </span>
-<span id="cb35-5"><a href="#cb35-5"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[^0-9.]"</span>, df_comp<span class="sc">$</span>clay), ]</span>
-<span id="cb35-6"><a href="#cb35-6"></a>df_comp<span class="sc">$</span>clay <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>clay)</span>
-<span id="cb35-7"><a href="#cb35-7"></a>df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30)</span>
-<span id="cb35-8"><a href="#cb35-8"></a><span class="co"># colSums(is.na(df_comp))</span></span>
-<span id="cb35-9"><a href="#cb35-9"></a></span>
-<span id="cb35-10"><a href="#cb35-10"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>clay<span class="sc">==</span> <span class="st">"NA"</span>,]</span>
-<span id="cb35-11"><a href="#cb35-11"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30<span class="sc">==</span> <span class="st">"NaN"</span>,]</span>
-<span id="cb35-12"><a href="#cb35-12"></a>df_comp <span class="ot">=</span> <span class="fu">droplevels</span>(df_comp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="co"># On recupere les deux colonnes du pH</span></span>
+<span id="cb34-2"><a href="#cb34-2"></a>df_comp<span class="ot">=</span>bdd[, <span class="fu">c</span>(<span class="st">"ID"</span>, <span class="st">"ID_Site"</span>,<span class="st">"clay"</span>,<span class="st">"argile.0_30"</span> )]</span>
+<span id="cb34-3"><a href="#cb34-3"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>clay),] </span>
+<span id="cb34-4"><a href="#cb34-4"></a>df_comp <span class="ot">=</span>df_comp[<span class="fu">complete.cases</span>(df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30),] </span>
+<span id="cb34-5"><a href="#cb34-5"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[^0-9.]"</span>, df_comp<span class="sc">$</span>clay), ]</span>
+<span id="cb34-6"><a href="#cb34-6"></a>df_comp<span class="sc">$</span>clay <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>clay)</span>
+<span id="cb34-7"><a href="#cb34-7"></a>df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30)</span>
+<span id="cb34-8"><a href="#cb34-8"></a><span class="co"># colSums(is.na(df_comp))</span></span>
+<span id="cb34-9"><a href="#cb34-9"></a></span>
+<span id="cb34-10"><a href="#cb34-10"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>clay<span class="sc">==</span> <span class="st">"NA"</span>,]</span>
+<span id="cb34-11"><a href="#cb34-11"></a>df_comp <span class="ot">=</span> df_comp[<span class="sc">!</span>df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30<span class="sc">==</span> <span class="st">"NaN"</span>,]</span>
+<span id="cb34-12"><a href="#cb34-12"></a>df_comp <span class="ot">=</span> <span class="fu">droplevels</span>(df_comp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-69_5c0a2f755473863e50b5ae58227bcb16">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-68_50b968fc923af80286fdcdcfc058a582">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a><span class="co"># -   Deleting duplicate measured values</span></span>
-<span id="cb36-2"><a href="#cb36-2"></a></span>
-<span id="cb36-3"><a href="#cb36-3"></a>ID_Site_dupliques <span class="ot">&lt;-</span> df_comp<span class="sc">$</span>ID_Site[<span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)]</span>
-<span id="cb36-4"><a href="#cb36-4"></a><span class="co">#length(ID_Site_dupliques)</span></span>
-<span id="cb36-5"><a href="#cb36-5"></a></span>
-<span id="cb36-6"><a href="#cb36-6"></a>lignes_dupliquees <span class="ot">&lt;-</span> <span class="fu">subset</span>(df_comp, <span class="fu">duplicated</span>(ID_Site) <span class="sc">&amp;</span> <span class="fu">duplicated</span>(clay))</span>
-<span id="cb36-7"><a href="#cb36-7"></a></span>
-<span id="cb36-8"><a href="#cb36-8"></a>lignes_unique <span class="ot">&lt;-</span> <span class="fu">unique</span>(lignes_dupliquees<span class="sc">$</span>ID_Site )</span>
-<span id="cb36-9"><a href="#cb36-9"></a><span class="co">#length(lignes_unique)</span></span>
-<span id="cb36-10"><a href="#cb36-10"></a><span class="co"># nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)</span></span>
-<span id="cb36-11"><a href="#cb36-11"></a></span>
-<span id="cb36-12"><a href="#cb36-12"></a>dupliquees <span class="ot">&lt;-</span> <span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)</span>
-<span id="cb36-13"><a href="#cb36-13"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span>dupliquees, ]</span>
-<span id="cb36-14"><a href="#cb36-14"></a>df_comp<span class="ot">=</span><span class="fu">droplevels</span>(df_comp)</span>
-<span id="cb36-15"><a href="#cb36-15"></a>df_comp<span class="sc">$</span>clay <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>clay)</span>
-<span id="cb36-16"><a href="#cb36-16"></a>df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a><span class="co"># -   Deleting duplicate measured values</span></span>
+<span id="cb35-2"><a href="#cb35-2"></a></span>
+<span id="cb35-3"><a href="#cb35-3"></a>ID_Site_dupliques <span class="ot">&lt;-</span> df_comp<span class="sc">$</span>ID_Site[<span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)]</span>
+<span id="cb35-4"><a href="#cb35-4"></a><span class="co">#length(ID_Site_dupliques)</span></span>
+<span id="cb35-5"><a href="#cb35-5"></a></span>
+<span id="cb35-6"><a href="#cb35-6"></a>lignes_dupliquees <span class="ot">&lt;-</span> <span class="fu">subset</span>(df_comp, <span class="fu">duplicated</span>(ID_Site) <span class="sc">&amp;</span> <span class="fu">duplicated</span>(clay))</span>
+<span id="cb35-7"><a href="#cb35-7"></a></span>
+<span id="cb35-8"><a href="#cb35-8"></a>lignes_unique <span class="ot">&lt;-</span> <span class="fu">unique</span>(lignes_dupliquees<span class="sc">$</span>ID_Site )</span>
+<span id="cb35-9"><a href="#cb35-9"></a><span class="co">#length(lignes_unique)</span></span>
+<span id="cb35-10"><a href="#cb35-10"></a><span class="co"># nrow(df_comp) - length(ID_Site_dupliques) + length(lignes_unique)</span></span>
+<span id="cb35-11"><a href="#cb35-11"></a></span>
+<span id="cb35-12"><a href="#cb35-12"></a>dupliquees <span class="ot">&lt;-</span> <span class="fu">duplicated</span>(df_comp<span class="sc">$</span>ID_Site)</span>
+<span id="cb35-13"><a href="#cb35-13"></a>df_comp <span class="ot">&lt;-</span> df_comp[<span class="sc">!</span>dupliquees, ]</span>
+<span id="cb35-14"><a href="#cb35-14"></a>df_comp<span class="ot">=</span><span class="fu">droplevels</span>(df_comp)</span>
+<span id="cb35-15"><a href="#cb35-15"></a>df_comp<span class="sc">$</span>clay <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>clay)</span>
+<span id="cb35-16"><a href="#cb35-16"></a>df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df_comp<span class="sc">$</span>argile<span class="fl">.0</span>_30)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="columns">
@@ -7323,9 +7403,9 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 <ul>
 <li><p>Method ?</p></li>
 <li><p>Depth ?</p></li>
-<li><p>Measured values CR = 70.5%</p></li>
+<li><p>Measured values (CR = 70.5%)</p></li>
 </ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-70_dc5eae72549996eb4f449ec7af55d1bf">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-69_dbfe573927b2f7af38fc8909d3fe3418">
 <div class="cell-output cell-output-stdout">
 <pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
    0.02   24.25  199.00  209.85  343.25  664.00 </code></pre>
@@ -7334,18 +7414,18 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 <ul>
 <li>Extracted values</li>
 </ul>
-<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-71_8c705fe981949795769195a54059d62f">
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-70_8938ef6df27bd668e0a80e7434632c7a">
 <div class="cell-output cell-output-stdout">
 <pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
    0.40   18.30   25.95   26.69   35.30   53.00 </code></pre>
 </div>
 </div>
 </div><div class="column" style="width:40%;">
-<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-72_534e5ba41c7d6c593f2b593ae996c6ea">
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-71_dfd656e8f963e7f3f019752e73547457">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-72-1.png" width="384"></p>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-71-1.png" width="384"></p>
 </figure>
 </div>
 </div>
@@ -7355,14 +7435,277 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 </section>
 <section id="elevation" class="slide level2" data-number="5.6">
 <h2><span class="header-section-number">5.6</span> Elevation</h2>
-<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-73_172efb7f668a4d342171eaf9081fbc2b">
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-72_b9299b708d995be57f1e210bfa273351">
 <div class="cell-output cell-output-stdout">
 <pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
- 0.2763  8.8661 12.3935 17.6922 28.1520 90.2459 </code></pre>
+  2.763  88.661 124.229 176.939 281.520 902.460 </code></pre>
 </div>
 
 </div>
-<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-73-1.png" width="960" class="r-stretch quarto-figure-center"><div class="footer footer-default">
+<!--
+## pH_H2O_CaCl 
+
+
+::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-73_205c4f2991e8accc14708d7efc0cae77'}
+::: {.cell-output .cell-output-stdout}
+```
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+0.00267 0.39992 0.52535 0.53074 0.64690 1.29993     130 
+```
+:::
+
+::: {.cell-output-display}
+![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-73-1.png){fig-align='center' width=960}
+:::
+:::
+
+
+## pH_H2O 
+
+
+::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-74_4583f1131796685c32068d0d581134b5'}
+::: {.cell-output .cell-output-stdout}
+```
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+  4.440   6.290   6.937   6.826   7.365   8.242     130 
+```
+:::
+
+::: {.cell-output-display}
+![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-74-1.png){fig-align='center' width=960}
+:::
+:::
+
+
+## pH_CaCl 
+
+
+::: {.cell layout-align="center" hash='avancement_stage_abdou_cache/revealjs/unnamed-chunk-75_554d1471627f9817f133634df47fe1ff'}
+::: {.cell-output .cell-output-stdout}
+```
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+  3.978   5.765   6.437   6.296   6.869   7.671     130 
+```
+:::
+
+::: {.cell-output-display}
+![](avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-75-1.png){fig-align='center' width=960}
+:::
+:::
+
+
+-->
+<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-72-1.png" width="960" class="r-stretch quarto-figure-center"></section>
+<section id="phosphore-p-mgkg" class="slide level2" data-number="5.7">
+<h2><span class="header-section-number">5.7</span> Phosphore (P, mg/kg)</h2>
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-76_4b6afb61707642d66ef8859e60a18b14">
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+  7.182  35.075  42.377  41.278  48.089  68.392     129 </code></pre>
+</div>
+
+</div>
+<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-76-1.png" width="960" class="r-stretch quarto-figure-center"></section>
+<section id="azote-n-gkg" class="slide level2" data-number="5.8">
+<h2><span class="header-section-number">5.8</span> Azote (N, g/kg)</h2>
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-77_9ebf5a5114d91b96179cfbd3176ce9ca">
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+ 0.8697  1.6357  1.8578  1.9957  2.2879  5.0805     130 </code></pre>
+</div>
+
+</div>
+<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-77-1.png" width="960" class="r-stretch quarto-figure-center"></section>
+<section id="potassium-k-mgkg" class="slide level2" data-number="5.9">
+<h2><span class="header-section-number">5.9</span> Potassium (K, mg/kg)</h2>
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-78_61d5427d39a819d98e4b6fd1425a97a3">
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+  63.28  207.85  237.38  244.21  275.13  690.57     129 </code></pre>
+</div>
+
+</div>
+<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-78-1.png" width="960" class="r-stretch quarto-figure-center"></section>
+<section id="cn" class="slide level2" data-number="5.10">
+<h2><span class="header-section-number">5.10</span> C/N</h2>
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-79_06e383f63ca15c2b997b4ada54b37011">
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+  8.140   9.746  10.512  10.898  11.822  20.064     130 </code></pre>
+</div>
+
+</div>
+<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-79-1.png" width="960" class="r-stretch quarto-figure-center"></section>
+<section id="capacité-déchange-de-cations-cec-cmolkg" class="slide level2" data-number="5.11">
+<h2><span class="header-section-number">5.11</span> Capacité d’échange de cations (CEC, cmol/kg)</h2>
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-80_29bfa0f8079377c818697d79276c2a0f">
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+  6.206  11.880  15.586  15.983  20.068  31.112     130 </code></pre>
+</div>
+
+</div>
+<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-80-1.png" width="960" class="r-stretch quarto-figure-center"></section>
+<section id="carbonates-de-calcium-caco3-gkg" class="slide level2" data-number="5.12">
+<h2><span class="header-section-number">5.12</span> Carbonates de calcium (CaCO3, g/kg)</h2>
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-81_815274d594cf6f150f91e7a0024f1afb">
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+   0.00   22.68   51.64   74.47  117.99  409.27     129 </code></pre>
+</div>
+
+</div>
+<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-81-1.png" width="960" class="r-stretch quarto-figure-center"></section></section>
+<section>
+<section id="analyses-explorations" class="title-slide slide level1 center" data-number="6">
+<h1><span class="header-section-number">6</span> Analyses explorations</h1>
+
+</section>
+<section id="réduction-du-jeu-de-donnée" class="slide level2" data-number="6.1">
+<h2><span class="header-section-number">6.1</span> Réduction du jeu de donnée</h2>
+<div class="cell" data-layout-align="center" data-animation.hook="gifski" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-82_fe0a36d8bf3ea906a0d091071da9842b">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1"></a>id_col<span class="ot">=</span><span class="fu">c</span>(<span class="st">"ID"</span>,<span class="st">"Programme"</span>,<span class="st">"Annee"</span>,<span class="st">"ID_Site"</span>,<span class="st">"Protocole"</span>)</span>
+<span id="cb45-2"><a href="#cb45-2"></a></span>
+<span id="cb45-3"><a href="#cb45-3"></a>vdt_col<span class="ot">=</span><span class="fu">c</span>(<span class="st">"AB_tot"</span>, <span class="st">"BM_tot"</span>, <span class="st">"Richesse_tot"</span>)</span>
+<span id="cb45-4"><a href="#cb45-4"></a></span>
+<span id="cb45-5"><a href="#cb45-5"></a>land_cover_col<span class="ot">=</span><span class="fu">c</span>(<span class="st">"clcm_lvl3"</span>)</span>
+<span id="cb45-6"><a href="#cb45-6"></a></span>
+<span id="cb45-7"><a href="#cb45-7"></a>topo_col<span class="ot">=</span><span class="fu">c</span>(<span class="st">"elevation"</span>,<span class="st">"gps_x"</span>,<span class="st">"gps_y"</span>)</span>
+<span id="cb45-8"><a href="#cb45-8"></a></span>
+<span id="cb45-9"><a href="#cb45-9"></a></span>
+<span id="cb45-10"><a href="#cb45-10"></a>soil_col<span class="ot">=</span><span class="fu">c</span>(<span class="st">"ph_0_a_30"</span>,<span class="st">"sable.0_30"</span>,<span class="st">"limon.0_30"</span>,<span class="st">"argile.0_30"</span>,<span class="st">"c_orga_0_a_30"</span>,<span class="st">"P"</span>,<span class="st">"N"</span>,<span class="st">"K"</span>,<span class="st">"CN"</span>,<span class="st">"CEC"</span>,<span class="st">"CaCO3"</span>)</span>
+<span id="cb45-11"><a href="#cb45-11"></a></span>
+<span id="cb45-12"><a href="#cb45-12"></a></span>
+<span id="cb45-13"><a href="#cb45-13"></a>climate_col<span class="ot">=</span><span class="fu">c</span>()</span>
+<span id="cb45-14"><a href="#cb45-14"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">19</span>){</span>
+<span id="cb45-15"><a href="#cb45-15"></a>  climate_col<span class="ot">=</span><span class="fu">c</span>(climate_col, <span class="fu">paste0</span>(<span class="st">"bio"</span>,i) )</span>
+<span id="cb45-16"><a href="#cb45-16"></a>}</span>
+<span id="cb45-17"><a href="#cb45-17"></a>climate_col<span class="ot">=</span><span class="fu">c</span>(climate_col,<span class="st">"cmi_mean"</span>,<span class="st">"gdd0"</span>,<span class="st">"gdd10"</span>,<span class="st">"hurs_mean"</span>,<span class="st">"pet_penman_mean"</span>)</span>
+<span id="cb45-18"><a href="#cb45-18"></a></span>
+<span id="cb45-19"><a href="#cb45-19"></a>bdd_explo<span class="ot">=</span> bdd[,<span class="fu">c</span>(id_col,vdt_col,land_cover_col,topo_col,soil_col,climate_col)]</span>
+<span id="cb45-20"><a href="#cb45-20"></a><span class="co"># str(bdd_explo)</span></span>
+<span id="cb45-21"><a href="#cb45-21"></a>bdd_explo<span class="sc">$</span>ID <span class="ot">=</span> <span class="fu">as.factor</span>(bdd_explo<span class="sc">$</span>ID)</span>
+<span id="cb45-22"><a href="#cb45-22"></a></span>
+<span id="cb45-23"><a href="#cb45-23"></a></span>
+<span id="cb45-24"><a href="#cb45-24"></a><span class="co"># Renome</span></span>
+<span id="cb45-25"><a href="#cb45-25"></a>new_soil_col<span class="ot">=</span><span class="fu">c</span>(<span class="st">"pH"</span>,<span class="st">"sand"</span>,<span class="st">"silt"</span>,<span class="st">"clay"</span>,<span class="st">"C"</span>,<span class="st">"P"</span>,<span class="st">"N"</span>,<span class="st">"K"</span>,<span class="st">"CN"</span>,<span class="st">"CEC"</span>,<span class="st">"CaCO3"</span>)</span>
+<span id="cb45-26"><a href="#cb45-26"></a>bdd_explo <span class="ot">&lt;-</span> <span class="fu">rename</span>(bdd_explo, <span class="sc">!!</span><span class="fu">setNames</span>(soil_col, new_soil_col))</span>
+<span id="cb45-27"><a href="#cb45-27"></a></span>
+<span id="cb45-28"><a href="#cb45-28"></a>cl_original <span class="ot">&lt;-</span> <span class="fu">levels</span>(bdd_explo<span class="sc">$</span>clcm_lvl3)</span>
+<span id="cb45-29"><a href="#cb45-29"></a>new_cl <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"cl_blf"</span>, <span class="st">"cl_cf"</span>, <span class="st">"cl_gua"</span>, <span class="st">"cl_mf"</span>, <span class="st">"cl_ng"</span>, <span class="st">"cl_nial"</span>, <span class="st">"cl_p"</span>, <span class="st">"cl_v"</span>)</span>
+<span id="cb45-30"><a href="#cb45-30"></a>bdd_explo<span class="sc">$</span>clcm_lvl3 <span class="ot">&lt;-</span> <span class="fu">factor</span>(bdd_explo<span class="sc">$</span>clcm_lvl3, <span class="at">levels =</span> cl_original, <span class="at">labels =</span> new_cl)</span>
+<span id="cb45-31"><a href="#cb45-31"></a></span>
+<span id="cb45-32"><a href="#cb45-32"></a></span>
+<span id="cb45-33"><a href="#cb45-33"></a></span>
+<span id="cb45-34"><a href="#cb45-34"></a></span>
+<span id="cb45-35"><a href="#cb45-35"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">names</span>(bdd_explo[,<span class="dv">6</span><span class="sc">:</span><span class="dv">47</span>])){</span>
+<span id="cb45-36"><a href="#cb45-36"></a>  <span class="co">#par(mfrow=c(2,2))</span></span>
+<span id="cb45-37"><a href="#cb45-37"></a>  <span class="fu">plot</span>(bdd_explo[[i]], <span class="at">main=</span>i)</span>
+<span id="cb45-38"><a href="#cb45-38"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+
+</div>
+<img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-82-.gif" width="960" class="r-stretch quarto-figure-center"></section>
+<section id="test-de-correlation-intra-catégories" class="slide level2" data-number="6.2">
+<h2><span class="header-section-number">6.2</span> Test de correlation : intra catégories</h2>
+<ul>
+<li><strong>Topographie</strong></li>
+</ul>
+<p>Elevation est corrélé a gps_x mais on garde les deux pour le moment.</p>
+<div class="cell" data-layout-align="center" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-83_53581a41b7b7262bd21ffbf781fe015e">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-83-1.png" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><br> - <strong>Soil data</strong></p>
+<div class="columns">
+<div class="column" style="width:25%;">
+<p><br> Colonnes supprimée : <em>silt</em></p>
+</div><div class="column" style="width:75%;">
+<div class="cell" data-layout-align="right" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-85_4ac0a32bec5600b9f15a3b61694f6a2c">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-right">
+<figure>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-85-1.png" width="864"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p><br> - <strong>Climat data</strong></p>
+<div class="columns">
+<div class="column" style="width:25%;">
+<p><br> Colonnes supprimmées :<em>bio2, bio4, bio5, bio6, bio7, bio10, bio11, bio13, bio16, bio17, bio18, bio19, gdd0, gdd10, cmi_mean</em></p>
+</div><div class="column" style="width:75%;">
+<div class="cell" data-layout-align="right" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-87_ef0f5d501f401ef09314b37e8b195049">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-right">
+<figure>
+<p><img data-src="avancement_stage_abdou_files/figure-revealjs/unnamed-chunk-87-1.png" width="864"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="test-de-correlation-inter-catégories" class="slide level2" data-number="6.3">
+<h2><span class="header-section-number">6.3</span> Test de correlation : inter catégories</h2>
+<ul>
+<li>On enleve gps_x et gps_y</li>
+</ul>
+<p><img data-src="graphes/interC_corrplot.png"> {width=“1200”,aligne=“center”}</p>
+</section>
+<section id="vif" class="slide level2" data-number="6.4">
+<h2><span class="header-section-number">6.4</span> VIF</h2>
+<div class="cell" data-hash="avancement_stage_abdou_cache/revealjs/unnamed-chunk-89_435d6aacd7290ec0e667edf1ad7a8cea">
+<div class="cell-output cell-output-stdout">
+<pre><code>1 variables from the 18 input variables have collinearity problem: 
+ 
+bio14 
+
+After excluding the collinear variables, the linear correlation coefficients ranges between: 
+min correlation ( bio8 ~ P ):  -0.0004338207 
+max correlation ( bio9 ~ bio1 ):  0.6955642 
+
+---------- VIFs of the remained variables -------- 
+   Variables      VIF
+1         pH 3.068144
+2       sand 2.743790
+3       clay 3.524068
+4          C 1.977684
+5          P 2.496130
+6          N 2.685014
+7          K 1.412954
+8         CN 2.273056
+9        CEC 3.893552
+10     CaCO3 2.178953
+11      bio1 7.443596
+12      bio3 1.898968
+13      bio8 1.509229
+14      bio9 6.106326
+15     bio12 1.818369
+16     bio15 4.194490
+17 hurs_mean 4.285893</code></pre>
+</div>
+</div>
+<ul>
+<li>On enleve “bio14” car la plus forte VIF</li>
+</ul>
+</section>
+<section id="aic" class="slide level2" data-number="6.5">
+<h2><span class="header-section-number">6.5</span> AIC</h2>
+</section>
+<section id="acp" class="slide level2" data-number="6.6">
+<h2><span class="header-section-number">6.6</span> ACP</h2>
+<div class="footer footer-default">
 
 </div>
 </section></section>
