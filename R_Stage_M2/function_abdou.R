@@ -1,51 +1,5 @@
 
-df= bdd_explo
-df$BM_tot=NULL
-df=drop_na(df)
-names(df)
-rdadoubs=rda(df[,c(6,7)],df[,8:30]) # VARIABLE A EXPLIQUER ET VARIABLE EXPLICATIVE
-#if env is not standardized, you can add 'scale=TRUE' in the rda() formula
-rdadoubs 
-#what is the percentage of variance of the fish data which is explained by the environment?
-#test the RDA with vegan:
 
-
-# L ENV EXLIQUE 70% DES POISSON
-# LA SOMME DE EIG CONTRAINT DONE 0.35 ET 0.14 DES NON CONTRAINTE
-# AJOUT DES % DES DEUX (PAR RAPPORT A CONTRAINTE ET PAR RAPPORT AU TOTAL)
-
-
-
-anova.cca(rdadoubs) #with vegan
-
-# SIGNIFICATIF
-
-#test the colinearity between explanoatory variables ? All number must be smaller than 10, otherwise remove one of the parameter
-test=vif.cca(rdadoubs) 
-test
-#what's wrong? what can you do?
-
-
-# SEUIF VIF = 10
-
-#perform the RDA with selection of explanatory variables 
-rdadoubs=rda(fish~.,env)
-rdadoubs=rda(df[,c(6,7)]~.,df[,8:30])
-ordistep(rdadoubs,perm.max=500)
-#allow to check which variables would be selected. Control if they are correlated ?
-#select ("oxy","alt","bdo","dfs"): what's wrong?
-#I propose to select :
-selected=env[,c("oxy","alt","bdo")]
-selected= as.data.frame(scale(selected, center=TRUE, scale=TRUE))
-rdadoubs=rda(fish,selected)
-rdadoubs
-
-
-# L ENV EXLIQUE 57% DES POISSON
-
-#test the colinearity between parameters. 
-test=vif.cca(rdadoubs) 
-test
 
 # Comparaison raster origine et modifier ----------------------------------
 

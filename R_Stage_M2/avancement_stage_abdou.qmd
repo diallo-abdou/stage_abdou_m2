@@ -17,7 +17,7 @@ slide-number: true
 margin: 0.1
 #center: true
 code-fold: true
-width: 1200
+width: 1300
 height: 700
 toc_depth: 1
 execute: 
@@ -89,6 +89,19 @@ execute:
   library(plotly)
   library(PerformanceAnalytics)
   library(usdm)
+  library(vcd) # pour la distribution des var reponse
+  library(prospectr)# pour split data avec kenSton()
+  library(glmnet)
+  library(randomForest)
+  library(doParallel)
+  library(gbm)
+  library(kernlab)
+  library(e1071)
+  library(ggforce)
+  #library(keras)
+  #library(tensorflow)
+  library(neuralnet)
+  library(parallel)
 
 
 
@@ -1639,14 +1652,13 @@ bdd_explo$ID = as.factor(bdd_explo$ID)
 new_soil_col=c("pH","sand","silt","clay","C","P","N","K","CN","CEC","CaCO3")
 bdd_explo <- rename(bdd_explo, !!setNames(soil_col, new_soil_col))
 
-cl_original <- levels(bdd_explo$clcm_lvl3)
-new_cl <- c("blf", "cf", "gua", "mf", "ng", "nial", "p", "v")
-bdd_explo$clcm_lvl3 <- factor(bdd_explo$clcm_lvl3, levels = cl_original, labels = new_cl)
-
-bdd_explo <- bdd_explo %>% 
-  rename(clc3 = clcm_lvl3)
 bdd_explo <- bdd_explo %>% 
   rename(PET = pet_penman_mean)
+climate_col=c()
+for (i in 1:19){
+  climate_col=c(climate_col, paste0("bio",i) )
+}
+climate_col=c(climate_col,"cmi_mean","gdd0","gdd10","hurs_mean","PET")
 
 
 col_graph=c(vdt_col,land_cover_col,topo_col,new_soil_col,climate_col)
@@ -1662,20 +1674,23 @@ var_quanti = c(topo_col,new_soil_col,climate_col)
 for (col in var_quanti) {
   bdd_explo[[col]] <- scale(bdd_explo[[col]])
 }
-summary(bdd_explo[, var_quanti])
+# summary(bdd_explo[, var_quanti])
+# str(bdd_explo[, var_quanti])
 ```
 
 ## Test de correlation : intra catégories
 
 -   **Topographie**
 
-Elevation est corrélé a gps_x mais on garde les deux pour le moment.
+Colonnes supprimée : *gps_x*
 
 ```{r,echo=FALSE,fig.align='center'}
 # ggpairs(bdd_explo[,topo_col])
 correlation_matrix <- cor(bdd_explo[,topo_col],use = "na.or.complete")
 # 
 corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 1,number.cex = 1)
+topo_sup=c("gps_x")
+bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), topo_sup)]
 
 ```
 
@@ -1724,7 +1739,7 @@ bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), soil_sup)]
 
 
 # cor_function_seuil(data = bdd_explo[,climate_col], seuil = 0.7)
-climat_sup=c("bio2","bio4","bio5","bio6","bio7","bio10","bio11","bio13","bio16","bio17","bio18","bio19","gdd0","gdd10", "cmi_mean")
+climat_sup=c("bio2","bio4","bio5","bio6","bio7", "bio9", "bio10","bio11","bio13","bio16","bio17","bio18","bio19","gdd0","gdd10", "cmi_mean","PET")
 ```
 
 ::: columns
@@ -1748,13 +1763,13 @@ bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), climat_sup)]
 
 
 ## Test de correlation : inter catégories
--   On enleve gps_x et gps_y
+
+Colonnes supprimée : *gps_y*
 ```{r,echo=FALSE}
 # correlation_matrix <- cor(bdd_explo[,10:31],use = "na.or.complete")
 # corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 0.5,number.cex = 0.5,mar = c(0,0,0,0))
 
-var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio9",
-      "bio12","bio14","bio15","hurs_mean","PET")
+# var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio12","bio14","bio15","hurs_mean","gps_y")
 # 
 # correlation_matrix <- cor(bdd_explo[,var],use = "na.or.complete")
 # 
@@ -1767,7 +1782,7 @@ var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","
 # dev.off()
 
 
-bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), c("gps_x","gps_y"))]
+bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), c("gps_y"))]
 ```
 
 ![](graphes/interC_corrplot.png) {width="1200",aligne="center"}
@@ -1776,44 +1791,86 @@ bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), c("gps_x","gps_y"))]
 
 ## VIF
 ```{r}
-var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio9",
-      "bio12","bio14","bio15","hurs_mean", "PET")
-#usdm::vif(bdd_explo[,var])
-#usdm::vifcor(bdd_explo[,var], th = 0.9, keep = NULL, method = 'pearson')
-usdm::vifstep(bdd_explo[,var], th = 10, keep = NULL, method = 'pearson')
+var_avant=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3",
+      "bio8","bio12","bio14","bio15","hurs_mean")
+#usdm::vif(bdd_explo[,var_avant])
+#usdm::vifcor(bdd_explo[,var_avant], th = 0.9, keep = NULL, method = 'pearson')
+usdm::vifstep(bdd_explo[,var_avant], th = 10, keep = NULL, method = 'pearson')
 # -   On enleve "bio14" car la plus forte VIF
 bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), c("bio14"))]
+
+var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio12","bio15","hurs_mean")
+```
+
+## Création des variables factices
+
+```{r,echo=TRUE}
+bdd_explo$clcm_lvl3= as.factor(bdd_explo$clcm_lvl3)
+summary_df <- as.data.frame(summary(bdd_explo$clcm_lvl3))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df,padding = 5)
+```
+
+-   Merging:
+    *Mixed forest = Broad\_leaved forest +* 
+                    *Coniferous forest +* 
+                    *Mixed forest*
+
+```{r, echo=TRUE}
+levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Broad-leaved forest"] <- "Mixed forest"
+levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Coniferous forest"] <- "Mixed forest"
+bdd_explo$clcm_lvl3= as.factor(bdd_explo$clcm_lvl3)
+# summary_df <- as.data.frame(summary(bdd_explo$clcm_lvl3))
+# colnames(summary_df) <- c("Numbers")
+# kable(summary_df,padding = 5)
+```
+
+-   Abréviation des levels
+
+```{r, echo=TRUE}
+cl_original <- levels(bdd_explo$clcm_lvl3)
+new_cl <- c("mf","gua", "ng", "nial", "p", "v")
+bdd_explo$clcm_lvl3 <- factor(bdd_explo$clcm_lvl3, levels = cl_original, labels = new_cl)
+
+bdd_explo <- bdd_explo %>% 
+  rename(clc3 = clcm_lvl3)
+```
+
+-   Variables
+
+```{r,echo=TRUE}
+bdd_explo <- dummy_cols(bdd_explo, select_columns = c("clc3"))
+clc3_col= c("clc3_mf","clc3_gua", "clc3_ng", "clc3_nial", "clc3_p", "clc3_v")
+head(bdd_explo[,clc3_col])
+# str(bdd_explo[,clc3_col])
 ```
 
 
 ```{r}
-# names(bdd_explo)
-bdd_explo <- dummy_cols(bdd_explo, select_columns = c("clc3"))
-# head(bdd_explo)
-
-# usdm::vifstep(bdd_explo[,10:36], th = 10, keep = NULL, method = 'pearson')
-# usdm::vif(bdd_explo[,10:36])
-# usdm::vifcor(bdd_explo[,10:36], th = 0.9, keep = NULL, method = 'pearson')
+# usdm::vif(bdd_explo[,c(var,clc3_col)])
+# usdm::vifcor(bdd_explo[,c(var,clc3_col)], th = 0.9, keep = NULL, method = 'pearson')
+# usdm::vifstep(bdd_explo[,c(var,clc3_col)], th = 10, keep = NULL, method = 'pearson')
 # summary(bdd_explo$clc3)
 ```
 
 
 ## ACP
-```{r}
+```{r, echo=TRUE, fig.align='center'}
 # On supprime les lignes avec des NA dans toutes les colonnes sauf BM_tot
 # colSums(is.na(bdd_explo))
 bdd_explo <- bdd_explo[apply(bdd_explo[, !colnames(bdd_explo) %in% "BM_tot"], 1, function(x) all(!is.na(x))), ]
 # colSums(is.na(bdd_explo))
 
 
-var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio9","bio12","bio15","hurs_mean", "PET")
+var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3",
+      "bio8","bio12","bio15","hurs_mean")
 
 data_acp = bdd_explo[, var]
 acp0 <- PCA(data_acp, graph = FALSE)
 
 
 ## Choix du nombre d'axes
-acp0$eig
+# acp0$eig
 fviz_eig(acp0, addlabels = TRUE) # on prend les trois premiers axes
 contrib_axes <- acp0$var$contrib[, 1:3]  # 3 premiers axes
 contrib_axes <- round(contrib_axes, 3)   # Plus facile a lire
@@ -1878,14 +1935,494 @@ fviz_pca_ind(
 
 ```{r}
 # Classification
-class1 = HCPC(acp0)
-plot(class1$call$t$inert.gain, type = "s")
-#Je choisis finalement 4 groupes
-class1 = HCPC(acp0, nb.clust = 4)
-fviz_dend(class1)
-fviz_cluster(class1)
-fviz_cluster(class1, ellipse.type = "norm", ellipse.level = 0.8)    #Groupes
+# class1 = HCPC(acp0)
+# plot(class1$call$t$inert.gain, type = "s")
+# #Je choisis finalement 4 groupes
+# class1 = HCPC(acp0, nb.clust = 4)
+# fviz_dend(class1)
+# fviz_cluster(class1)
+# fviz_cluster(class1, ellipse.type = "norm", ellipse.level = 0.8)    #Groupes
 ```
 
-## Questions
+
+# Selecting variables with regsubsets()
+```{r, echo=TRUE}
+# colSums(is.na(bdd_explo))
+bdd_explo <- bdd_explo[apply(bdd_explo[, !colnames(bdd_explo) %in% "BM_tot"], 1, function(x) all(!is.na(x))), ]
+# colSums(is.na(bdd_explo))
+dim(bdd_explo)
+```
+
+## AB_tot
+```{r, echo=TRUE, fig.align='center'}
+# names(bdd_explo)
+supp = c("ID","Programme","Annee","ID_Site", "Protocole","BM_tot", "Richesse_tot","clc3")
+df_AB_tot= bdd_explo[, setdiff(names(bdd_explo), supp)]
+df_AB_tot= df_AB_tot[, setdiff(names(df_AB_tot), clc3_col)]
+# str(df_AB_tot)
+# colSums(is.na(df_AB_tot))
+results_AB_tot <- regsubsets(AB_tot ~ ., data = df_AB_tot,method = "exhaustive",nvmax =17 )
+# summary(results_AB_tot)
+rsq_AB_tot= round (summary(results_AB_tot)$rsq,2)
+adjr2_AB_tot= round(summary(results_AB_tot)$adjr2,2)
+cp_AB_tot=round (summary(results_AB_tot)$cp,2)
+bic_AB_tot=round(summary(results_AB_tot)$bic,2)
+```
+
+
+-   Selection by R² : stable from `r which.max(rsq_AB_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_AB_tot, scale = "r2", main='R² criteria')
+```
+
+-   Selection by R² adj : stable from `r which.max(adjr2_AB_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_AB_tot, scale = "adjr2",main='R² adj criteria')
+```
+
+-   Selection by Cp : stable from `r which.min(cp_AB_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_AB_tot, scale = "Cp",main='Mallows Cp criteria')
+```
+
+-   Selection by BIC : stable from `r which.min(bic_AB_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_AB_tot, scale = "bic",main="BIC criteria")
+```
+
+```{r}
+nbr_AB_tot= max(which.max(rsq_AB_tot),which.max(adjr2_AB_tot),which.min(cp_AB_tot),which.min(bic_AB_tot))
+best_var_AB_tot=coefficients(results_AB_tot, id = nbr_AB_tot)
+best_var_AB_tot=names(best_var_AB_tot)[-1]
+```
+-   Les `r length(best_var_AB_tot)` meilleurs variables sont: **`r best_var_AB_tot`**
+
+
+
+## BM_tot
+
+-   Suppression de `r sum(is.na(bdd_explo$BM_tot))` lignes de NA de BM_tot
+```{r, echo=TRUE, fig.align='center'}
+# names(bdd_explo)
+supp = c("ID","Programme","Annee","ID_Site", "Protocole","AB_tot", "Richesse_tot","clc3")
+df_BM_tot= bdd_explo[, setdiff(names(bdd_explo), supp)]
+df_BM_tot= df_BM_tot[, setdiff(names(df_BM_tot), clc3_col)]
+df_BM_tot=drop_na(df_BM_tot)
+# str(df_BM_tot)
+# colSums(is.na(df_BM_tot))
+results_BM_tot <- regsubsets(BM_tot ~ ., data = df_BM_tot,method = "exhaustive",nvmax =17 )
+# summary(results_BM_tot)
+rsq_BM_tot= round (summary(results_BM_tot)$rsq,2)
+adjr2_BM_tot= round(summary(results_BM_tot)$adjr2,2)
+cp_BM_tot=round (summary(results_BM_tot)$cp,2)
+bic_BM_tot=round(summary(results_BM_tot)$bic,2)
+```
+
+
+-   Selection by R² : stable from `r which.max(rsq_BM_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_BM_tot, scale = "r2", main='R² criteria')
+```
+
+-   Selection by R² adj : stable from `r which.max(adjr2_BM_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_BM_tot, scale = "adjr2",main='R² adj criteria')
+```
+
+-   Selection by Cp : stable from `r which.min(cp_BM_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_BM_tot, scale = "Cp",main='Mallows Cp criteria')
+```
+
+-   Selection by BIC : stable from `r which.min(bic_BM_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_BM_tot, scale = "bic",main="BIC criteria")
+```
+
+```{r}
+nbr_BM_tot= max(which.max(rsq_BM_tot),which.max(adjr2_BM_tot),which.min(cp_BM_tot),which.min(bic_BM_tot))
+best_var_BM_tot=coefficients(results_BM_tot, id = nbr_BM_tot)
+best_var_BM_tot=names(best_var_BM_tot)[-1]
+```
+-   Les `r length(best_var_BM_tot)` meilleurs variables sont: **`r best_var_BM_tot`**
+
+
+
+## Richesse_tot
+```{r, echo=TRUE, fig.align='center'}
+# names(bdd_explo)
+supp = c("ID","Programme","Annee","ID_Site", "Protocole","BM_tot", "AB_tot","clc3")
+df_Richesse_tot= bdd_explo[, setdiff(names(bdd_explo), supp)]
+df_Richesse_tot= df_Richesse_tot[, setdiff(names(df_Richesse_tot), clc3_col)]
+# str(df_Richesse_tot)
+# colSums(is.na(df_Richesse_tot))
+results_Richesse_tot <- regsubsets(Richesse_tot ~ ., data = df_Richesse_tot,method = "exhaustive",nvmax =17 )
+# summary(results_Richesse_tot)
+rsq_Richesse_tot= round (summary(results_Richesse_tot)$rsq,2)
+adjr2_Richesse_tot= round(summary(results_Richesse_tot)$adjr2,2)
+cp_Richesse_tot=round (summary(results_Richesse_tot)$cp,2)
+bic_Richesse_tot=round(summary(results_Richesse_tot)$bic,2)
+```
+
+
+-   Selection by R² : stable from `r which.max(rsq_Richesse_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_Richesse_tot, scale = "r2", main='R² criteria')
+```
+
+-   Selection by R² adj : stable from `r which.max(adjr2_Richesse_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_Richesse_tot, scale = "adjr2",main='R² adj criteria')
+```
+
+-   Selection by Cp : stable from `r which.min(cp_Richesse_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_Richesse_tot, scale = "Cp",main='Mallows Cp criteria')
+```
+
+-   Selection by BIC : stable from `r which.min(bic_Richesse_tot)` variables
+```{r, echo=FALSE, fig.align='center'}
+plot(results_Richesse_tot, scale = "bic",main="BIC criteria")
+```
+
+```{r}
+nbr_Richesse_tot= max(which.max(rsq_Richesse_tot),which.max(adjr2_Richesse_tot),which.min(cp_Richesse_tot),which.min(bic_Richesse_tot))
+best_var_Richesse_tot=coefficients(results_Richesse_tot, id = nbr_Richesse_tot)
+best_var_Richesse_tot=names(best_var_Richesse_tot)[-1]
+```
+-   Les `r length(best_var_Richesse_tot)` meilleurs variables sont: **`r best_var_Richesse_tot`**
+
+
+## Synthèses
+```{r}
+all_var=unique(c(best_var_AB_tot,best_var_BM_tot,best_var_Richesse_tot))
+col_max=max(c(length(best_var_AB_tot),length(best_var_BM_tot),length(best_var_Richesse_tot)))
+
+
+# Colonnes communes
+colonnes_communes <- intersect(intersect(best_var_AB_tot, best_var_BM_tot), best_var_Richesse_tot)
+
+resultat_tableau <- data.frame(
+  Var_AB_tot =c(best_var_AB_tot, rep(" ", col_max - length(best_var_AB_tot))),
+  
+  Var_BM_tot =  c(best_var_BM_tot, rep(" ", col_max - length(best_var_BM_tot))),
+  
+  Var_Richesse_tot =  c(best_var_Richesse_tot, rep(" ", col_max -    length(best_var_Richesse_tot))),
+  
+  Communes =c(colonnes_communes, rep(" ", col_max - length(colonnes_communes)))
+)
+kable(resultat_tableau,padding=10)
+
+
+```
+**bio1** = mean annual air temperature
+
+**bio3** = isothermality
+
+**bio8** = mean air temperatures of the wettest quarter
+
+**bio8** = mean air temperatures of the wettest quarter
+
+**bio12** = annual precipitation amount
+
+**bio15** = precipitation seasonality
+
+**hurs_mean** = Mean monthly near-surface relative humidity
+
+
+
+# Modélisation
+```{r}
+supp = c("ID","Programme","Annee","ID_Site", "Protocole","AB_tot","BM_tot","Richesse_tot", "AB_tot","clc3")
+predicteurs=c(names(df_mod)[! names(df_mod) %in% supp])
+# names(bdd_explo[,10:26])
+df_mod=bdd_explo
+
+
+set.seed(42)  # Pour rendre les résultats reproductibles
+index <- createDataPartition(df_mod$clc3, p = 0.8, list = FALSE)
+
+# Séparer les données en ensembles d'entraînement et de test
+df_train <- df_mod[index, ]  # Données d'entraînement
+df_test <- df_mod[-index, ]  # Données de test
+df_train = droplevels(df_train)
+df_test = droplevels(df_test)
+# summary(df_train$clc3)
+# summary(df_test$clc3)
+# summary(df_mod$clc3)
+# 80*summary(df_mod$clc3)/100
+```
+
+## Models
+
+```{r}
+GLM <- function(var_rep, df_app, df_valid,family = 'gaussian'){
+  var_mod=c(var_rep,predicteurs)
+  df_app = df_app[,var_mod]
+  df_valid = df_valid[,var_mod]
+  formula <- substitute(var_rep ~ ., list(var_rep = as.name(var_rep)))
+  # entrainement du modele sur le jeu d'entrainement
+  modelglm<-glm(formula,family = family ,data = df_app)
+  
+  # Prediction sur le jeu de validation
+  prev.glm<-predict(modelglm,newdata=as.data.frame(df_valid[,predicteurs]))
+  
+  # Calcul du RMSE pour évaluer la qualite du modele
+  rmse <- round (sqrt(mean((df_valid[,var_rep] - prev.glm)^2)),2)
+  
+  
+ 
+  formula <- substitute(var_rep ~ 1, list(var_rep = as.name(var_rep)))
+  null.deviance <- deviance(lm(formula, data = df_app))
+  deviance<- deviance(tests)
+  r_squared = with(summary(tests), 1 - deviance/null.deviance) # McFadden's R-squared
+  
+  r_adj <- round (100*r_squared,2)
+  
+  
+  results <- list(RMSE = rmse, R_squared= r_adj)
+  return(results)
+}
+
+# GLM(var_rep ="AB_tot" , df_app=df_train, df_valid = df_test,family = 'gaussian')
+
+
+
+GAM <- function(var_rep, df_app, df_valid, family = 'gaussian',method = "REML"){
+  # var_mod=c(var_rep,predicteurs)
+  # df_app = df_app[,var_mod]
+  # df_valid = df_valid[,var_mod]
+  # formula <- substitute(var_rep ~ ,  list(var_rep = as.name(var_rep)))
+  
+  # entrainement du modele sur le jeu d'entrainement
+  modelgam<-gam(AB_tot ~ clc3 + s(elevation) + s(pH) + s(silt) + s(clay) + s(C) + s(N) + s(K) + s(CN) + s(CEC) + s(CaCO3) + s(bio1) + s(bio3) + s(bio8) + s(bio12) + s(bio15) + s(hurs_mean) ,
+        family=family,method = method,data = df_app)
+  
+  # Prediction sur le jeu de validation
+  prev.gam<-predict(modelgam,newdata=as.data.frame(df_valid[,9:26]))
+  
+  # Calcul du RMSE pour évaluer la qualite du modele
+  rmse <- round (sqrt(mean((df_valid[,var_rep] - prev.gam)^2)),2)
+
+  
+  null.deviance <- modelgam$null.deviance
+  deviance<- modelgam$deviance
+  r_squared = with(summary(tests), 1 - deviance/null.deviance) # McFadden's R-squared
+  
+  r_adj <- round (100*r_squared,2)
+  
+  
+  results <- list(RMSE = rmse, R_squared= r_adj)
+  return(results)
+}
+
+# GAM(var_rep ="AB_tot" , df_app=df_train, df_valid = df_test,family = 'gaussian')
+
+
+
+
+ForetAlea <- function(var_rep, df_app, df_valid){
+  
+  # Nombre de variables tirées aléatoirement pour la construction des arbre : mtry =    1/nombre de variable explicatives totales
+  # nombre d'arbres : ntree = 250
+  
+  var_mod=c(var_rep,predicteurs)
+  df_app = df_app[,var_mod]
+  df_valid = df_valid[,var_mod]
+  
+  
+  col_posi <- which(names(df_app) == var_rep)
+  ForeVDT <- randomForest(df_app[-col_posi], df_app[[col_posi]], mtry=(ncol(df_app)-1)/3,
+                          ntree=1000, keep.forest=TRUE)
+  
+  # Prediction sur le jeu de validation
+  prev<-predict(ForeVDT,newdata=as.data.frame(df_valid[,predicteurs]))
+  
+  # Calcul du RMSE pour évaluer la qualité du modele
+  rmse <- round (sqrt(mean((df_valid[,var_rep] - prev)^2)),2)
+  
+  r_adj = round (mean(100*ForeVDT$rsq),2)
+  
+    results <- list(RMSE = rmse, R_squared= r_adj)
+  return(results)
+}
+# ForetAlea(var_rep ="AB_tot" , df_app=df_train, df_valid = df_test)
+
+```
+
+
+```{r}
+n_sim=5 # Nombre de similation
+
+# Pour AB_tot
+AB_tot_RMSE_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("RMSEGLM", "RMSEGAM", "RMSERandomF","RMSEGB","RMSEResNeu","RMS_BestMod")))
+AB_tot_RMSE_Results<-as.data.frame(AB_tot_RMSE_Results)
+
+AB_tot_R_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("R_GLM", "R_GAM", "R_RandomF","R_GB","R_ResNeu","R_BestMod")))
+AB_tot_R_Results<-as.data.frame(AB_tot_R_Results)
+
+
+
+# Pour BM_tot
+BM_tot_RMSE_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("RMSEGLM", "RMSEGAM", "RMSERandomF","RMSEGB","RMSEResNeu","RMS_BestMod")))
+BM_tot_RMSE_Results<-as.data.frame(BM_tot_RMSE_Results)
+
+BM_tot_R_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("R_GLM", "R_GAM", "R_RandomF","R_GB","R_ResNeu","R_BestMod")))
+BM_tot_R_Results<-as.data.frame(BM_tot_R_Results)
+
+
+
+# Pour AB_tot
+Richesse_tot_RMSE_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("RMSEGLM", "RMSEGAM", "RMSERandomF","RMSEGB","RMSEResNeu","RMS_BestMod")))
+Richesse_tot_RMSE_Results<-as.data.frame(Richesse_tot_RMSE_Results)
+
+Richesse_tot_R_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("R_GLM", "R_GAM", "R_RandomF","R_GB","R_ResNeu","R_BestMod")))
+Richesse_tot_R_Results<-as.data.frame(Richesse_tot_R_Results)
+```
+
+## Distributions: AB_tot
+
+```{r}
+# Noraml
+set.seed(123)
+donnees_normales <- rnorm(nrow(df_mod), mean = mean(df_mod$AB_tot), sd = 2)
+hist(donnees_normales, freq = FALSE, main = "Distribution Normale", xlab = "Valeurs", ylab = "Densité")
+curve(dnorm(x, mean = mean(donnees_normales), sd = sd(donnees_normales)), add = TRUE, col = "blue", lwd = 2)
+
+
+# Poisson
+set.seed(123)
+donnees_poisson <- rpois(nrow(df_mod), lambda = mean(df_mod$AB_tot))
+hist(donnees_poisson, freq = FALSE, main = "Distribution de Poisson", xlab = "Valeurs", ylab = "Densité")
+x <- 0:max(donnees_poisson)
+lines(x, dpois(x, lambda = mean(df_mod$AB_tot)), col = "blue", lwd = 2)
+
+
+hist(df_mod$AB_tot,xlab = "AB_tot",main = "Distribution des données")
+
+par(mfrow = c(1,1))
+qqnorm(df_mod$AB_tot, pch= 16, col = 'blue',xlab='')
+qqline(df_mod$AB_tot, col= 'red')
+```
+
+## Distributions: BM_tot
+
+```{r}
+# Noraml
+df_bm=drop_na(df_mod)
+set.seed(123)
+donnees_normales <- rnorm(nrow(df_bm), mean = mean(df_bm$BM_tot), sd = 2)
+hist(donnees_normales, freq = FALSE, main = "Distribution Normale", xlab = "Valeurs", ylab = "Densité")
+curve(dnorm(x, mean = mean(donnees_normales), sd = sd(donnees_normales)), add = TRUE, col = "blue", lwd = 2)
+
+
+# Poisson
+set.seed(123)
+donnees_poisson <- rpois(nrow(df_bm), lambda = mean(df_bm$BM_tot))
+hist(donnees_poisson, freq = FALSE, main = "Distribution de Poisson", xlab = "Valeurs", ylab = "Densité")
+x <- 0:max(donnees_poisson)
+lines(x, dpois(x, lambda = mean(df_bm$BM_tot)), col = "blue", lwd = 2)
+
+
+hist(df_bm$BM_tot,xlab = "BM_tot",main = "Distribution des données")
+
+par(mfrow = c(1,1))
+qqnorm(df_bm$BM_tot, pch= 16, col = 'blue',xlab='')
+qqline(df_bm$BM_tot, col= 'red')
+```
+
+## Distributions: Richesse_tot
+
+```{r}
+# Noraml
+set.seed(123)
+donnees_normales <- rnorm(nrow(df_mod), mean = mean(df_mod$Richesse_tot), sd = 2)
+hist(donnees_normales, freq = FALSE, main = "Distribution Normale", xlab = "Valeurs", ylab = "Densité")
+curve(dnorm(x, mean = mean(donnees_normales), sd = sd(donnees_normales)), add = TRUE, col = "blue", lwd = 2)
+
+
+# Poisson
+set.seed(123)
+donnees_poisson <- rpois(nrow(df_mod), lambda = mean(df_mod$Richesse_tot))
+hist(donnees_poisson, freq = FALSE, main = "Distribution de Poisson", xlab = "Valeurs", ylab = "Densité")
+x <- 0:max(donnees_poisson)
+lines(x, dpois(x, lambda = mean(df_mod$Richesse_tot)), col = "blue", lwd = 2)
+
+
+hist(df_mod$Richesse_tot,xlab = "Richesse_tot",main = "Distribution des données")
+
+par(mfrow = c(1,1))
+qqnorm(df_mod$Richesse_tot, pch= 16, col = 'blue',xlab='')
+qqline(df_mod$Richesse_tot, col= 'red')
+```
+
+
+## Compilation
+
+-   GLM
+```{r}
+temps1=Sys.time()
+set.seed(1234)
+
+# cl <- detectCores() %>% -1 %>% makeCluster
+# registerDoParallel(cl)
+
+for (i in 1:n_sim){
+lignes <- createDataPartition(df_mod$clc3, p = 0.8, list = FALSE)
+
+# Séparer les données en ensembles d'entraînement et de test
+b_df_train <- df_mod[lignes, ]  # Données d'entraînement
+b_df_test <- df_mod[-lignes, ]  # Données de test
+b_df_train = droplevels(b_df_train)
+b_df_test = droplevels(b_df_test)
+
+# GLM
+AB_tot_RMSE_Results[i,"RMSEGLM"] <- GLM(var_rep ="AB_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian')$RMSE
+
+AB_tot_R_Results[i,"R_GLM"] <- GLM(var_rep ="AB_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian')$R_squared
+
+cat("compilation : ",i, "/",n_sim,"\n")
+}
+temps2=Sys.time()
+duree=difftime(temps2,temps1)
+# stopCluster(cl)
+# head(AB_tot_RMSE_Results)
+# head(AB_tot_R_Results)
+```
+
+
+-   GAM
+```{r}
+temps1=Sys.time()
+set.seed(1234)
+
+# cl <- detectCores() %>% -1 %>% makeCluster
+# registerDoParallel(cl)
+
+for (i in 1:n_sim){
+lignes <- createDataPartition(df_mod$clc3, p = 0.8, list = FALSE)
+
+# Séparer les données en ensembles d'entraînement et de test
+b_df_train <- df_mod[lignes, ]  # Données d'entraînement
+b_df_test <- df_mod[-lignes, ]  # Données de test
+b_df_train = droplevels(b_df_train)
+b_df_test = droplevels(b_df_test)
+
+# GAM
+AB_tot_RMSE_Results[i,"RMSEGAM"] <- GAM(var_rep ="AB_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian')$RMSE
+
+AB_tot_R_Results[i,"R_GAM"] <- GAM(var_rep ="AB_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian')$R_squared
+
+cat("compilation : ",i, "/",n_sim,"\n")
+}
+temps2=Sys.time()
+duree=difftime(temps2,temps1)
+# stopCluster(cl)
+# head(AB_tot_RMSE_Results)
+# head(AB_tot_R_Results)
+```
+
+
+
+# Questions
 
