@@ -1,7 +1,7 @@
 ---
 title: "Internship progress"
 author: "Abdourahmane Diallo"
-date: "2024-02-20"
+date: '`r Sys.Date()`'
 format: 
   revealjs
 #smaller: true
@@ -70,7 +70,7 @@ execute:
   library(outliers)
   library(leaps)
   library(fastDummies)
-  library(caret)
+  library(caret) # pour l'entrainement des models
   library(mgcv)
   library(ggeffects)
   library(gratia)
@@ -102,6 +102,8 @@ execute:
   #library(tensorflow)
   library(neuralnet)
   library(parallel)
+  library(iml) # pour l'interpretabilité des models https://cran.r-project.org/web/packages/iml/vignettes/intro.html
+  library(e1071)
 
 
 
@@ -252,6 +254,20 @@ cor_function_seuil <- function(data, seuil,affiche=FALSE) {
   
   return(variables_corr)
 }
+
+
+# tests de valeurs aberant -----------------------------------------------
+verifier_valeurs_aberrantes <- function(data, variable, opposite = FALSE) {
+ id_ligne=c()
+    test_aberrant <- grubbs.test(data[[variable]], opposite = opposite)
+    p.value <- test_aberrant$p.value
+    cat(p.value, "\n")
+      texte <- test_aberrant$alternative
+      chiffres <- regmatches(texte, regexpr("-?\\d+\\.\\d+", texte))
+      id_ligne <- data[which(data[[variable]] == as.numeric(chiffres)), "ID"]
+  return(id_ligne)
+}
+
 ```
 
 # Plan
@@ -274,14 +290,14 @@ cor_function_seuil <- function(data, seuil,affiche=FALSE) {
 
 -   Import of database **LandWorm_dataset_site_V1.9.xlsx** (february 22, 2024)
 
-```{r,echo=FALSE}
+```{r import,echo=FALSE}
 chemin_fichier_excel = "C:/Users/diall/Downloads/datas/LandWorm_dataset_site_V1.9.xlsx"
 bdd <- read.xlsx(chemin_fichier_excel, sheet = "Sheet1")
 ```
 
 -   The database contains **`r nrow(bdd)`** rows and **`r ncol(bdd)`** columns
 
-```{r,echo=FALSE}
+```{r conversion,echo=FALSE}
 col_en_factor = c("Programme","Annee","ID_Site","Code_Parcelle","postal_code","clcm_lvl1",
                   "clcm_lvl2","clcm_lvl3","Modalite","Bloc","Protocole","land_cover_detail","type_tillage","fertilisation","ferti_min_product","ferti_orga_product")
 bdd = conv_col(bdd, col_en_factor, "factor")
@@ -289,7 +305,7 @@ bdd = conv_col(bdd, col_en_factor, "factor")
 
 ## Data selection: EcoBioSoil
 
-```{r,echo=FALSE}
+```{r selection dc1,echo=FALSE}
 n_line=nrow(bdd)
 bdd$owner=as.factor(bdd$owner)
 summary_df <- as.data.frame(summary(bdd$owner))
@@ -297,7 +313,7 @@ colnames(summary_df) <- c("Numbers")
 kable(summary_df)
 ```
 
-```{r,echo=FALSE}
+```{r selection dc2,echo=FALSE}
 bdd <- subset(bdd, owner == "dc")
 bdd$owner=droplevels(bdd$owner)
 
@@ -311,7 +327,7 @@ bdd$owner=droplevels(bdd$owner)
 
 ## Complete columns
 
-```{r, echo=TRUE}
+```{r Complete columns, echo=TRUE}
 df_col=taux_completion(bdd,TRUE,trie=FALSE)
 df_col = df_col[df_col$Variables != "Total",]
 #print("table")
@@ -322,7 +338,7 @@ kable(df_col, caption = "", col.width = c("75%", "25%"))
 
 ## Non-complete columns
 
-```{r, scrollable = TRUE}
+```{r Non-complete columns, scrollable = TRUE}
 df_col= taux_completion(bdd,FALSE,trie = TRUE)
 df_col = df_col[df_col$Variables != "Total",]
 kable(df_col, caption = " ", col.width = c("75%", "25%"))
@@ -333,7 +349,7 @@ kable(df_col, caption = " ", col.width = c("75%", "25%"))
 -   There is **`r sum(is.na(bdd$gps_x))`** NA (CR = `r df_col[df_col$Variable=="gps_x", "CR"]`) in **GPS_X**
 -   There is **`r sum(is.na(bdd$gps_y))`** NA (CR = `r df_col[df_col$Variable=="gps_y", "CR"]`) in **GPS_Y**
 
-```{r,echo=TRUE}
+```{r GPS,echo=TRUE}
 n_line= nrow(bdd)
 bdd$gps_x <- as.numeric(gsub("[^0-9.-]", "", bdd$gps_x))
 bdd$gps_y <- as.numeric(gsub("[^0-9.-]", "", bdd$gps_y))
@@ -347,7 +363,7 @@ bdd <- bdd %>%filter(!is.na(gps_x) & !is.na(gps_y))
 -   The database therefore changes from **`r n_line`** to **`r nrow(bdd)`** observations.
 -   Merging database and climat database
 
-```{r, echo=TRUE}
+```{r mergins & climat, echo=TRUE}
 # Ajout variables climatiques (voir chunk extraction données climatiques)
 chemin_fichier <- "C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/datas/bdd_climat_ok.rds"
 # saveRDS(bdd_climat_ok, chemin_fichier)
@@ -366,7 +382,7 @@ bdd = merged_df
 
 ## Cartography
 
-```{r,echo=TRUE}
+```{r Cartography,echo=TRUE}
 n_ligne= nrow(bdd)
 df_coord <- bdd[, c("gps_x", "gps_y")] %>% mutate(gps_x = as.numeric(gps_x),gps_y = as.numeric(gps_y))
 
@@ -377,7 +393,7 @@ carte <- leaflet(df_coord) %>%
 carte
 ```
 
-```{r}
+```{r outside France}
 hors_france= read.csv(file = "C:/Users/diall/Downloads/datas/hors_france.csv", header = TRUE)
 
 bdd <- bdd[!(bdd$gps_x %in% hors_france$gps_x & bdd$gps_y %in% hors_france$gps_y), ]
@@ -392,7 +408,7 @@ bdd <- droplevels(bdd)
 -   Cleaning the Annee column 
 <br/> 
 <!--
-```{r , echo=TRUE}
+```{r years1, echo=TRUE}
 # levels(bdd$Annee) # parfois années et jours et ou mois
 # bdd$Annee= as.factor(bdd$Annee)
 # bdd$Annee <- gsub("^(\\d{4}).*$", "\\1", bdd$Annee) # on prend uniquement les 04 premier chiffre
@@ -403,7 +419,7 @@ bdd <- droplevels(bdd)
 
 -   CR of Annee = **`r df_col[df_col$Variable=="Annee", "CR"]`** (`r length(levels(bdd$Annee))` levels)
 
-```{r, echo=TRUE, scrollable = TRUE}
+```{r years2, echo=TRUE, scrollable = TRUE}
 bdd$Annee= as.factor(bdd$Annee)
 summary_df <- as.data.frame(summary(bdd$Annee))
 colnames(summary_df) <- c("Numbers")
@@ -414,7 +430,7 @@ kable(summary_df)
 <!-- 
 -   We remove all the years before **1990** and the NA 
 
-```{r, echo=TRUE, scrollable = TRUE}
+```{r years3, echo=TRUE, scrollable = TRUE}
 n_ligne =nrow(bdd)
 bdd <- bdd %>%filter(!is.na(Annee))# on enleve les NA
 annes_omit= c("1821", "1960", "1978", "1982", "1983", "1984", "1986", "1988", "1989") # annee sup
@@ -437,7 +453,7 @@ kable(summary_df,padding = 5)
 
 -   clcm_lvl1 & protocol
 
-```{r, echo=TRUE}
+```{r clcm_lvl1 & protocol, echo=TRUE}
 kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c")
 
 ```
@@ -446,7 +462,7 @@ kable(table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 
 -   clcm_lvl2 & protocol
 
-```{r, echo=TRUE}
+```{r clcm_lvl2 & protocol, echo=TRUE}
 kable(table(bdd$clcm_lvl2, bdd$Protocole,exclude = NULL),padding = 10,align = "c")
 ```
 
@@ -454,7 +470,7 @@ kable(table(bdd$clcm_lvl2, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 
 -   clcm_lvl3 & protocol
 
-```{r, echo=TRUE}
+```{r clcm_lvl3 & protocol, echo=TRUE}
 kable(table(bdd$clcm_lvl3, bdd$Protocole,exclude = NULL),padding = 0,align = "c")
 ```
 -->
@@ -464,7 +480,7 @@ kable(table(bdd$clcm_lvl3, bdd$Protocole,exclude = NULL),padding = 0,align = "c"
 
 -   List of protocols available on the database ( `r length(levels(bdd$Protocole))` levels)
 
-```{r,echo=TRUE}
+```{r protocols,echo=TRUE}
 bdd$Protocole = as.factor(bdd$Protocole)
 summary_df <- as.data.frame(summary(bdd$Protocole))
 colnames(summary_df) <- c("Numbers")
@@ -478,7 +494,7 @@ kable(summary_df,padding = 5)
 
 -   Selection of protocols: **F_HS, HS**
 
-```{r,echo=TRUE}
+```{r select protocols,echo=TRUE}
 n_ligne = nrow(bdd)
 #select_protocole =c("F_HS", "FHS", "hand sorting" ,"HS")
 select_protocole =c("F_HS", "HS")
@@ -499,7 +515,7 @@ kable(summary_df,padding = 5)
     -   F_HS $=$ F_HS $+$ FHS
     -   HS $=$ HS $+$ hand sorting
 
-    ```{r,echo=TRUE}
+    ```{r merging protocols,echo=TRUE}
     levels(bdd$Protocole)[levels(bdd$Protocole) == "FHS"] <- "F_HS"
     levels(bdd$Protocole)[levels(bdd$Protocole) == "hand sorting"] <- "HS"
     bdd$Protocole = as.factor(bdd$Protocole)
@@ -513,7 +529,7 @@ kable(summary_df,padding = 5)
 
 -   CR of clcm_lvl1 = **`r df_col[df_col$Variable=="clcm_lvl1","CR"]`** (`r length(levels(bdd$clcm_lvl1))` levels)
 
-```{r, echo=TRUE}
+```{r clcm_lvl1, echo=TRUE}
 bdd$clcm_lvl1= as.factor(bdd$clcm_lvl1)
 summary_df <- as.data.frame(summary(bdd$clcm_lvl1))
 colnames(summary_df) <- c("Numbers")
@@ -522,7 +538,7 @@ colnames(summary_df) <- c("Numbers")
 
 -   Merging levels
 
-```{r, echo=TRUE}
+```{r merging clcm_lvl1, echo=TRUE}
 levels(bdd$clcm_lvl1)[levels(bdd$clcm_lvl1) == "1_Naturel"] <- "Forest and semi natural areas"
 levels(bdd$clcm_lvl1)[levels(bdd$clcm_lvl1) == "2_Agricole"] <- "Agricultural areas"
 
@@ -534,7 +550,7 @@ kable(summary_df,padding = 5)
 
 -   Update **code_clcm_lvl1**
 
-```{r, echo=TRUE}
+```{r code_clcm_lvl1, echo=TRUE}
 #bdd$code_clcm_lvl1 = as.factor(bdd$code_clcm_lvl1)
 
 bdd$code_clcm_lvl1 <- ifelse(bdd$clcm_lvl1 == "Forest and semi natural areas", 3, bdd$code_clcm_lvl1)
@@ -548,7 +564,7 @@ bdd$code_clcm_lvl1 <- ifelse(bdd$clcm_lvl1 == "Agricultural areas", 2, bdd$code_
 
 -   CR of clcm_lvl2 = **`r df_col[df_col$Variable=="clcm_lvl2","CR"]`** (`r length(levels(bdd$clcm_lvl2))` levels)
 
-```{r, echo=TRUE}
+```{r clcm_lvl2 , echo=TRUE}
 bdd$clcm_lvl2= as.factor(bdd$clcm_lvl2)
 summary_df <- as.data.frame(summary(bdd$clcm_lvl2))
 colnames(summary_df) <- c("Numbers")
@@ -557,7 +573,7 @@ colnames(summary_df) <- c("Numbers")
 
 -   Merging levels
 
-```{r, echo=TRUE}
+```{r merging clcm_lvl2, echo=TRUE}
 levels(bdd$clcm_lvl2)[levels(bdd$clcm_lvl2) == "21_Agricole ouvert"] <- "Arable land"
 
 bdd$clcm_lvl2= as.factor(bdd$clcm_lvl2)
@@ -568,7 +584,7 @@ kable(summary_df,padding = 5)
 
 -   Update **code_clcm_lvl2**
 
-```{r, echo=TRUE}
+```{r code_clcm_lvl2, echo=TRUE}
 
 bdd$code_clcm_lvl2 <- ifelse(bdd$clcm_lvl2 == "Arable land", 21, bdd$code_clcm_lvl2)
 
@@ -578,7 +594,7 @@ bdd$code_clcm_lvl2 <- ifelse(bdd$clcm_lvl2 == "Arable land", 21, bdd$code_clcm_l
 
 -   CR of clcm_lvl3 = **`r df_col[df_col$Variable=="clcm_lvl3","CR"]`** (`r length(levels(bdd$clcm_lvl3))` levels)
 
-```{r, echo=TRUE, scrollable = TRUE}
+```{r clcm_lvl3, echo=TRUE, scrollable = TRUE}
 bdd$clcm_lvl3= as.factor(bdd$clcm_lvl3)
 summary_df <- as.data.frame(summary(bdd$clcm_lvl3))
 colnames(summary_df) <- c("Numbers")
@@ -605,7 +621,7 @@ kable(summary_df,padding = 5)
 -   **Natural grasslands**
 -->
 
-```{r, echo=TRUE}
+```{r select clcm_lvl3, echo=TRUE}
 select_os= c("Broad-leaved forest", "Coniferous forest", "Mixed forest", 
 "Pastures, meadows and other permanent grasslands under agricultural use", "Non-irrigated arable land", 
 "Vineyards","Green urban areas","Natural grasslands")
@@ -623,7 +639,7 @@ kable(summary_df)
 
 ## Land use & protocol overview
 
-```{r, echo=TRUE}
+```{r LU & protocol overview, echo=TRUE}
 # kable (table(bdd$clcm_lvl1, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)
 # kable (table(bdd$clcm_lvl2, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)
 kable (table(bdd$clcm_lvl3, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)
@@ -635,26 +651,36 @@ kable (table(bdd$clcm_lvl3, bdd$Protocole,exclude = NULL), align = "c", format =
 
 ## Total abundance (CR = 100 % )
 
-```{r,fig.align='center',fig.height=10}
+```{r fig AB_tot,fig.align='center',fig.height=10}
+# summary(bdd$AB_tot) 
+# explo_num(nom_col = "AB_tot", titre = "Total abundance")
+# On supprime les parcelles dont l'AB_tot sont sup a 1500 ind/m²
+id_ligne <- bdd[which(bdd$AB_tot >=1500), "ID"] 
+bdd <- bdd[!bdd$ID %in% id_ligne, ]
+bdd=droplevels(bdd)
+
+
 summary(bdd$AB_tot) 
-#bdd <- subset(bdd, AB_tot <= 800)
 explo_num(nom_col = "AB_tot", titre = "Total abundance")
 ```
 
+
 ## Total biomass (CR = `r df_col[df_col$Variable=="BM_tot","CR"]`)
 
-```{r,fig.align='center',fig.height=10}
+```{r fig BM_tot,fig.align='center',fig.height=10}
+# summary(bdd$BM_tot) 
+# explo_num(nom_col = "BM_tot", titre = "Total biomass")
+# On supprime les parcelles dont la BM_tot sont sup a 500g/m²
+
+id_ligne <- bdd[which(bdd$BM_tot >=500), "ID"] 
+bdd <- bdd[!bdd$ID %in% id_ligne, ]
+bdd=droplevels(bdd)
+
 summary(bdd$BM_tot) 
-#bdd <- subset(bdd, BM_tot <= 3000)
-explo_num(nom_col = "BM_tot", titre = "Total biomass",)
+explo_num(nom_col = "BM_tot", titre = "Total biomass")
 ```
 
 
--->
-
-
-
-<!--
 ## Total richness calculation method
 
 -   Removal of columns with only NA (**`r length(colnames(bdd)[colSums(is.na(bdd)) == nrow(bdd)])`**) and/or only 0
@@ -664,7 +690,7 @@ explo_num(nom_col = "BM_tot", titre = "Total biomass",)
 -   Total richness = **1** if the plot has a value in AB and/or BM
 -->
 
-```{r, echo=FALSE,"Total richness calculation method"}
+```{r calcul richness, echo=FALSE}
 # on supprime tout les colonnes ayant que des NA
 colonnes_na <- colnames(bdd)[colSums(is.na(bdd)) == nrow(bdd)]
 # summary(bdd[, colonnes_na])
@@ -741,7 +767,7 @@ ab_sans_bm <- subset(bdd, BM_tot == 0 & AB_tot != 0) # 1 parcelles
 <!--
 ## Total richness (CR = 100 % )
 
-```{r, fig.align='center',fig.height=10}
+```{r fig richness, fig.align='center',fig.height=10}
 summary(bdd$Richesse_tot)
 #bdd <- subset(bdd, Richesse_tot <= 2000)
 explo_num(nom_col = "Richesse_tot", titre = "Total richness",)
@@ -755,7 +781,7 @@ explo_num(nom_col = "Richesse_tot", titre = "Total richness",)
 
 ## Complete columns
 
-```{r, echo=TRUE}
+```{r synt CR, echo=TRUE}
 df_col=taux_completion(bdd,TRUE,trie=FALSE)
 df_col = df_col[df_col$Variables != "Total",]
 kable(df_col, caption = " ", col.width = c("75%", "25%"))
@@ -777,7 +803,7 @@ kable(df_col, caption = " ", col.width = c("75%", "25%"))
 # Climate data extraction
 ## The source database ([CHELSA V2](https://chelsa-climate.org/bioclim/){target="_blank"})
 
-```{r,echo=TRUE}
+```{r Climate df extraction,echo=TRUE}
 
 # Lire le fichier Excel
 chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
@@ -807,7 +833,7 @@ kableExtra::kable(climat) %>%
 
 -   Adding variables to the LANDWORM database
 
-```{r,echo=TRUE}
+```{r Extraction method,echo=TRUE}
 liens_tif = read.table(file = "C:/Users/diall/Downloads/datas/envidatS3paths.txt")
 liens_tif$shortname <- str_extract(liens_tif$V1, "(?<=CHELSA_).*?(?=_1981)")
 liens_tif[liens_tif$shortname=="rsds","shortname"]=c("rsds_max","rsds_mean","rsds_min","rsds_range")
@@ -902,12 +928,15 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 ```{r}
 summary(bdd_climat_ok)
 ```
+-->
 
+
+<!--
 ## Temperature
 
 -   Average annual air temperature (°C) = bio1
 
-```{r,fig.align='center',fig.height=8}
+```{r Temperature,fig.align='center',fig.height=8}
 summary(bdd$bio1)
 explo_num(nom_col = "bio1", titre = "temp°.")
 ```
@@ -916,13 +945,10 @@ explo_num(nom_col = "bio1", titre = "temp°.")
 
 -   Annual precipitation (kg/m²) = bio12
 
-```{r,fig.align='center',fig.height=8}
+```{r Precipitation,fig.align='center',fig.height=8}
 summary(bdd$bio12)
 explo_num(nom_col = "bio12", titre = "Précipitat°.")
 ```
-
-
-
 
 -->
 
@@ -931,7 +957,7 @@ explo_num(nom_col = "bio12", titre = "Précipitat°.")
 <!--
 # Questions
 
-```{r}
+```{r Questions}
 ID_Site_dupliques <- bdd$ID_Site[duplicated(bdd$ID_Site)]
 #length(ID_Site_dupliques)
 
@@ -977,12 +1003,14 @@ lignes_unique <- unique(lignes_dupliquees$ID_Site)
 
 
 
--->
 
+
+
+-->
 
 # Soil data extraction
 
-```{r}
+```{r Soil data extraction}
 # Calcul des distances euclidiennes entre les sites
 distances <- dist(cbind(bdd$gps_x, bdd$gps_y))
 distance_moyenne <- mean(distances)
@@ -995,7 +1023,7 @@ df_col = df_col[df_col$Variables != "Total",]
 <!--
 ## The source database ([openlandmap](https://openlandmap.org/?center=25,39&zoom=4&opacity=72&base=OpenStreetMap&layer=lc_glc.fcs30d&time=2022){target="_blank"})
 
-```{r,echo=TRUE}
+```{r soil source database,echo=TRUE}
 chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
 pedo <- read.xlsx(chemin_fichier_excel, sheet = "pedo")
 
@@ -1014,8 +1042,6 @@ kableExtra::kable(pedo) %>%
 -   Average values between surface (0 cm) and 30 cm depth
 
 
-
-
 ## Changing the resolution ![](https://logowik.com/content/uploads/images/python.jpg){width="200"}
 
 -   Long compilation time in R
@@ -1024,7 +1050,7 @@ kableExtra::kable(pedo) %>%
 
 -   Resolution = 0.0083 = 30 arc-second \~ 1km
 
-    ```{r}
+```{r changing resolution}
     test_resolution = bdd
     tif_file_path_origine = "C:/Users/diall/Downloads/datas/raster_origine/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif"
     raster_ph_origine <- raster(tif_file_path_origine)
@@ -1051,7 +1077,7 @@ kableExtra::kable(pedo) %>%
     p <- ggplot(bdd_echan, aes(x = ph_10_origine, y = ph_10_rech)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = FALSE, color = "red") + 
-      labs(subtitle = paste("R = ", round(correlation, 2)),
+      labs(subtitle = paste("r = ", round(correlation, 2)),
            x = "Original pH", y = "Resampled pH") + 
       theme_classic() 
 
@@ -1065,7 +1091,7 @@ kableExtra::kable(pedo) %>%
 
 ## Soil organic carbone (g/kg)
 
-```{r,fig.align='center',fig.height=8}
+```{r extract C,fig.align='center',fig.height=8}
 bdd <- extraction(nom_col = "c_orga_0",df = bdd,conv = 5, 
       tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sol_organic.carbon_usda.6a1c_m_250m_b0..0cm_1950..2017_v0.2.tif")
 bdd <- extraction(nom_col = "c_orga_10",df = bdd,conv = 5, 
@@ -1075,19 +1101,27 @@ bdd <- extraction(nom_col = "c_orga_30",df = bdd,conv = 5,
 bdd = moyenne_val_extrct(nom_col = "c_orga_0_a_30", vec_col = c("c_orga_0","c_orga_10","c_orga_30"),df=bdd)
 
 
-indice_max <- which.max(bdd$c_orga_0_a_30)
-bdd <- bdd[-indice_max, ]
+# summary(bdd$c_orga_0_a_30)
+# explo_num(nom_col = "c_orga_0_a_30", titre = "C. organic")
+
+id_ligne <- bdd[which(bdd$c_orga_0_a_30 >=2.4), "ID"] 
+bdd <- bdd[!bdd$ID %in% id_ligne, ]
+bdd=droplevels(bdd)
+
 
 
 summary(bdd$c_orga_0_a_30)
 explo_num(nom_col = "c_orga_0_a_30", titre = "C. organic")
+
+# verifier_valeurs_aberrantes(data=bdd, variable="c_orga_0_a_30", opposite = FALSE)
+
 ```
 
 ## pH
 
 **Extracted values**
 
-```{r,fig.align='center',fig.height=8}
+```{r extract pH,fig.align='center',fig.height=8}
 bdd <- extraction(nom_col = "ph_0",df = bdd,conv = 10, 
                   tif_file_path ="C:/Users/diall/Downloads/datas/raster_modif/sol_ph.h2o_usda.4c1a2a_m_250m_b10..10cm_1950..2017_v0.2.tif")
 
@@ -1105,7 +1139,7 @@ explo_num(nom_col = "ph_0_a_30", titre = "pH (0 - 30 cm)")
 
 -   Clean pH column
 
-```{r,echo=TRUE}
+```{r clean pH,echo=TRUE}
 # On recupere les deux colonnes du pH
 df_comp=bdd[, c("ID", "ID_Site","ph_eau","ph_0_a_30" )]
 df_comp =df_comp[complete.cases(df_comp$ph_eau),] 
@@ -1167,15 +1201,16 @@ df_comp$ph_0_a_30 <- as.numeric(df_comp$ph_0_a_30)
 :::
 
 ::: {.column width="40%"}
-```{r,fig.align='center',fig.height=5,fig.width=4}
+```{r fig cor pH,fig.align='center',fig.height=5,fig.width=4}
     correlation <- cor(as.numeric(df_comp$ph_eau), df_comp$ph_0_a_30)
 # graphique avec ggplot
     p <- ggplot(df_comp, aes(x = ph_eau, y = ph_0_a_30)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = FALSE, color = "red") + 
-      labs(subtitle =paste("R = ", round(correlation, 2)),x = "pH measured values", y = "pH extracted values") + 
+      labs(subtitle =paste("r = ", round(correlation, 2)),x = "pH measured values", y = "pH extracted values") + 
       theme_classic() 
 p
+# plot(as.numeric(df_comp$ph_eau))
 ```
 :::
 :::
@@ -1218,7 +1253,7 @@ explo_num(nom_col = "sable_0_a_30", titre = "Sand (0 - 30 cm)")
 
 **Extracted values (g/kg, 0 - 30 cm)**
 
-```{r,fig.align='center',fig.height=8}
+```{r extract sand,fig.align='center',fig.height=8}
 bdd <- extraction(nom_col = "sable.0_5",df = bdd,conv = 1, 
       tif_file_path = "C:/Users/diall/Downloads/datas/raster_modif/sable.0_5.tif")
 
@@ -1272,6 +1307,20 @@ df_comp=droplevels(df_comp)
 df_comp$sand <- as.numeric(df_comp$sand)
 df_comp$sable.0_30 <- as.numeric(df_comp$sable.0_30)
 
+# summary(df_comp$sand)
+# explo_num(nom_col = "sand", titre = "Sand extracted values",df = df_comp)
+id_ligne <- df_comp[which(df_comp$sand >=83), "ID"] 
+df_comp <- df_comp[!df_comp$ID %in% id_ligne, ]
+df_comp=droplevels(df_comp)
+
+
+# 
+# summary(df_comp$sable.0_30)
+# explo_num(nom_col = "sable.0_30", titre = "Sand extracted values",df = df_comp)
+id_ligne <- df_comp[which(df_comp$sable.0_30 >=60), "ID"] 
+df_comp <- df_comp[!df_comp$ID %in% id_ligne, ]
+df_comp=droplevels(df_comp)
+
 ```
 
 ::: columns
@@ -1302,10 +1351,13 @@ correlation <- cor(as.numeric(df_comp$sand), df_comp$sable.0_30)
     p <- ggplot(df_comp, aes(x = sand, y = sable.0_30)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = FALSE, color = "red") + 
-      labs(subtitle =paste("R = ", round(correlation, 2)) ,x = "Sand measured values", y = "Sand extracted values") + 
+      labs(subtitle =paste("r = ", round(correlation, 2)) ,x = "Sand measured values", y = "Sand extracted values") + 
       theme_classic() 
 p
+# plot(as.numeric(df_comp$sand))
+# plot(df_comp$sable.0_30)
 ```
+
 :::
 :::
 
@@ -1325,8 +1377,16 @@ bdd <- extraction(nom_col = "limon.15_30",df = bdd,conv = 1,
 
 bdd = moyenne_val_extrct(nom_col = "limon.0_30", vec_col = c("limon.0_5","limon.5_15","limon.15_30"),df=bdd)
 
-# summary(bdd$limon.0_30)
 
+
+# summary(bdd$limon.0_30)
+# explo_num(nom_col = "limon.0_30", titre = "limon.0_30",df = bdd)
+id_ligne <- bdd[which(bdd$limon.0_30 >=80), "ID"] 
+bdd <- bdd[!bdd$ID %in% id_ligne, ]
+bdd=droplevels(bdd)
+
+
+# summary(bdd$limon.0_30)
 explo_num(nom_col = "limon.0_30", titre = "Silt extracted values")
 ```
 
@@ -1369,6 +1429,24 @@ df_comp=droplevels(df_comp)
 df_comp$silt <- as.numeric(df_comp$silt)
 df_comp$limon.0_30 <- as.numeric(df_comp$limon.0_30)
 
+
+
+
+# summary(df_comp$silt)
+# explo_num(nom_col = "silt", titre = "Silt",df = df_comp)
+id_ligne <- df_comp[which(df_comp$silt <=7.3), "ID"] 
+df_comp <- df_comp[!df_comp$ID %in% id_ligne, ]
+df_comp=droplevels(df_comp)
+
+
+
+# summary(df_comp$limon.0_30)
+# explo_num(nom_col = "limon.0_30", titre = "limon.0_30",df = df_comp)
+id_ligne <- df_comp[which(df_comp$limon.0_30 >=80), "ID"] 
+df_comp <- df_comp[!df_comp$ID %in% id_ligne, ]
+df_comp=droplevels(df_comp)
+
+
 ```
 
 ::: columns
@@ -1399,9 +1477,24 @@ correlation <- cor(as.numeric(df_comp$silt), df_comp$limon.0_30)
     p <- ggplot(df_comp, aes(x = silt, y = limon.0_30)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = FALSE, color = "red") + 
-      labs(subtitle =paste("R = ", round(correlation, 2)) ,x = "Silt measured values", y = "Silt extracted values") + 
+      labs(subtitle =paste("r = ", round(correlation, 2)) ,x = "Silt measured values", y = "Silt extracted values") + 
       theme_classic() 
 p
+
+plot(as.numeric(df_comp$limon.0_30))
+```
+
+```{r,fig.align='center',fig.height=5,fig.width=4}
+# graphique avec ggplot
+correlation <- cor(as.numeric(df_comp$silt), df_comp$limon.0_30)
+    p <- ggplot(df_comp, aes(x = silt, y = limon.0_30)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = FALSE, color = "red") + 
+      labs(subtitle =paste("r = ", round(correlation, 2)) ,x = "Silt measured values", y = "Silt extracted values") + 
+      theme_classic() 
+p
+
+plot(as.numeric(df_comp$limon.0_30))
 ```
 :::
 :::
@@ -1422,8 +1515,15 @@ bdd <- extraction(nom_col = "argile.15_30",df = bdd,conv = 1,
 
 bdd = moyenne_val_extrct(nom_col = "argile.0_30", vec_col = c("argile.0_5","argile.5_15","argile.15_30"),df=bdd)
 
-summary(bdd$argile.0_30)
 
+
+# summary(bdd$argile.0_30)
+# explo_num(nom_col = "argile.0_30", titre = "argile.0_30",df = bdd)
+id_ligne <- bdd[which(bdd$argile.0_30 >=52), "ID"] 
+bdd <- bdd[!bdd$ID %in% id_ligne, ]
+bdd=droplevels(bdd)
+
+summary(bdd$argile.0_30)
 explo_num(nom_col = "argile.0_30", titre = "Clay extracted values")
 ```
 
@@ -1462,6 +1562,9 @@ df_comp=droplevels(df_comp)
 df_comp$clay <- as.numeric(df_comp$clay)
 df_comp$argile.0_30 <- as.numeric(df_comp$argile.0_30)
 
+
+df_comp$clay = as.numeric(df_comp$clay)/10 # pour conv en %
+
 ```
 
 ::: columns
@@ -1492,7 +1595,7 @@ correlation <- cor(as.numeric(df_comp$clay), df_comp$argile.0_30)
     p <- ggplot(df_comp, aes(x = clay, y = argile.0_30)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = FALSE, color = "red") + 
-      labs(subtitle =paste("R = ", round(correlation, 2)) ,x = "Clay measured values", y = "Clay extracted values") + 
+      labs(subtitle =paste("r = ", round(correlation, 2)) ,x = "Clay measured values", y = "Clay extracted values") + 
       theme_classic() 
 p
 ```
@@ -1505,8 +1608,15 @@ p
 bdd <- extraction(nom_col = "elevation",df = bdd,conv = 1, 
                   tif_file_path ="C:/Users/diall/Downloads/datas/raster_modif/GMTED2010_Spatial.tif")
 
-summary(bdd$elevation)
 
+# summary(bdd$elevation)
+# explo_num(nom_col = "elevation", titre = "elevation",df = bdd)
+id_ligne <- bdd[which(bdd$elevation >=800), "ID"] 
+bdd <- bdd[!bdd$ID %in% id_ligne, ]
+bdd=droplevels(bdd)
+
+
+summary(bdd$elevation)
 explo_num(nom_col = "elevation", titre = "elevation")
 ```
 
@@ -1575,8 +1685,15 @@ explo_num(nom_col = 'P', titre = 'P')
 ```{r,fig.align='center',fig.height=8}
 bdd <- extraction(nom_col = 'N', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/N.tif')
 
-summary(bdd$N)
 
+# summary(bdd$N)
+# explo_num(nom_col = "N", titre = "N",df = bdd)
+id_ligne <- bdd[which(bdd$N >=4), "ID"] 
+bdd <- bdd[!bdd$ID %in% id_ligne, ]
+bdd=droplevels(bdd)
+
+
+summary(bdd$N)
 explo_num(nom_col = 'N', titre = 'N')
 ```
 
@@ -1585,8 +1702,15 @@ explo_num(nom_col = 'N', titre = 'N')
 ```{r,fig.align='center',fig.height=8}
 bdd <- extraction(nom_col = 'K', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/K.tif')
 
-summary(bdd$K)
 
+# summary(bdd$K)
+# explo_num(nom_col = "K", titre = "K",df = bdd)
+id_ligne <- bdd[which(bdd$K >=500), "ID"] 
+bdd <- bdd[!bdd$ID %in% id_ligne, ]
+bdd=droplevels(bdd)
+
+
+summary(bdd$K)
 explo_num(nom_col = 'K', titre = 'K')
 ```
 
@@ -1595,8 +1719,15 @@ explo_num(nom_col = 'K', titre = 'K')
 ```{r,fig.align='center',fig.height=8}
 bdd <- extraction(nom_col = 'CN', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/CN.tif')
 
-summary(bdd$CN)
 
+# summary(bdd$N)
+# explo_num(nom_col = "CN", titre = "CN",df = bdd)
+id_ligne <- bdd[which(bdd$CN >=18), "ID"] 
+bdd <- bdd[!bdd$ID %in% id_ligne, ]
+bdd=droplevels(bdd)
+
+
+summary(bdd$CN)
 explo_num(nom_col = 'CN', titre = 'CN')
 ```
 
@@ -1615,16 +1746,23 @@ explo_num(nom_col = 'CEC', titre = 'CEC')
 ```{r,fig.align='center',fig.height=8}
 bdd <- extraction(nom_col = 'CaCO3', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/CaCO3.tif')
 
-summary(bdd$CaCO3)
 
+# summary(bdd$N)
+# explo_num(nom_col = "CaCO3", titre = "CaCO3",df = bdd)
+id_ligne <- bdd[which(bdd$CaCO3 >=350), "ID"] 
+bdd <- bdd[!bdd$ID %in% id_ligne, ]
+bdd=droplevels(bdd)
+
+
+summary(bdd$CaCO3)
 explo_num(nom_col = 'CaCO3', titre = 'CaCO3')
 ```
 
 # Analyses explorations
 
-## Réduction du jeu de donnée
+**Réduction du jeu de donnée**
 
-```{r,echo=TRUE,fig.height=8,fig.show='animate',fig.align='center'}
+```{r ana explo,echo=TRUE,fig.height=8,fig.show='animate',fig.align='center'}
 id_col=c("ID","Programme","Annee","ID_Site","Protocole")
 
 vdt_col=c("AB_tot", "BM_tot", "Richesse_tot")
@@ -1676,8 +1814,23 @@ for (col in var_quanti) {
 }
 # summary(bdd_explo[, var_quanti])
 # str(bdd_explo[, var_quanti])
+
+
+levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Broad-leaved forest"] <- "Mixed forest"
+levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Coniferous forest"] <- "Mixed forest"
+bdd_explo$clcm_lvl3= as.factor(bdd_explo$clcm_lvl3)
+
+cl_original <- levels(bdd_explo$clcm_lvl3)
+new_cl <- c("mf","gua", "ng", "nial", "p", "v")
+bdd_explo$clcm_lvl3 <- factor(bdd_explo$clcm_lvl3, levels = cl_original, labels = new_cl)
+
+
+data_mod = bdd_explo
+
+
 ```
 
+<!--
 ## Test de correlation : intra catégories
 
 -   **Topographie**
@@ -1790,7 +1943,7 @@ bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), c("gps_y"))]
 
 
 ## VIF
-```{r}
+```{r VIF var}
 var_avant=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3",
       "bio8","bio12","bio14","bio15","hurs_mean")
 #usdm::vif(bdd_explo[,var_avant])
@@ -1802,9 +1955,11 @@ bdd_explo <- bdd_explo[, setdiff(names(bdd_explo), c("bio14"))]
 var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio12","bio15","hurs_mean")
 ```
 
+**Suppression de la variable bio14**
+
 ## Création des variables factices
 
-```{r,echo=TRUE}
+```{r factices var ,echo=TRUE}
 bdd_explo$clcm_lvl3= as.factor(bdd_explo$clcm_lvl3)
 summary_df <- as.data.frame(summary(bdd_explo$clcm_lvl3))
 colnames(summary_df) <- c("Numbers")
@@ -1816,7 +1971,7 @@ kable(summary_df,padding = 5)
                     *Coniferous forest +* 
                     *Mixed forest*
 
-```{r, echo=TRUE}
+```{r clc3 levels, echo=FALSE}
 levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Broad-leaved forest"] <- "Mixed forest"
 levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Coniferous forest"] <- "Mixed forest"
 bdd_explo$clcm_lvl3= as.factor(bdd_explo$clcm_lvl3)
@@ -1827,7 +1982,7 @@ bdd_explo$clcm_lvl3= as.factor(bdd_explo$clcm_lvl3)
 
 -   Abréviation des levels
 
-```{r, echo=TRUE}
+```{r clc3 names, echo=FALSE}
 cl_original <- levels(bdd_explo$clcm_lvl3)
 new_cl <- c("mf","gua", "ng", "nial", "p", "v")
 bdd_explo$clcm_lvl3 <- factor(bdd_explo$clcm_lvl3, levels = cl_original, labels = new_cl)
@@ -1836,9 +1991,10 @@ bdd_explo <- bdd_explo %>%
   rename(clc3 = clcm_lvl3)
 ```
 
+
 -   Variables
 
-```{r,echo=TRUE}
+```{r head clc var ,echo=FALSE}
 bdd_explo <- dummy_cols(bdd_explo, select_columns = c("clc3"))
 clc3_col= c("clc3_mf","clc3_gua", "clc3_ng", "clc3_nial", "clc3_p", "clc3_v")
 head(bdd_explo[,clc3_col])
@@ -1846,7 +2002,7 @@ head(bdd_explo[,clc3_col])
 ```
 
 
-```{r}
+```{r VIF and clc3}
 # usdm::vif(bdd_explo[,c(var,clc3_col)])
 # usdm::vifcor(bdd_explo[,c(var,clc3_col)], th = 0.9, keep = NULL, method = 'pearson')
 # usdm::vifstep(bdd_explo[,c(var,clc3_col)], th = 10, keep = NULL, method = 'pearson')
@@ -1854,8 +2010,9 @@ head(bdd_explo[,clc3_col])
 ```
 
 
+
 ## ACP
-```{r, echo=TRUE, fig.align='center'}
+```{r ACP, echo=TRUE, fig.align='center'}
 # On supprime les lignes avec des NA dans toutes les colonnes sauf BM_tot
 # colSums(is.na(bdd_explo))
 bdd_explo <- bdd_explo[apply(bdd_explo[, !colnames(bdd_explo) %in% "BM_tot"], 1, function(x) all(!is.na(x))), ]
@@ -1884,8 +2041,8 @@ lignes_superieures <- rownames(contrib_axes)[apply(contrib_axes, 1,
                                                      any(x >= seuil))]
 var [! var %in% lignes_superieures]
 
-#  **** En consderant les deux premiers axes:
-#le Phosphore_.P._g.kg et le C_N et le pH ne sont pas trés influant
+#  **** En consderant les Trois premiers axes:
+# seul K n'est pas trés influant
 
 
 
@@ -1901,24 +2058,23 @@ fviz_pca_var(
 ) # evite le chevauchement de texte
 
 
-# Suppression de Limon fin
-
-#Suppression de Argiles
 
 
-coul = c("yellow", "green", "violet", "blue", "black", "red")
-fviz_pca_ind(
-  axes = c(1, 2),
-  acp0,
-  geom.ind = "text",
-  pointshape = 21,
-  pointsize = 2,
-  #palette = coul,
-  palette = "viridis",
-  addEllipses = TRUE,
-  legend.title = "CLC",
-  fill.ind = bdd_explo$clc3
-)
+# coul = c("yellow", "green", "violet", "blue", "black", "red")
+# fviz_pca_ind(
+#   axes = c(1, 2),
+#   acp0,
+#   geom.ind = "text",
+#   pointshape = 21,
+#   pointsize = 2,
+#   #palette = coul,
+#   palette = "viridis",
+#   addEllipses = TRUE,
+#   legend.title = "CLC",
+#   fill.ind = bdd_explo$clc3
+# )
+
+
 fviz_pca_ind(
   axes = c(1, 2),
   acp0,
@@ -1946,15 +2102,15 @@ fviz_pca_ind(
 
 
 # Selecting variables with regsubsets()
-```{r, echo=TRUE}
+```{r select var, echo=TRUE}
 # colSums(is.na(bdd_explo))
 bdd_explo <- bdd_explo[apply(bdd_explo[, !colnames(bdd_explo) %in% "BM_tot"], 1, function(x) all(!is.na(x))), ]
 # colSums(is.na(bdd_explo))
 dim(bdd_explo)
 ```
 
-## AB_tot
-```{r, echo=TRUE, fig.align='center'}
+## Séléction pour AB_tot
+```{r abundance selection, echo=TRUE, fig.align='center'}
 # names(bdd_explo)
 supp = c("ID","Programme","Annee","ID_Site", "Protocole","BM_tot", "Richesse_tot","clc3")
 df_AB_tot= bdd_explo[, setdiff(names(bdd_explo), supp)]
@@ -1999,10 +2155,9 @@ best_var_AB_tot=names(best_var_AB_tot)[-1]
 
 
 
-## BM_tot
+## Séléction pour BM_tot
 
--   Suppression de `r sum(is.na(bdd_explo$BM_tot))` lignes de NA de BM_tot
-```{r, echo=TRUE, fig.align='center'}
+```{r biomass selection, echo=TRUE, fig.align='center'}
 # names(bdd_explo)
 supp = c("ID","Programme","Annee","ID_Site", "Protocole","AB_tot", "Richesse_tot","clc3")
 df_BM_tot= bdd_explo[, setdiff(names(bdd_explo), supp)]
@@ -2018,6 +2173,7 @@ cp_BM_tot=round (summary(results_BM_tot)$cp,2)
 bic_BM_tot=round(summary(results_BM_tot)$bic,2)
 ```
 
+-   Suppression de `r sum(is.na(bdd_explo$BM_tot))` lignes de NA de BM_tot (nrow = `r nrow(df_BM_tot)`)
 
 -   Selection by R² : stable from `r which.max(rsq_BM_tot)` variables
 ```{r, echo=FALSE, fig.align='center'}
@@ -2048,8 +2204,8 @@ best_var_BM_tot=names(best_var_BM_tot)[-1]
 
 
 
-## Richesse_tot
-```{r, echo=TRUE, fig.align='center'}
+## Séléction pour Richesse_tot
+```{r richness selection, echo=TRUE, fig.align='center'}
 # names(bdd_explo)
 supp = c("ID","Programme","Annee","ID_Site", "Protocole","BM_tot", "AB_tot","clc3")
 df_Richesse_tot= bdd_explo[, setdiff(names(bdd_explo), supp)]
@@ -2094,7 +2250,7 @@ best_var_Richesse_tot=names(best_var_Richesse_tot)[-1]
 
 
 ## Synthèses
-```{r}
+```{r synth selection}
 all_var=unique(c(best_var_AB_tot,best_var_BM_tot,best_var_Richesse_tot))
 col_max=max(c(length(best_var_AB_tot),length(best_var_BM_tot),length(best_var_Richesse_tot)))
 
@@ -2131,186 +2287,76 @@ kable(resultat_tableau,padding=10)
 
 
 
-# Modélisation
-```{r}
-supp = c("ID","Programme","Annee","ID_Site", "Protocole","AB_tot","BM_tot","Richesse_tot", "AB_tot","clc3")
-predicteurs=c(names(df_mod)[! names(df_mod) %in% supp])
-# names(bdd_explo[,10:26])
-df_mod=bdd_explo
-
-
-set.seed(42)  # Pour rendre les résultats reproductibles
-index <- createDataPartition(df_mod$clc3, p = 0.8, list = FALSE)
-
-# Séparer les données en ensembles d'entraînement et de test
-df_train <- df_mod[index, ]  # Données d'entraînement
-df_test <- df_mod[-index, ]  # Données de test
-df_train = droplevels(df_train)
-df_test = droplevels(df_test)
-# summary(df_train$clc3)
-# summary(df_test$clc3)
-# summary(df_mod$clc3)
-# 80*summary(df_mod$clc3)/100
-```
-
-## Models
-
-```{r}
-GLM <- function(var_rep, df_app, df_valid,family = 'gaussian'){
-  var_mod=c(var_rep,predicteurs)
-  df_app = df_app[,var_mod]
-  df_valid = df_valid[,var_mod]
-  formula <- substitute(var_rep ~ ., list(var_rep = as.name(var_rep)))
-  # entrainement du modele sur le jeu d'entrainement
-  modelglm<-glm(formula,family = family ,data = df_app)
-  
-  # Prediction sur le jeu de validation
-  prev.glm<-predict(modelglm,newdata=as.data.frame(df_valid[,predicteurs]))
-  
-  # Calcul du RMSE pour évaluer la qualite du modele
-  rmse <- round (sqrt(mean((df_valid[,var_rep] - prev.glm)^2)),2)
-  
-  
- 
-  formula <- substitute(var_rep ~ 1, list(var_rep = as.name(var_rep)))
-  null.deviance <- deviance(lm(formula, data = df_app))
-  deviance<- deviance(tests)
-  r_squared = with(summary(tests), 1 - deviance/null.deviance) # McFadden's R-squared
-  
-  r_adj <- round (100*r_squared,2)
-  
-  
-  results <- list(RMSE = rmse, R_squared= r_adj)
-  return(results)
-}
-
-# GLM(var_rep ="AB_tot" , df_app=df_train, df_valid = df_test,family = 'gaussian')
-
-
-
-GAM <- function(var_rep, df_app, df_valid, family = 'gaussian',method = "REML"){
-  # var_mod=c(var_rep,predicteurs)
-  # df_app = df_app[,var_mod]
-  # df_valid = df_valid[,var_mod]
-  # formula <- substitute(var_rep ~ ,  list(var_rep = as.name(var_rep)))
-  
-  # entrainement du modele sur le jeu d'entrainement
-  modelgam<-gam(AB_tot ~ clc3 + s(elevation) + s(pH) + s(silt) + s(clay) + s(C) + s(N) + s(K) + s(CN) + s(CEC) + s(CaCO3) + s(bio1) + s(bio3) + s(bio8) + s(bio12) + s(bio15) + s(hurs_mean) ,
-        family=family,method = method,data = df_app)
-  
-  # Prediction sur le jeu de validation
-  prev.gam<-predict(modelgam,newdata=as.data.frame(df_valid[,9:26]))
-  
-  # Calcul du RMSE pour évaluer la qualite du modele
-  rmse <- round (sqrt(mean((df_valid[,var_rep] - prev.gam)^2)),2)
-
-  
-  null.deviance <- modelgam$null.deviance
-  deviance<- modelgam$deviance
-  r_squared = with(summary(tests), 1 - deviance/null.deviance) # McFadden's R-squared
-  
-  r_adj <- round (100*r_squared,2)
-  
-  
-  results <- list(RMSE = rmse, R_squared= r_adj)
-  return(results)
-}
-
-# GAM(var_rep ="AB_tot" , df_app=df_train, df_valid = df_test,family = 'gaussian')
 
 
 
 
-ForetAlea <- function(var_rep, df_app, df_valid){
-  
-  # Nombre de variables tirées aléatoirement pour la construction des arbre : mtry =    1/nombre de variable explicatives totales
-  # nombre d'arbres : ntree = 250
-  
-  var_mod=c(var_rep,predicteurs)
-  df_app = df_app[,var_mod]
-  df_valid = df_valid[,var_mod]
-  
-  
-  col_posi <- which(names(df_app) == var_rep)
-  ForeVDT <- randomForest(df_app[-col_posi], df_app[[col_posi]], mtry=(ncol(df_app)-1)/3,
-                          ntree=1000, keep.forest=TRUE)
-  
-  # Prediction sur le jeu de validation
-  prev<-predict(ForeVDT,newdata=as.data.frame(df_valid[,predicteurs]))
-  
-  # Calcul du RMSE pour évaluer la qualité du modele
-  rmse <- round (sqrt(mean((df_valid[,var_rep] - prev)^2)),2)
-  
-  r_adj = round (mean(100*ForeVDT$rsq),2)
-  
-    results <- list(RMSE = rmse, R_squared= r_adj)
-  return(results)
-}
-# ForetAlea(var_rep ="AB_tot" , df_app=df_train, df_valid = df_test)
-
-```
+-->
 
 
-```{r}
-n_sim=5 # Nombre de similation
-
-# Pour AB_tot
-AB_tot_RMSE_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("RMSEGLM", "RMSEGAM", "RMSERandomF","RMSEGB","RMSEResNeu","RMS_BestMod")))
-AB_tot_RMSE_Results<-as.data.frame(AB_tot_RMSE_Results)
-
-AB_tot_R_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("R_GLM", "R_GAM", "R_RandomF","R_GB","R_ResNeu","R_BestMod")))
-AB_tot_R_Results<-as.data.frame(AB_tot_R_Results)
-
-
-
-# Pour BM_tot
-BM_tot_RMSE_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("RMSEGLM", "RMSEGAM", "RMSERandomF","RMSEGB","RMSEResNeu","RMS_BestMod")))
-BM_tot_RMSE_Results<-as.data.frame(BM_tot_RMSE_Results)
-
-BM_tot_R_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("R_GLM", "R_GAM", "R_RandomF","R_GB","R_ResNeu","R_BestMod")))
-BM_tot_R_Results<-as.data.frame(BM_tot_R_Results)
-
-
-
-# Pour AB_tot
-Richesse_tot_RMSE_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("RMSEGLM", "RMSEGAM", "RMSERandomF","RMSEGB","RMSEResNeu","RMS_BestMod")))
-Richesse_tot_RMSE_Results<-as.data.frame(Richesse_tot_RMSE_Results)
-
-Richesse_tot_R_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("R_GLM", "R_GAM", "R_RandomF","R_GB","R_ResNeu","R_BestMod")))
-Richesse_tot_R_Results<-as.data.frame(Richesse_tot_R_Results)
-```
-
+# Distributions des variables de réponse
 ## Distributions: AB_tot
 
-```{r}
+```{r abundace dist}
 # Noraml
 set.seed(123)
-donnees_normales <- rnorm(nrow(df_mod), mean = mean(df_mod$AB_tot), sd = 2)
+par(mfrow = c(2,2))
+donnees_normales <- rnorm(nrow(data_mod), mean = mean(data_mod$AB_tot), sd = 2)
 hist(donnees_normales, freq = FALSE, main = "Distribution Normale", xlab = "Valeurs", ylab = "Densité")
 curve(dnorm(x, mean = mean(donnees_normales), sd = sd(donnees_normales)), add = TRUE, col = "blue", lwd = 2)
 
 
 # Poisson
 set.seed(123)
-donnees_poisson <- rpois(nrow(df_mod), lambda = mean(df_mod$AB_tot))
+donnees_poisson <- rpois(nrow(data_mod), lambda = mean(data_mod$AB_tot))
 hist(donnees_poisson, freq = FALSE, main = "Distribution de Poisson", xlab = "Valeurs", ylab = "Densité")
 x <- 0:max(donnees_poisson)
-lines(x, dpois(x, lambda = mean(df_mod$AB_tot)), col = "blue", lwd = 2)
+lines(x, dpois(x, lambda = mean(data_mod$AB_tot)), col = "blue", lwd = 2)
 
 
-hist(df_mod$AB_tot,xlab = "AB_tot",main = "Distribution des données")
+hist(data_mod$AB_tot,xlab = "AB_tot",main = "Distribution des données")
 
-par(mfrow = c(1,1))
-qqnorm(df_mod$AB_tot, pch= 16, col = 'blue',xlab='')
-qqline(df_mod$AB_tot, col= 'red')
+
+qqnorm(data_mod$AB_tot, pch= 16, col = 'blue',xlab='')
+qqline(data_mod$AB_tot, col= 'red')
 ```
 
-## Distributions: BM_tot
 
+-   Transformation sqrt
 ```{r}
 # Noraml
-df_bm=drop_na(df_mod)
 set.seed(123)
+test = sqrt(data_mod$AB_tot)
+par(mfrow = c(2,2))
+donnees_normales <- rnorm(nrow(data_mod), mean = mean(test), sd = 2)
+hist(donnees_normales, freq = FALSE, main = "Distribution Normale", xlab = "Valeurs", ylab = "Densité")
+curve(dnorm(x, mean = mean(donnees_normales), sd = sd(donnees_normales)), add = TRUE, col = "blue", lwd = 2)
+
+
+# Poisson
+set.seed(123)
+donnees_poisson <- rpois(nrow(data_mod), lambda = mean(test))
+hist(donnees_poisson, freq = FALSE, main = "Distribution de Poisson", xlab = "Valeurs", ylab = "Densité")
+x <- 0:max(donnees_poisson)
+lines(x, dpois(x, lambda = mean(test)), col = "blue", lwd = 2)
+
+
+hist(test,xlab = "AB_tot",main = "Distribution avec transformation sqrt")
+
+
+qqnorm(test, pch= 16, col = 'blue',xlab='')
+qqline(test, col= 'red')
+
+
+```
+
+
+## Distributions: BM_tot
+```{r biomass dist}
+# Noraml
+df_bm=drop_na(data_mod)
+set.seed(123)
+par(mfrow = c(2,2))
 donnees_normales <- rnorm(nrow(df_bm), mean = mean(df_bm$BM_tot), sd = 2)
 hist(donnees_normales, freq = FALSE, main = "Distribution Normale", xlab = "Valeurs", ylab = "Densité")
 curve(dnorm(x, mean = mean(donnees_normales), sd = sd(donnees_normales)), add = TRUE, col = "blue", lwd = 2)
@@ -2326,103 +2372,2068 @@ lines(x, dpois(x, lambda = mean(df_bm$BM_tot)), col = "blue", lwd = 2)
 
 hist(df_bm$BM_tot,xlab = "BM_tot",main = "Distribution des données")
 
-par(mfrow = c(1,1))
+
 qqnorm(df_bm$BM_tot, pch= 16, col = 'blue',xlab='')
 qqline(df_bm$BM_tot, col= 'red')
 ```
 
-## Distributions: Richesse_tot
 
+-   Transformation sqrt
 ```{r}
 # Noraml
 set.seed(123)
-donnees_normales <- rnorm(nrow(df_mod), mean = mean(df_mod$Richesse_tot), sd = 2)
+test = sqrt(data_mod$BM_tot)
+test = drop_na(as.data.frame(test))
+par(mfrow = c(2,2))
+test =test$test
+donnees_normales <- rnorm(length(test), mean = mean(test), sd = sd(test))
 hist(donnees_normales, freq = FALSE, main = "Distribution Normale", xlab = "Valeurs", ylab = "Densité")
 curve(dnorm(x, mean = mean(donnees_normales), sd = sd(donnees_normales)), add = TRUE, col = "blue", lwd = 2)
 
 
 # Poisson
 set.seed(123)
-donnees_poisson <- rpois(nrow(df_mod), lambda = mean(df_mod$Richesse_tot))
+donnees_poisson <- rpois(length(test), lambda = mean(test))
 hist(donnees_poisson, freq = FALSE, main = "Distribution de Poisson", xlab = "Valeurs", ylab = "Densité")
 x <- 0:max(donnees_poisson)
-lines(x, dpois(x, lambda = mean(df_mod$Richesse_tot)), col = "blue", lwd = 2)
+lines(x, dpois(x, lambda = mean(test)), col = "blue", lwd = 2)
 
 
-hist(df_mod$Richesse_tot,xlab = "Richesse_tot",main = "Distribution des données")
+hist(test,xlab = "BM_tot",main = "Distribution avec transformation sqrt")
 
-par(mfrow = c(1,1))
-qqnorm(df_mod$Richesse_tot, pch= 16, col = 'blue',xlab='')
-qqline(df_mod$Richesse_tot, col= 'red')
+
+qqnorm(test, pch= 16, col = 'blue',xlab='')
+qqline(test, col= 'red')
+
+
 ```
 
 
-## Compilation
+## Distributions: Richesse_tot
 
--   GLM
+```{r richness dist}
+# Noraml
+set.seed(123)
+par(mfrow = c(2,2))
+donnees_normales <- rnorm(nrow(data_mod), mean = mean(data_mod$Richesse_tot), sd = 2)
+hist(donnees_normales, freq = FALSE, main = "Distribution Normale", xlab = "Valeurs", ylab = "Densité")
+curve(dnorm(x, mean = mean(donnees_normales), sd = sd(donnees_normales)), add = TRUE, col = "blue", lwd = 2)
+
+
+# Poisson
+set.seed(123)
+donnees_poisson <- rpois(nrow(data_mod), lambda = mean(data_mod$Richesse_tot))
+hist(donnees_poisson, freq = FALSE, main = "Distribution de Poisson", xlab = "Valeurs", ylab = "Densité")
+x <- 0:max(donnees_poisson)
+lines(x, dpois(x, lambda = mean(data_mod$Richesse_tot)), col = "blue", lwd = 2)
+
+
+hist(data_mod$Richesse_tot,xlab = "Richesse_tot",main = "Distribution des données")
+
+
+qqnorm(data_mod$Richesse_tot, pch= 16, col = 'blue',xlab='')
+qqline(data_mod$Richesse_tot, col= 'red')
+```
+
+
+-   Transformation sqrt
 ```{r}
-temps1=Sys.time()
-set.seed(1234)
+# Noraml
+set.seed(123)
+test = sqrt(data_mod$Richesse_tot+1)
+test = drop_na(as.data.frame(test))
+par(mfrow = c(2,2))
+test =test$test
+donnees_normales <- rnorm(length(test), mean = mean(test), sd = sd(test))
+hist(donnees_normales, freq = FALSE, main = "Distribution Normale", xlab = "Valeurs", ylab = "Densité")
+curve(dnorm(x, mean = mean(donnees_normales), sd = sd(donnees_normales)), add = TRUE, col = "blue", lwd = 2)
 
-# cl <- detectCores() %>% -1 %>% makeCluster
-# registerDoParallel(cl)
 
-for (i in 1:n_sim){
-lignes <- createDataPartition(df_mod$clc3, p = 0.8, list = FALSE)
+# Poisson
+set.seed(123)
+donnees_poisson <- rpois(length(test), lambda = mean(test))
+hist(donnees_poisson, freq = FALSE, main = "Distribution de Poisson", xlab = "Valeurs", ylab = "Densité")
+x <- 0:max(donnees_poisson)
+lines(x, dpois(x, lambda = mean(test)), col = "blue", lwd = 2)
+
+
+hist(test,xlab = "Richesse_tot",main = "Distribution avec transformation sqrt")
+
+
+qqnorm(test, pch= 16, col = 'blue',xlab='')
+qqline(test, col= 'red')
+
+
+```
+Tranformation non satisfaisante
+
+
+# Importance des variables
+```{r}
+# Transformation
+data_mod$AB_tot = sqrt(data_mod$AB_tot)
+data_mod$BM_tot = sqrt(data_mod$BM_tot)
+```
+
+## Importance des variables pour AB_tot
+```{r}
+ForetAlea <- function(var_rep, df_app, df_valid,mtry =9,ntree= 2000,maxnodes=60){
+  
+  # Nombre de variables tirées aléatoirement pour la construction des arbre : mtry =    1/nombre de variable explicatives totales # nombre d'arbres : ntree = 250
+  
+  # var_mod=c(var_rep,predicteurs)
+  # df_app = df_app[,var_mod]
+  # df_valid = df_valid[,var_mod]
+  
+  
+  col_posi <- which(names(df_app) == var_rep)
+  ForeVDT <- randomForest(df_app[-col_posi], df_app[[col_posi]], mtry=mtry, ntree=ntree,maxnodes=maxnodes)
+  
+  # Prediction sur le jeu de validation
+  col_posi <- which(names(df_valid) == var_rep)
+  pred.RF<-predict(ForeVDT,newdata=as.data.frame(df_valid[,-col_posi]))
+  
+  # Calcul du RMSE pour évaluer la qualité du modele
+  rmse <- round (sqrt(mean((df_valid[,col_posi] - pred.RF)^2)),2)
+  
+  r_adj = round (mean(ForeVDT$rsq),2)
+  
+    results <- list(RMSE = rmse, R_squared= r_adj, model=ForeVDT)
+  return(results)
+}
+```
+
+```{r imp abundance}
+# names(data_mod)
+
+df_explo_AB_tot = data_mod[,c(6,9:47)]
+df_explo_AB_tot = drop_na(df_explo_AB_tot)
+
+
+set.seed(1234)  # Pour rendre les résultats reproductibles
+index <- createDataPartition(df_explo_AB_tot$clcm_lvl3, p = 0.8, list = FALSE)
 
 # Séparer les données en ensembles d'entraînement et de test
-b_df_train <- df_mod[lignes, ]  # Données d'entraînement
-b_df_test <- df_mod[-lignes, ]  # Données de test
-b_df_train = droplevels(b_df_train)
-b_df_test = droplevels(b_df_test)
+df_train_AB_tot <- df_explo_AB_tot[index, ]  # Données d'entraînement
+df_test_AB_tot <- df_explo_AB_tot[-index, ]  # Données de test
+df_train_AB_tot = droplevels(df_train_AB_tot)
+df_test_AB_tot = droplevels(df_test_AB_tot)
 
-# GLM
-AB_tot_RMSE_Results[i,"RMSEGLM"] <- GLM(var_rep ="AB_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian')$RMSE
 
-AB_tot_R_Results[i,"R_GLM"] <- GLM(var_rep ="AB_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian')$R_squared
+all_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot, df_valid = df_test_AB_tot,mtry =9,ntree= 2000)
+AB_tot_fit_rf = all_var_AB_tot$model
 
-cat("compilation : ",i, "/",n_sim,"\n")
+# # Etape 5 importance des variables
+# AB_tot_fit_rf #display fitted model
+# which.min(AB_tot_fit_rf$mse) #find number of trees that produce lowest test MSE
+# sqrt(AB_tot_fit_rf$mse[which.min(AB_tot_fit_rf$mse)]) #find RMSE of best model
+# varImpPlot(AB_tot_fit_rf) #produce variable importance plot
+
+# Obtention de l'importance des variables
+importance_rf <- as.data.frame(importance(AB_tot_fit_rf))
+importance_rf$nom=rownames(importance_rf)
+importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+
+best_20_AB_tot = c(importance_rf$nom[1:20])
+var_a_sup_AB_tot= setdiff(y = best_20_AB_tot,x = importance_rf$nom)
+
+best20_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot",best_20_AB_tot)], df_valid = df_test_AB_tot [,c("AB_tot",best_20_AB_tot)],mtry =9,ntree= 2000)
+
+varImpPlot(best20_var_AB_tot$model) #produce variable importance plot
+
+```
+
+
+
+## Importance des variables pour BM_tot
+```{r imp biomass}
+# names(data_mod)
+df_explo_BM_tot = data_mod[,c(7,9:47)]
+df_explo_BM_tot = drop_na(df_explo_BM_tot)
+
+
+set.seed(1234)  # Pour rendre les résultats reproductibles
+index <- createDataPartition(df_explo_BM_tot$clcm_lvl3, p = 0.8, list = FALSE)
+
+# Séparer les données en ensembles d'entraînement et de test
+df_train_BM_tot <- df_explo_BM_tot[index, ]  # Données d'entraînement
+df_test_BM_tot <- df_explo_BM_tot[-index, ]  # Données de test
+df_train_BM_tot = droplevels(df_train_BM_tot)
+df_test_BM_tot = droplevels(df_test_BM_tot)
+
+
+all_var_BM_tot= ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot, df_valid = df_test_BM_tot,mtry =9,ntree= 2000)
+BM_tot_fit_rf = all_var_BM_tot$model
+
+
+# # Etape 5 importance des variables
+# BM_tot_fit_rf #display fitted model
+# which.min(BM_tot_fit_rf$mse) #find number of trees that produce lowest test MSE
+# sqrt(BM_tot_fit_rf$mse[which.min(BM_tot_fit_rf$mse)]) #find RMSE of best model
+# sqrt(mean(BM_tot_fit_rf$mse))
+# mean(100*BM_tot_fit_rf$rsq)
+# varImpPlot(BM_tot_fit_rf) #produce variable importance plot
+
+# Obtention de l'importance des variables
+importance_rf <- as.data.frame(importance(BM_tot_fit_rf))
+importance_rf$nom=rownames(importance_rf)
+importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+
+best_20_BM_tot = c(importance_rf$nom[1:20])
+var_a_sup_BM_tot= setdiff(y = best_20_BM_tot,x = importance_rf$nom)
+
+best20_var_BM_tot= ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot[, c("BM_tot",best_20_BM_tot)], df_valid = df_test_BM_tot [, c("BM_tot",best_20_BM_tot)],mtry =9,ntree= 2000)
+varImpPlot(best20_var_BM_tot$model) #produce variable importance plot
+
+```
+
+
+## Importance des variables pour Richesse tot
+```{r imp richness}
+# names(data_mod)
+df_explo_Richesse_tot = data_mod[,c(8,9:47)]
+df_explo_Richesse_tot = drop_na(df_explo_Richesse_tot)
+
+
+set.seed(1234)  # Pour rendre les résultats reproductibles
+index <- createDataPartition(df_explo_Richesse_tot$clcm_lvl3, p = 0.8, list = FALSE)
+
+# Séparer les données en ensembles d'entraînement et de test
+df_train_Richesse_tot <- df_explo_Richesse_tot[index, ]  # Données d'entraînement
+df_test_Richesse_tot <- df_explo_Richesse_tot[-index, ]  # Données de test
+df_train_Richesse_tot = droplevels(df_train_Richesse_tot)
+df_test_Richesse_tot = droplevels(df_test_Richesse_tot)
+
+
+
+all_var_Richesse_tot= ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot, df_valid = df_test_Richesse_tot,mtry =9,ntree= 2000)
+Richesse_tot_fit_rf = all_var_Richesse_tot$model
+
+
+# Etape 5 importance des variables
+# Richesse_tot_fit_rf #display fitted model
+# which.min(Richesse_tot_fit_rf$mse) #find number of trees that produce lowest test MSE
+# sqrt(Richesse_tot_fit_rf$mse[which.min(Richesse_tot_fit_rf$mse)]) #find RMSE of best model
+# sqrt(mean(Richesse_tot_fit_rf$mse))
+# mean(100*Richesse_tot_fit_rf$rsq)
+# varImpPlot(Richesse_tot_fit_rf) #produce variable importance plot
+
+# Obtention de l'importance des variables
+importance_rf <- as.data.frame(importance(Richesse_tot_fit_rf))
+importance_rf$nom=rownames(importance_rf)
+importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+
+best_20_Richesse_tot = c(importance_rf$nom[1:20])
+var_a_sup_Richesse_tot= setdiff(y = best_20_Richesse_tot,x = importance_rf$nom)
+
+best20_var_Richesse_tot= ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot[, c("Richesse_tot",best_20_Richesse_tot)], df_valid = df_test_Richesse_tot [, c("Richesse_tot",best_20_Richesse_tot)],mtry =9,ntree= 2000)
+
+
+varImpPlot(best20_var_Richesse_tot$model) #produce variable importance plot
+```
+
+
+
+
+
+
+# Modélisation
+```{r modeling, echo=TRUE}
+supp = c("ID","Programme","Annee","ID_Site", "Protocole","AB_tot","BM_tot","Richesse_tot", "AB_tot","clc3")
+
+# names(bdd_explo[,10:26])
+# df_mod=bdd_explo
+# predicteurs=c(names(df_mod)[! names(df_mod) %in% supp])
+
+set.seed(1234)  # Pour rendre les résultats reproductibles
+index <- createDataPartition(data_mod$clcm_lvl3, p = 0.8, list = FALSE)
+
+# Séparer les données en ensembles d'entraînement et de test
+df_train <- data_mod[index, ]  # Données d'entraînement
+df_test <- data_mod[-index, ]  # Données de test
+df_train = droplevels(df_train)
+df_test = droplevels(df_test)
+# summary(df_train$clcm_lvl3)
+# summary(df_test$clcm_lvl3)
+# summary(data_mod$clcm_lvl3)
+# 80*summary(data_mod$clcm_lvl3)/100
+
+n_sim=30 # Nombre de similation
+
+
+
+df_mod_AB_tot = data_mod[,c(6,9:47)]
+df_mod_AB_tot = drop_na(df_mod_AB_tot)
+
+
+df_mod_BM_tot = data_mod[,c(7,9:47)]
+df_mod_BM_tot = drop_na(df_mod_BM_tot)
+
+
+df_mod_Richesse_tot = data_mod[,c(8,9:47)]
+df_mod_Richesse_tot = drop_na(df_mod_Richesse_tot)
+
+```
+
+-   Data partition (`r dim(data_mod)`):
+    -   train data (80 %) = `r dim(df_train)`
+    -   test data (20 %) = `r dim(df_test)`
+-   Nombre de simulation = `r n_sim`
+
+
+
+Création des fonction de chaque modèle 
+ 
+
+## GLM
+```{r function GLM, echo=TRUE}
+GLM <- function(var_rep, df_app, df_valid,family = 'gaussian'){
+  
+  var_predicteurs = c("clcm_lvl3","elevation","pH","silt","clay","C","N","K","CN","CEC","CaCO3","bio1","bio3",
+                        "bio8","bio12","bio15","hurs_mean")
+
+  df_app = df_app[,c(var_rep,var_predicteurs)]
+  df_valid = df_valid[,c(var_rep,var_predicteurs)]
+  
+  formula <- substitute(var_rep ~ ., list(var_rep = as.name(var_rep)))
+  
+  
+  # entrainement du modele sur le jeu d'entrainement
+  modelglm<-glm(formula,family = family ,data = df_app)
+  
+  # Prediction sur le jeu de validation
+  pred.GLM<-predict(modelglm,newdata=as.data.frame(df_valid[,var_predicteurs]))
+  
+  # Calcul du RMSE pour évaluer la qualite du modele
+  rmse <- round (sqrt(mean((df_valid[,var_rep] - pred.GLM)^2,na.rm=TRUE)),2)
+  
+  
+   # Calcul du R-squared pour évaluer la qualite du modele
+  # la somme des carrés résiduels (SSR)
+  col_posi <- which(names(df_valid) == var_rep)
+  SSR <- sum((pred.GLM - df_valid[,col_posi]) ^ 2,na.rm=TRUE)
+  # la somme totale des carrés (SST)
+  SST <- sum((df_valid[,col_posi] - mean(df_valid[,col_posi])) ^ 2)
+  r_adj <- 1 - (SSR / SST)
+
+  
+  MAE <- mean(abs(pred.GLM - df_valid[,col_posi]),na.rm=TRUE)
+  
+  results <- list(RMSE = rmse, R_squared= r_adj, MAE = MAE, model = modelglm)
+  return(results)
 }
-temps2=Sys.time()
-duree=difftime(temps2,temps1)
-# stopCluster(cl)
+
+# GLM(var_rep ="AB_tot" , df_app=df_train, df_valid = df_test,family = 'gaussian')
+# GLM(var_rep ="BM_tot" , df_app=drop_na(df_train), df_valid = drop_na(df_test),family = 'gaussian')
+# GLM(var_rep ="Richesse_tot" , df_app=df_train, df_valid = df_test,family = 'gaussian')
+```
+
+## GAM
+```{r function GAM, echo=TRUE}
+GAM <- function(var_rep, df_app, df_valid, family = 'gaussian',method = "REML"){
+  var_predicteurs = c("clcm_lvl3","elevation","pH","silt","clay","C","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio12","bio15","hurs_mean")
+  # var_mod=c(var_rep,predicteurs)
+  # df_app = df_app[,var_mod]
+  # df_valid = df_valid[,var_mod]
+  #formula <- substitute(var_rep ~.,   list(var_rep = as.name(var_rep)))
+  
+  # entrainement du modele sur le jeu d'entrainement
+  if(var_rep == "AB_tot"){ 
+  modelgam<-gam(AB_tot ~ clcm_lvl3 + s(elevation) + s(pH) + s(silt) + s(clay) + s(C) + s(N) +  s(K) + s(CN) + s(CEC) + s(CaCO3) + s(bio1) + s(bio3) + s(bio8) + s(bio12) + s(bio15) + s(hurs_mean) ,
+        family=family,method = method,data = df_app)
+  }
+    if(var_rep == "BM_tot"){ 
+  modelgam<-gam(BM_tot ~ clcm_lvl3 + s(elevation) + s(pH) + s(silt) + s(clay) + s(C) + s(N) +  s(K) + s(CN) + s(CEC) + s(CaCO3) + s(bio1) + s(bio3) + s(bio8) + s(bio12) + s(bio15) + s(hurs_mean) ,
+        family=family,method = method,data = df_app)
+    }
+    if(var_rep == "Richesse_tot"){ 
+  modelgam<-gam(Richesse_tot ~ clcm_lvl3 + s(elevation) + s(pH) + s(silt) + s(clay) + s(C) + s(N) +  s(K) + s(CN) +  s(CEC) + s(CaCO3) + s(bio1) + s(bio3) + s(bio8) + s(bio12) + s(bio15) + s(hurs_mean) ,
+        family=family,method = method,data = df_app)
+    }
+  
+  
+  # Prediction sur le jeu de validation
+  pred.GAM<-predict(modelgam,newdata=as.data.frame(df_valid[,var_predicteurs]))
+  
+  # Calcul du RMSE pour évaluer la qualite du modele
+  rmse <- sqrt(mean((df_valid[,var_rep] - pred.GAM)^2,na.rm=TRUE))
+
+  
+  # calcule du R-squared
+  # la somme des carrés résiduels (SSR)
+  col_posi <- which(names(df_valid) == var_rep)
+  SSR <- sum((pred.GAM - df_valid[,col_posi]) ^ 2,na.rm=TRUE)
+  # la somme totale des carrés (SST)
+  SST <- sum((df_valid[,col_posi] - mean(df_valid[,col_posi])) ^ 2)
+  r_adj <- 1 - (SSR / SST)
+
+  
+  MAE <- mean(abs(pred.GAM - df_valid[,col_posi]))
+  results <- list(RMSE = rmse, R_squared= r_adj, MAE = MAE,model = modelgam)
+  return(results)
+}
+# GAM(var_rep ="AB_tot", df_app=df_train, df_valid = df_test,family = 'gaussian',method = "REML")
+# GAM(var_rep ="BM_tot", df_app= drop_na(df_train), df_valid = drop_na(df_test),family = 'gaussian',method = "REML")
+# GAM(var_rep ="Richesse_tot", df_app=df_train, df_valid = df_test,family = 'gaussian',method = "REML")
+```
+
+
+## RF
+-   Boosting the RF model
+  -   Évaluer le modèle avec le paramètre par défaut
+  -   Trouver le meilleur nombre de mtry
+  -   Trouver le meilleur nombre de maxnodes
+  -   Trouver le meilleur nombre d'arbres
+  -   Évaluer le modèle sur l'ensemble de données de test
+
+```{r function RF, echo=TRUE}
+# # Define the control
+# trControl <- trainControl(method = "cv",
+#     number = 5,
+#     search = "grid")
+# 
+# # Étape 1) default model
+# set.seed(1234)
+# # Run the model
+# rf_default <- train(AB_tot~.,
+#     data = df_train_AB_tot,
+#     method = "rf",
+#     metric = "RMSE",
+#     trControl = trControl)
+# # Print the results
+# print(rf_default)
+# 
+# 
+# 
+# # Étape 2) Recherchez le meilleur essai
+# set.seed(1234)
+# tuneGrid <- expand.grid(.mtry = c(2: 10))
+# rf_mtry <- train(AB_tot~.,
+#     data = df_train_AB_tot,
+#     method = "rf",
+#     metric = "RMSE",
+#     tuneGrid = tuneGrid,
+#     trControl = trControl,
+#     importance = TRUE,
+#     nodesize = 14,
+#     ntree = 300)
+# print(rf_mtry)
+# 
+# ## RMSE was used to select the optimal model using  the largest value.
+# ## The final value used for the model was mtry = XX
+# rf_mtry$bestTune$mtry
+# min(rf_mtry$results$RMSE)
+# best_mtry_AB_tot <- rf_mtry$bestTune$mtry
+# 
+# 
+# # Étape 3) Recherchez les meilleurs maxnodes
+# 
+# store_maxnode <- list()
+# tuneGrid <- expand.grid(.mtry = best_mtry_AB_tot)
+# for (maxnodes in c(50: 60)) {
+#     set.seed(1234)
+#     rf_maxnode <- train(AB_tot~.,
+#         data = df_train_AB_tot,
+#         method = "rf",
+#         metric = "RMSE",
+#         tuneGrid = tuneGrid,
+#         trControl = trControl,
+#         importance = TRUE,
+#         nodesize = 14,
+#         maxnodes = maxnodes,
+#         ntree = 300)
+#     current_iteration <- toString(maxnodes)
+#     store_maxnode[[current_iteration]] <- rf_maxnode
+# }
+# results_mtry <- resamples(store_maxnode)
+# summary(results_mtry)
+# best_maxnodes_AB_tot = 60
+# 
+# # Étape 4) Recherchez les meilleurs ntrees
+# store_maxtrees <- list()
+# for (ntree in c(250, 300, 350, 400, 450, 500, 550, 600, 800, 1000, 2000)) {
+#     set.seed(5678)
+#     rf_maxtrees <- train(AB_tot~.,
+#         data = df_train_AB_tot,
+#         method = "rf",
+#         metric = "RMSE",
+#         tuneGrid = tuneGrid,
+#         trControl = trControl,
+#         importance = TRUE,
+#         nodesize = 14,
+#         maxnodes = 60,
+#         ntree = ntree)
+#     key <- toString(ntree)
+#     store_maxtrees[[key]] <- rf_maxtrees
+# }
+# results_tree <- resamples(store_maxtrees)
+# summary(results_tree)
+# best_ntree_AB_tot = 2000
+# 
+# 
+# AB_tot_fit_rf <- randomForest(AB_tot~.,
+#     data=df_train_AB_tot,
+#     method = "rf",
+#     metric = "RMSE",
+#     tuneGrid = tuneGrid,
+#     trControl = trControl,
+#     importance = TRUE,
+#     nodesize = 14,
+#     ntree = best_ntree_AB_tot,
+#     maxnodes = best_maxnodes_AB_tot)
+
+
+#tune model
+# df_AB_tot=df_mod
+# names(df_AB_tot)
+# df_AB_tot = df_AB_tot[,c(6,10:32)]
+# model_tuned <- tuneRF(
+#   x=df_AB_tot[,-1],
+#   y=df_AB_tot$AB_tot,
+#   ntreeTry=500,
+#   mtryStart=10,
+#   stepFactor=1.5,
+#   improve=0.01, doBest =TRUE,
+#   trace=FALSE #don't show real-time progress
+# )
+# plot(model_tuned)
+
+ForetAlea <- function(var_rep, df_app, df_valid,mtry =9,ntree= 2000,maxnodes=60){
+  
+  # Nombre de variables tirées aléatoirement pour la construction des arbre : mtry =    1/nombre de variable explicatives totales # nombre d'arbres : ntree = 250
+  
+  # var_mod=c(var_rep,predicteurs)
+  # df_app = df_app[,var_mod]
+  # df_valid = df_valid[,var_mod]
+  
+  
+  col_posi <- which(names(df_app) == var_rep)
+  ForeVDT <- randomForest(df_app[-col_posi], df_app[[col_posi]], mtry=mtry, ntree=ntree,maxnodes=maxnodes)
+  
+  # Prediction sur le jeu de validation
+  col_posi <- which(names(df_valid) == var_rep)
+  pred.RF<-predict(ForeVDT,newdata=as.data.frame(df_valid[,-col_posi]))
+  
+  # Calcul du RMSE pour évaluer la qualité du modele
+  rmse <- round (sqrt(mean((df_valid[,col_posi] - pred.RF)^2)),2)
+  
+  # calcule du R-squared
+  # la somme des carrés résiduels (SSR)
+SSR <- sum((pred.RF - df_valid[,col_posi]) ^ 2)
+# la somme totale des carrés (SST)
+SST <- sum((df_valid[,col_posi] - mean(df_valid[,col_posi])) ^ 2)
+
+r_adj <- 1 - (SSR / SST)
+  
+  
+  MAE <- mean(abs(pred.RF - df_valid[,col_posi]))
+
+    results <- list(RMSE = rmse, R_squared= r_adj,MAE = MAE, model=ForeVDT)
+    
+    
+  return(results)
+}
+
+
+
+# ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot, df_valid = df_test_AB_tot,mtry =9,ntree= 2000)
+# 
+# ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot",best_20_AB_tot)], df_valid = df_test_AB_tot[,c("AB_tot",best_20_AB_tot)],mtry =9,ntree= 2000)
+# 
+# 
+# 
+# 
+# ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot, df_valid = df_test_BM_tot,mtry =9,ntree= 2000)
+# 
+# ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot[, c("BM_tot",best_20_BM_tot)], df_valid = df_test_BM_tot [, c("BM_tot",best_20_BM_tot)],mtry =9,ntree= 2000)
+# 
+# 
+# 
+# 
+# ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot, df_valid = df_test_Richesse_tot,mtry =9,ntree= 2000)
+# 
+# ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot[, c("Richesse_tot",best_20_Richesse_tot)], df_valid = df_test_Richesse_tot [, c("Richesse_tot",best_20_Richesse_tot)],mtry =9,ntree= 2000)
+
+```
+
+
+## GBM
+
+-   Choisir un learning rate relativement élevé. Généralement (0.1 mais entre 0.05 et 0.2 peut marché aussi).
+
+-   Trouver le nombre optimal de ntree pour ce learning rate.
+
+-   Corriger les hyperparamètres de l’arborescence, ajuster le learning rate et évaluer la vitesse par rapport aux performances.
+
+-   Ajustez les paramètres spécifiques à l’arbre pour un learning rate déterminé.
+
+-   Réduir le learning rate pour évaluer toute amélioration de la précision.
+
+-   Utiliser les paramètres d'hyperparamètres finaux et augmentez les procédures de CV pour obtenir des estimations plus robustes. 
+
+```{r function GBM, echo=TRUE}
+# # see : https://bradleyboehmke.github.io/HOML/gbm.html
+# # df_train_AB_tot
+# # df_test_AB_tot
+# 
+# # run a basic GBM model
+# set.seed(123)  # for reproducibility
+# ames_gbm1 <- gbm(
+#   formula = AB_tot ~ .,
+#   data = df_train_AB_tot,
+#   distribution = "gaussian",  # SSE loss function
+#   n.trees = 5000,
+#   shrinkage = 0.1,
+#   interaction.depth = 3,
+#   n.minobsinnode = 10,
+#   cv.folds = 10
+# )
+# 
+# # find index for number trees with minimum CV error
+# best <- which.min(ames_gbm1$cv.error)
+# 
+# # get MSE and compute RMSE
+# sqrt(ames_gbm1$cv.error[best])
+# 
+# # plot error curve
+# gbm.perf(ames_gbm1, method = "cv")
+# 
+# 
+# 
+# # a partir de l'etape 3
+# # create grid search
+# hyper_grid <- expand.grid(
+#   learning_rate = c(0.3, 0.1, 0.05, 0.01, 0.005),
+#   RMSE = NA,
+#   trees = NA,
+#   time = NA
+# )
+# 
+# # execute grid search
+# for(i in seq_len(nrow(hyper_grid))) {
+# 
+#   # fit gbm
+#   set.seed(123)  # for reproducibility
+#   train_time <- system.time({
+#     m <- gbm(
+#       formula = AB_tot ~ .,
+#       data = df_train_AB_tot,
+#       distribution = "gaussian",
+#       n.trees = 5000, 
+#       shrinkage = hyper_grid$learning_rate[i], 
+#       interaction.depth = 3, 
+#       n.minobsinnode = 10,
+#       cv.folds = 10 
+#    )
+#   })
+#   
+#   # add SSE, trees, and training time to results
+#   hyper_grid$RMSE[i]  <- sqrt(min(m$cv.error))
+#   hyper_grid$trees[i] <- which.min(m$cv.error)
+#   hyper_grid$Time[i]  <- train_time[["elapsed"]]
+# cat(i)
+# }
+# 
+# # results
+# arrange(hyper_grid, RMSE)
+# #   learning_rate     RMSE trees time   Time
+# # 1         0.010 5.635777  4174   NA  81.22
+# # 2         0.050 5.655101   819   NA 107.34
+# # 3         0.005 5.658337  4997   NA 103.94
+# # 4         0.100 5.703994   274   NA 108.89
+# # 5         0.300 5.788693   141   NA 109.50
+# 
+# 
+# 
+# 
+# 
+# # etape 4
+# # search grid
+# hyper_grid <- expand.grid(
+#   n.trees = 6000,
+#   shrinkage = 0.01,
+#   interaction.depth = c(3, 5, 7),
+#   n.minobsinnode = c(5, 10, 15)
+# )
+# 
+# # create model fit function
+# model_fit <- function(n.trees, shrinkage, interaction.depth, n.minobsinnode) {
+#   set.seed(123)
+#   m <- gbm(
+#     formula = AB_tot ~ .,
+#     data = df_train_AB_tot,
+#     distribution = "gaussian",
+#     n.trees = n.trees,
+#     shrinkage = shrinkage,
+#     interaction.depth = interaction.depth,
+#     n.minobsinnode = n.minobsinnode,
+#     cv.folds = 10
+#   )
+#   # compute RMSE
+#   sqrt(min(m$cv.error))
+# }
+# 
+# # perform search grid with functional programming
+# hyper_grid$rmse <- purrr::pmap_dbl(
+#   hyper_grid,
+#   ~ model_fit(
+#     n.trees = ..1,
+#     shrinkage = ..2,
+#     interaction.depth = ..3,
+#     n.minobsinnode = ..4
+#     )
+# )
+# 
+# # results
+# arrange(hyper_grid, rmse)
+# #   n.trees shrinkage interaction.depth n.minobsinnode     rmse
+# # 1    6000      0.01                 7             15 5.600324
+# # 2    6000      0.01                 7             10 5.607520
+# # 3    6000      0.01                 5             15 5.612125
+# # 4    6000      0.01                 7              5 5.612956
+# # 5    6000      0.01                 5              5 5.625295
+# # 6    6000      0.01                 5             10 5.627353
+# # 7    6000      0.01                 3             15 5.632210
+# # 8    6000      0.01                 3             10 5.635777
+# # 9    6000      0.01                 3              5 5.653090
+# 
+# # nouvelle tantative
+# # search grid
+# hyper_grid <- expand.grid(
+#   n.trees = 8000,
+#   shrinkage = 0.001,
+#   interaction.depth = c(7),
+#   n.minobsinnode = c(15)
+# )
+# # perform search grid with functional programming
+# hyper_grid$rmse <- purrr::pmap_dbl(
+#   hyper_grid,
+#   ~ model_fit(
+#     n.trees = ..1,
+#     shrinkage = ..2,
+#     interaction.depth = ..3,
+#     n.minobsinnode = ..4
+#     )
+# )
+# # results
+# arrange(hyper_grid, rmse)
+
+best_n.trees = 6000
+best_shrinkage = 0.01
+best_interaction.depth = 7
+best_n.minobsinnode = 15
+
+
+
+GBM <- function(var_rep, df_app, df_valid,distribution = 'gaussian',n.trees = 6000,
+shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15){
+  # var_mod=c(var_rep,predicteurs)
+  # df_app = df_app[,var_mod]
+  # df_valid = df_valid[,var_mod]
+  formula <- substitute(var_rep ~ ., list(var_rep = as.name(var_rep)))
+  # entrainement du modele sur le jeu d'entrainement
+  Gradboost<-gbm(formula, data = df_app,
+    distribution = distribution, 
+    n.trees = n.trees,
+    shrinkage = shrinkage,
+    interaction.depth = interaction.depth,
+    n.minobsinnode = n.minobsinnode,
+    cv.folds = 10) 
+  
+  # Prediction sur le jeu de validation :
+   col_posi <- which(names(df_valid) == var_rep)
+  prev.GBM<-predict(Gradboost,newdata=as.data.frame(df_valid[,-col_posi]))
+ 
+  # Calcul du RMSE pour évaluer la qualité du modele
+  rmse <- round (sqrt(mean((df_valid[,var_rep] - prev.GBM)^2)),2)
+
+
+ # calcule du R-squared
+  # la somme des carrés résiduels (SSR)
+SSR <- sum((prev.GBM - df_valid[,col_posi]) ^ 2)
+# la somme totale des carrés (SST)
+SST <- sum((df_valid[,col_posi] - mean(df_valid[,col_posi])) ^ 2)
+
+r_adj <- 1 - (SSR / SST)
+  
+  MAE <- mean(abs(prev.GBM - df_valid[,col_posi])) 
+  results <- list(RMSE = rmse, R_squared= r_adj,MAE = MAE, model = Gradboost)
+  return(results)
+}
+
+
+# GBM_test = GBM(var_rep ="AB_tot", df_app=df_train_AB_tot, df_valid = df_test_AB_tot,distribution = 'gaussian',n.trees = 6000,shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+# summary(GBM_test$model)
+# best.iter <- gbm.perf(GBM_test$model, method = "cv")
+# summary(GBM_test$model, n.trees = best.iter)
+
+
+
+# GBM(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot",best_20_AB_tot)], df_valid = df_test_AB_tot[,c("AB_tot",best_20_AB_tot)],distribution = 'gaussian',n.trees = 6000,
+# shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+
+
+
+# GBM(var_rep ="BM_tot", df_app=df_train_BM_tot, df_valid = df_test_BM_tot,distribution = 'gaussian',n.trees = 6000,
+# shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+
+# GBM(var_rep ="BM_tot", df_app=df_train_BM_tot[, c("BM_tot",best_20_BM_tot)], df_valid = df_test_BM_tot[, c("BM_tot",best_20_BM_tot)],distribution = 'gaussian',n.trees = 6000,
+# shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+
+
+
+
+# GBM(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot, df_valid = df_test_Richesse_tot,distribution = 'gaussian',n.trees = 6000,shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+
+# GBM(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot[, c("Richesse_tot",best_20_Richesse_tot)], df_valid = df_test_Richesse_tot [, c("Richesse_tot",best_20_Richesse_tot)],distribution = 'gaussian',n.trees = 6000,
+# shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+
+```
+
+
+## ANN
+```{r}
+# Pour AB_tot
+ANN_df_train_AB_tot = df_train_AB_tot[,c("AB_tot",best_20_AB_tot)]
+colnames(ANN_df_train_AB_tot)[colnames(ANN_df_train_AB_tot) == "clcm_lvl3"] <- "clcm_lvl3"
+
+dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = ANN_df_train_AB_tot)
+ANN_df_train_AB_tot <- cbind(ANN_df_train_AB_tot, dummy_vars)
+ANN_df_train_AB_tot <- ANN_df_train_AB_tot[, -which(names(ANN_df_train_AB_tot) == "clcm_lvl3")]
+
+
+ANN_df_test_AB_tot = df_test_AB_tot[,c("AB_tot",best_20_AB_tot)]
+colnames(ANN_df_test_AB_tot)[colnames(ANN_df_test_AB_tot) == "clcm_lvl3"] <- "clcm_lvl3"
+
+dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = ANN_df_test_AB_tot)
+ANN_df_test_AB_tot <- cbind(ANN_df_test_AB_tot, dummy_vars)
+ANN_df_test_AB_tot <- ANN_df_test_AB_tot[, -which(names(ANN_df_test_AB_tot) == "clcm_lvl3")]
+
+write.csv2(x =ANN_df_train_AB_tot,file = "Results/AB_tot_train.csv", row.names = FALSE)
+write.csv2(x =ANN_df_test_AB_tot,file = "Results/AB_tot_test.csv", row.names = FALSE)
+
+
+# Pour BM_tot
+ANN_df_train_BM_tot = df_train_BM_tot[,c("BM_tot",best_20_BM_tot)]
+colnames(ANN_df_train_BM_tot)[colnames(ANN_df_train_BM_tot) == "clcm_lvl3"] <- "clcm_lvl3"
+
+dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = ANN_df_train_BM_tot)
+ANN_df_train_BM_tot <- cbind(ANN_df_train_BM_tot, dummy_vars)
+ANN_df_train_BM_tot <- ANN_df_train_BM_tot[, -which(names(ANN_df_train_BM_tot) == "clcm_lvl3")]
+
+
+ANN_df_test_BM_tot = df_test_BM_tot[,c("BM_tot",best_20_BM_tot)]
+colnames(ANN_df_test_BM_tot)[colnames(ANN_df_test_BM_tot) == "clcm_lvl3"] <- "clcm_lvl3"
+
+dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = ANN_df_test_BM_tot)
+ANN_df_test_BM_tot <- cbind(ANN_df_test_BM_tot, dummy_vars)
+ANN_df_test_BM_tot <- ANN_df_test_BM_tot[, -which(names(ANN_df_test_BM_tot) == "clcm_lvl3")]
+
+write.csv2(x =ANN_df_train_BM_tot,file = "Results/BM_tot_train.csv", row.names = FALSE)
+write.csv2(x =ANN_df_test_BM_tot,file = "Results/BM_tot_test.csv", row.names = FALSE)
+
+
+
+
+# Pour Richesse_tot
+ANN_df_train_Richesse_tot = df_train_Richesse_tot[,c("Richesse_tot",best_20_Richesse_tot)]
+colnames(ANN_df_train_Richesse_tot)[colnames(ANN_df_train_Richesse_tot) == "clcm_lvl3"] <- "clcm_lvl3"
+
+dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = ANN_df_train_Richesse_tot)
+ANN_df_train_Richesse_tot <- cbind(ANN_df_train_Richesse_tot, dummy_vars)
+ANN_df_train_Richesse_tot <- ANN_df_train_Richesse_tot[, -which(names(ANN_df_train_Richesse_tot) == "clcm_lvl3")]
+
+
+ANN_df_test_Richesse_tot = df_test_Richesse_tot[,c("Richesse_tot",best_20_Richesse_tot)]
+colnames(ANN_df_test_Richesse_tot)[colnames(ANN_df_test_Richesse_tot) == "clcm_lvl3"] <- "clcm_lvl3"
+
+dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = ANN_df_test_Richesse_tot)
+ANN_df_test_Richesse_tot <- cbind(ANN_df_test_Richesse_tot, dummy_vars)
+ANN_df_test_Richesse_tot <- ANN_df_test_Richesse_tot[, -which(names(ANN_df_test_Richesse_tot) == "clcm_lvl3")]
+
+write.csv2(x =ANN_df_train_Richesse_tot,file = "Results/Richesse_tot_train.csv", row.names = FALSE)
+write.csv2(x =ANN_df_test_Richesse_tot,file = "Results/Richesse_tot_test.csv", row.names = FALSE)
+
+```
+
+
+```{r function ANN, echo=TRUE}
+# Fonction ANN pour entraîner un modèle de réseau neuronal artificiel
+# et évaluer ses performances
+
+set.seed(12321)
+
+
+
+# ANN1 <- neuralnet::neuralnet(AB_tot~.,               
+#                       data = ANN_df_train_AB_tot,linear.output = FALSE) 
+# plot(ANN1, rep = 'best')
+
+
+
+
+
+
+
+ANN = function(var_rep, df_app, df_valid){
+
+  formula <- substitute(var_rep ~ ., list(var_rep = as.name(var_rep)))
+  # entrainement du modele sur le jeu d'entrainement
+  ResNeu <- neuralnet(formula,               #Modèle à ajuster
+                      data = df_app,         #Jeu de données avec variables de la formule
+                      hidden = c(11,5,2),#Nombre de neurones sur la couche cachée
+                      #err.fct = "sse",  #Erreur estimée par la somme des carrés des erreurs absolues que l'algorithme va chercher à minimiser
+                      linear.output = FALSE,   #Application linéaire aux neuronnes de sortie
+                      #lifesign = 'full',       #Imprimer ou non le détail du calcul
+                      rep = 2,                 #Nombre de répétition pour l'entraînement du réseau
+                      #algorithm = "rprop+",    #retropropagation résiliente avec retour arriere de poids
+                      #stepmax = 3000
+                      )      #Etapes maximales pour la formation du reseau
+  
+  #Sélection de la répétition la plus efficace
+   col_posi <- which(names(df_valid) == var_rep)
+   repp1 = ResNeu$result.matrix[1,1]
+   repp2 = ResNeu$result.matrix[1,2]
+   
+  if(repp1  < repp2){
+    
+    output <- compute(ResNeu, rep = 1, df_valid[,-col_posi])
+  }
+  if(repp1  > repp2){
+    output <- compute(ResNeu, rep = 2, df_valid[,-col_posi])
+  }
+ 
+
+
+   # Calcul de la RMSE
+rmse <-sqrt(mean((df_valid[,col_posi]-(output$net.result*(max(df_app[,var_rep])-min(df_app[,var_rep])+min(df_app[,var_rep]))))^2))
+rmse = round(rmse,2)  
+  
+  
+   # Calcul du McFadden's R-squared pour évaluer la qualite du modele
+  r_squared = 1 
+  r_adj <- round (100*r_squared,2)
+  
+  
+  results <- list(RMSE = rmse,R_squared= r_squared, model = ResNeu)
+  return(results)
+}
+
+# resl = ANN(var_rep ="AB_tot" , df_app= ANN_df_train_AB_tot, df_valid = ANN_df_test_AB_tot)
+# 
+# resl$RMSE
+# resl$R_squared
+# 
+# 
+# ANN_mode = resl$model
+# plot(ANN_mode, rep = 'best')
+```
+
+
+
+## Tableau des output
+```{r output,echo=FALSE}
+# # Pour AB_tot
+# AB_tot_RMSE_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("RMSE_GLM", "RMSE_GAM", "RMSE_RF","RMSE_GBM","RMSE_ANN","RMS_BestMod")))
+# AB_tot_RMSE_Results<-as.data.frame(AB_tot_RMSE_Results)
+# 
+# AB_tot_R_Results<-matrix(0,ncol=6,nrow=n_sim,dimnames=list(1:n_sim,c("R_GLM", "R_GAM", "R_RF","R_GBM","R_ANN","R_BestMod")))
+# AB_tot_R_Results<-as.data.frame(AB_tot_R_Results)
+# 
+# 
+# 
+# # Pour BM_tot
+# BM_tot_RMSE_Results<- AB_tot_RMSE_Results
+# 
+# BM_tot_R_Results<-AB_tot_R_Results
+# 
+# 
+# 
+# # Pour Richesse_tot
+# Richesse_tot_RMSE_Results<-AB_tot_RMSE_Results
+# 
+# Richesse_tot_R_Results<-AB_tot_R_Results
+# 
+# 
 # head(AB_tot_RMSE_Results)
 # head(AB_tot_R_Results)
+
+
+
 ```
+
+## Compilation pour chaque algoritme
+
+
+-   GLM
+```{r Loop.GLM}
+# # Pour AB_tot ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(data_mod$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- data_mod[lignes, ]  # Données d'entraînement
+# b_df_test <- data_mod[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # GLM
+# GLM_reslt_AB_tot = GLM(var_rep ="AB_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian')
+# 
+# AB_tot_RMSE_Results[i,"RMSE_GLM"] <- GLM_reslt_AB_tot$RMSE
+# 
+# AB_tot_R_Results[i,"R_GLM"] <- GLM_reslt_AB_tot$R_squared
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(AB_tot_RMSE_Results)
+# # head(AB_tot_R_Results)
+# write.csv2(x=AB_tot_RMSE_Results$RMSE_GLM, file = "Results/GLM_AB_tot_RMSE.csv")
+# write.csv2(x=AB_tot_R_Results$R_GLM, file = "Results/GLM_AB_tot_R.csv")
+
+
+
+
+
+# # Pour BM_tot ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(data_mod$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- data_mod[lignes, ]  # Données d'entraînement
+# b_df_test <- data_mod[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # GLM
+# GLM_reslt_BM_tot = GLM(var_rep ="BM_tot",df_app = drop_na(b_df_train), df_valid = drop_na(b_df_test),family = 'gaussian')
+# 
+# BM_tot_RMSE_Results[i,"RMSE_GLM"] <- GLM_reslt_BM_tot$RMSE
+# 
+# BM_tot_R_Results[i,"R_GLM"] <- GLM_reslt_BM_tot$R_squared
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(BM_tot_RMSE_Results)
+# # head(BM_tot_R_Results)
+# write.csv2(x=BM_tot_RMSE_Results$RMSE_GLM, file = "Results/GLM_BM_tot_RMSE.csv")
+# write.csv2(x=BM_tot_R_Results$R_GLM, file = "Results/GLM_BM_tot_R.csv")
+
+
+
+
+
+# # Pour Richesse_tot ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(data_mod$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- data_mod[lignes, ]  # Données d'entraînement
+# b_df_test <- data_mod[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # GLM
+# GLM_reslt_Richesse_tot = GLM(var_rep ="Richesse_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian')
+# 
+# Richesse_tot_RMSE_Results[i,"RMSE_GLM"] <- GLM_reslt_Richesse_tot$RMSE
+# 
+# Richesse_tot_R_Results[i,"R_GLM"] <- GLM_reslt_Richesse_tot$R_squared
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(Richesse_tot_RMSE_Results)
+# # head(Richesse_tot_R_Results)
+# write.csv2(x=Richesse_tot_RMSE_Results$RMSE_GLM, file = "Results/GLM_Richesse_tot_RMSE.csv")
+# write.csv2(x=Richesse_tot_R_Results$R_GLM, file = "Results/GLM_Richesse_tot_R.csv")
+
+```
+
+
 
 
 -   GAM
-```{r}
-temps1=Sys.time()
-set.seed(1234)
+```{r Loop.GAM}
+# # Pour AB_tot ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(data_mod$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- data_mod[lignes, ]  # Données d'entraînement
+# b_df_test <- data_mod[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # GAM
+# GAM_reslt_AB_tot <- GAM(var_rep ="AB_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian',method = "REML")
+# 
+# AB_tot_RMSE_Results[i,"RMSE_GAM"] = GAM_reslt_AB_tot$RMSE
+# 
+# AB_tot_R_Results[i,"R_GAM"] = GAM_reslt_AB_tot$R_squared
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(AB_tot_RMSE_Results)
+# # head(AB_tot_R_Results)
+# write.csv2(x=AB_tot_RMSE_Results$RMSE_GAM, file = "Results/GAM_AB_tot_RMSE.csv")
+# write.csv2(x=AB_tot_R_Results$R_GAM, file = "Results/GAM_AB_tot_R.csv")
 
-# cl <- detectCores() %>% -1 %>% makeCluster
-# registerDoParallel(cl)
 
-for (i in 1:n_sim){
-lignes <- createDataPartition(df_mod$clc3, p = 0.8, list = FALSE)
 
-# Séparer les données en ensembles d'entraînement et de test
-b_df_train <- df_mod[lignes, ]  # Données d'entraînement
-b_df_test <- df_mod[-lignes, ]  # Données de test
-b_df_train = droplevels(b_df_train)
-b_df_test = droplevels(b_df_test)
 
-# GAM
-AB_tot_RMSE_Results[i,"RMSEGAM"] <- GAM(var_rep ="AB_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian')$RMSE
+# # Pour BM_tot ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(data_mod$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- data_mod[lignes, ]  # Données d'entraînement
+# b_df_test <- data_mod[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # GAM
+# GAM_reslt_BM_tot <- GAM(var_rep ="BM_tot",df_app = drop_na(b_df_train), df_valid = drop_na(b_df_test),family = 'gaussian',method = "REML")
+# 
+# BM_tot_RMSE_Results[i,"RMSE_GAM"] = GAM_reslt_BM_tot$RMSE
+# 
+# BM_tot_R_Results[i,"R_GAM"] = GAM_reslt_BM_tot$R_squared
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(BM_tot_RMSE_Results)
+# # head(BM_tot_R_Results)
+# write.csv2(x=BM_tot_RMSE_Results$RMSE_GAM, file = "Results/GAM_BM_tot_RMSE.csv")
+# write.csv2(x=BM_tot_R_Results$R_GAM, file = "Results/GAM_BM_tot_R.csv")
 
-AB_tot_R_Results[i,"R_GAM"] <- GAM(var_rep ="AB_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian')$R_squared
 
-cat("compilation : ",i, "/",n_sim,"\n")
-}
-temps2=Sys.time()
-duree=difftime(temps2,temps1)
-# stopCluster(cl)
-# head(AB_tot_RMSE_Results)
-# head(AB_tot_R_Results)
+
+
+# # Pour Richesse_tot ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(data_mod$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- data_mod[lignes, ]  # Données d'entraînement
+# b_df_test <- data_mod[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # GAM
+# GAM_reslt_Richesse_tot <- GAM(var_rep ="Richesse_tot",df_app = b_df_train, df_valid = b_df_test,family = 'gaussian',method = "REML")
+# 
+# Richesse_tot_RMSE_Results[i,"RMSE_GAM"] = GAM_reslt_Richesse_tot$RMSE
+# 
+# Richesse_tot_R_Results[i,"R_GAM"] = GAM_reslt_Richesse_tot$R_squared
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(Richesse_tot_RMSE_Results)
+# # head(Richesse_tot_R_Results)
+# write.csv2(x=Richesse_tot_RMSE_Results$RMSE_GAM, file = "Results/GAM_Richesse_tot_RMSE.csv")
+# write.csv2(x=Richesse_tot_R_Results$R_GAM, file = "Results/GAM_Richesse_tot_R.csv")
 ```
+
+
+
+
+-   RF
+```{r Loop.RF}
+# # Pour AB_tot  ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(df_mod_AB_tot$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- df_mod_AB_tot[lignes, ]  # Données d'entraînement
+# b_df_test <- df_mod_AB_tot[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # RF
+# RF_result = ForetAlea(var_rep ="AB_tot", df_app=b_df_train[,c("AB_tot",best_20_AB_tot)], df_valid = b_df_test[,c("AB_tot",best_20_AB_tot)],mtry =9,ntree= 2000)
+# 
+# AB_tot_RMSE_Results[i,"RMSE_RF"] <- RF_result$RMSE
+# 
+# AB_tot_R_Results[i,"R_RF"] <- RF_result$R_squared
+# 
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(AB_tot_RMSE_Results)
+# # head(AB_tot_R_Results)
+# # mean(AB_tot_RMSE_Results$RMSE_RF)
+# # mean(AB_tot_R_Results$R_RF)
+# 
+# write.csv2(x=AB_tot_RMSE_Results$RMSE_RF, file = "Results/RF_AB_tot_RMSE.csv")
+# write.csv2(x=AB_tot_R_Results$R_RF, file = "Results/RF_AB_tot_R.csv")
+
+
+# # Pour BM_tot  ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(df_mod_BM_tot$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- df_mod_BM_tot[lignes, ]  # Données d'entraînement
+# b_df_test <- df_mod_BM_tot[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # RF
+# RF_result = ForetAlea(var_rep ="BM_tot", df_app=b_df_train[,c("BM_tot",best_20_BM_tot)], df_valid = b_df_test[,c("BM_tot",best_20_BM_tot)],mtry =9,ntree= 2000)
+# 
+# BM_tot_RMSE_Results[i,"RMSE_RF"] <- RF_result$RMSE
+# 
+# BM_tot_R_Results[i,"R_RF"] <- RF_result$R_squared
+# 
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(BM_tot_RMSE_Results)
+# # head(BM_tot_R_Results)
+# # mean(BM_tot_RMSE_Results$RMSE_RF)
+# # mean(BM_tot_R_Results$R_RF)
+# 
+# write.csv2(x=BM_tot_RMSE_Results$RMSE_RF, file = "Results/RF_BM_tot_RMSE.csv")
+# write.csv2(x=BM_tot_RMSE_Results$R_RF, file = "Results/RF_BM_tot_R.csv")
+
+
+
+
+# # Pour Richesse_tot  ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(df_mod_Richesse_tot$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- df_mod_Richesse_tot[lignes, ]  # Données d'entraînement
+# b_df_test <- df_mod_Richesse_tot[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # RF
+# RF_result = ForetAlea(var_rep ="Richesse_tot", df_app=b_df_train[,c("Richesse_tot",best_20_Richesse_tot)], df_valid = b_df_test[,c("Richesse_tot",best_20_Richesse_tot)],mtry =9,ntree= 2000)
+# 
+# Richesse_tot_RMSE_Results[i,"RMSE_RF"] <- RF_result$RMSE
+# 
+# Richesse_tot_R_Results[i,"R_RF"] <- RF_result$R_squared
+# 
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(Richesse_tot_RMSE_Results)
+# # head(Richesse_tot_R_Results)
+# # mean(Richesse_tot_RMSE_Results$RMSE_RF)
+# # mean(Richesse_tot_R_Results$R_RF)
+# 
+# write.csv2(x=Richesse_tot_RMSE_Results$RMSE_RF, file = "Results/RF_Richesse_tot_RMSE.csv")
+# write.csv2(x=Richesse_tot_R_Results$R_RF, file = "Results/RF_Richesse_tot_R.csv")
+```
+
+
+-   GBM
+```{r Loop.GBM}
+# Pour AB_tot  ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(df_mod_AB_tot$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- df_mod_AB_tot [lignes, ]  # Données d'entraînement
+# b_df_test <- df_mod_AB_tot [-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # GBM
+# GBM_result = GBM(var_rep ="AB_tot", df_app=b_df_train[,c("AB_tot",best_20_AB_tot)], df_valid = b_df_test[,c("AB_tot",best_20_AB_tot)],distribution = 'gaussian',n.trees = 6000,shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+# 
+# AB_tot_RMSE_Results[i,"RMSE_GBM"] <- GBM_result$RMSE
+# 
+# AB_tot_R_Results[i,"R_GBM"] <- GBM_result$R_squared
+# 
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(AB_tot_RMSE_Results)
+# # head(AB_tot_R_Results)
+# write.csv2(x=AB_tot_RMSE_Results$RMSE_GBM, file = "Results/GBM_AB_tot_RMSE.csv")
+# write.csv2(x=AB_tot_R_Results$R_GBM, file = "Results/GBM_AB_tot_R.csv")
+
+
+
+
+# Pour BM_tot ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(df_mod_BM_tot$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- df_mod_BM_tot [lignes, ]  # Données d'entraînement
+# b_df_test <- df_mod_BM_tot [-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # GBM
+# GBM_result = GBM(var_rep ="BM_tot", df_app=b_df_train[,c("BM_tot",best_20_BM_tot)], df_valid = b_df_test[,c("BM_tot",best_20_BM_tot)],distribution = 'gaussian',n.trees = 6000,shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+# 
+# BM_tot_RMSE_Results[i,"RMSE_GBM"] <- GBM_result$RMSE
+# 
+# BM_tot_R_Results[i,"R_GBM"] <- GBM_result$R_squared
+# 
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# stopCluster(cl)
+# head(BM_tot_RMSE_Results)
+# head(BM_tot_R_Results)
+# write.csv2(x=BM_tot_RMSE_Results$RMSE_GBM, file = "Results/GBM_BM_tot_RMSE.csv")
+# write.csv2(x=BM_tot_R_Results$R_GBM, file = "Results/GBM_BM_tot_R.csv")
+
+
+
+
+
+# # Pour Richesse_tot ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(df_mod_Richesse_tot$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- df_mod_Richesse_tot[lignes, ]  # Données d'entraînement
+# b_df_test <- df_mod_Richesse_tot[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # GBM
+# GBM_result = GBM(var_rep ="Richesse_tot", df_app=b_df_train[,c("Richesse_tot",best_20_Richesse_tot)], df_valid = b_df_test[,c("Richesse_tot",best_20_Richesse_tot)],distribution = 'gaussian',n.trees = 6000,shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+# 
+# Richesse_tot_RMSE_Results[i,"RMSE_GBM"] <- GBM_result$RMSE
+# 
+# Richesse_tot_R_Results[i,"R_GBM"] <- GBM_result$R_squared
+# 
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(Richesse_tot_RMSE_Results)
+# # head(Richesse_tot_R_Results)
+# write.csv2(x=Richesse_tot_RMSE_Results$RMSE_GBM, file = "Results/GBM_Richesse_tot_RMSE.csv")
+# write.csv2(x=Richesse_tot_R_Results$R_GBM, file = "Results/GBM_Richesse_tot_R.csv")
+
+```
+
+
+-   ANN
+```{r Loop.ANN}
+# Pour AB_tot  ------------------------------------------------------------------
+# temps1=Sys.time()
+# set.seed(1234)
+# 
+# # cl <- detectCores() %>% -1 %>% makeCluster
+# # registerDoParallel(cl)
+# 
+# for (i in 1:n_sim){
+# lignes <- createDataPartition(data_mod$clcm_lvl3, p = 0.8, list = FALSE)
+# 
+# # Séparer les données en ensembles d'entraînement et de test
+# b_df_train <- data_mod[lignes, ]  # Données d'entraînement
+# b_df_test <- data_mod[-lignes, ]  # Données de test
+# b_df_train = droplevels(b_df_train)
+# b_df_test = droplevels(b_df_test)
+# 
+# # GAM
+# AB_tot_RMSE_Results[i,"RMSE_ANN"] <- ANN(var_rep ="AB_tot" , df_app=b_df_train, df_valid = b_df_test)$RMSE
+# 
+# AB_tot_R_Results[i,"R_ANN"] <- ANN(var_rep ="AB_tot" , df_app=b_df_train, df_valid = b_df_test)$R_squared
+# 
+# 
+# cat("Itération : ",i, "/",n_sim,"\n")
+# }
+# temps2=Sys.time()
+# duree=difftime(temps2,temps1)
+# # stopCluster(cl)
+# # head(AB_tot_RMSE_Results)
+# # head(AB_tot_R_Results)
+```
+
+
+
+
+# Resultats
+
+## Sansibilité au nombre d'observation
+
+```{r sensbilite au nbr}
+
+df_reslt=data.frame(obs=numeric(),RMSE=numeric(),R=numeric())
+n_linges=seq(0.4,1,0.1)
+set.seed(1234)  # Pour rendre les résultats reproductibles
+
+for (i in n_linges){
+
+res = data.frame(obs=numeric(),RMSE=numeric(),R=numeric())
+for (j in 1:5){ 
+
+index <- createDataPartition(df_explo_AB_tot$clcm_lvl3, p = i, list = FALSE)
+
+df = df_explo_AB_tot[index, ]
+index <- createDataPartition(df$clcm_lvl3, p = 0.8, list = FALSE)
+# Séparer les données en ensembles d'entraînement et de test
+df_train <- df[index, ]  # Données d'entraînement
+df_test <- df[-index, ]  # Données de test
+df_train = droplevels(df_train)
+df_test = droplevels(df_test)
+
+
+
+res=ForetAlea(var_rep ="AB_tot" , df_app=df_train [,c("AB_tot",best_20_AB_tot)], df_valid = df_test [,c("AB_tot",best_20_AB_tot)],mtry =9,ntree= 2000)
+
+
+df_reslt=rbind(df_reslt,data.frame(obs=i,RMSE=res$RMSE,R=res$R_squared))
+}
+
+}
+
+
+df_reslt$obs_ligne = round(df_reslt$obs*nrow(df_explo_AB_tot))
+#df_reslt[nrow(df_reslt)+1,] = c("1",res$RMSE,res$R_squared,nrow(df_explo_AB_tot))
+
+
+
+df_reslt$obs=as.factor(df_reslt$obs)
+df_reslt$RMSE = as.numeric(df_reslt$RMSE)
+df_reslt$R = as.numeric(df_reslt$R)
+df_reslt$obs_ligne = as.numeric(df_reslt$obs_ligne)
+
+
+res_f = df_reslt %>% group_by(obs) %>% summarise_at(vars(RMSE,R,obs_ligne),funs(mean(.,na.rm=TRUE)))
+
+plot(res_f$R ~ res_f$obs_ligne, xlab="Numbers of observations", ylab="R squared (%)", main="Evolution of RF R² (%)",type='p')
+
+```
+
+
+
+
+
+
+## RMSE sur le JDD test
+```{r save result}
+# AB_tot
+AB_tot_RMSE_Results = read.csv2(file = "Results/AB_tot_RMSE_Results.csv")
+AB_tot_RMSE_Results = AB_tot_RMSE_Results [,-1]
+AB_tot_R_Results = read.csv2(file = "Results/AB_tot_R_Results.csv")
+AB_tot_R_Results = AB_tot_R_Results[,-1]
+# write.csv2(x=AB_tot_RMSE_Results, file = "Results/AB_tot_RMSE_Results.csv")
+# write.csv2(x=AB_tot_R_Results, file = "Results/AB_tot_R_Results.csv")
+
+# BM_tot
+BM_tot_RMSE_Results = read.csv2(file = "Results/BM_tot_RMSE_Results.csv")
+BM_tot_RMSE_Results = BM_tot_RMSE_Results[,-1]
+BM_tot_R_Results = read.csv2(file = "Results/BM_tot_R_Results.csv")
+BM_tot_R_Results=BM_tot_R_Results[,-1]
+# write.csv2(x=BM_tot_RMSE_Results, file = "Results/BM_tot_RMSE_Results.csv")
+# write.csv2(x=BM_tot_R_Results, file = "Results/BM_tot_R_Results.csv")
+
+# Richesse_tot
+Richesse_tot_RMSE_Results = read.csv2(file = "Results/Richesse_tot_RMSE_Results.csv")
+Richesse_tot_RMSE_Results= Richesse_tot_RMSE_Results[,-1]
+Richesse_tot_R_Results = read.csv2(file = "Results/Richesse_tot_R_Results.csv")
+Richesse_tot_R_Results = Richesse_tot_R_Results[,-1]
+# write.csv2(x=Richesse_tot_RMSE_Results, file = "Results/Richesse_tot_RMSE_Results.csv")
+# write.csv2(x=Richesse_tot_R_Results, file = "Results/Richesse_tot_R_Results.csv")
+```
+
+-   AB_tot
+```{r RMSE.plot AB_tot, fig.align='center', fig.height=5, fig.dpi=300}
+Results_long = AB_tot_RMSE_Results%>%
+  select(starts_with("RMSE"))%>%
+  pivot_longer(everything())
+
+Results_long$name = as.factor(Results_long$name)
+levels(Results_long$name) = c("ANN","GAM", "GBM", "GLM", "RF")
+ordonee = c("GLM","GAM","RF","GBM","ANN")
+Results_long$name <- factor(Results_long$name, levels = ordonee)
+Results_long = as.data.frame(Results_long)
+Results_long = Results_long[!Results_long$name=="ANN",]
+Results_long$value = Results_long$value^2 # Pour retrouver les données de base
+
+recap = Results_long%>%
+  group_by(name)%>%
+  summarise(mean.rmse = mean(value),
+            sd.rmse = sd(value))
+
+
+means <- colMeans(AB_tot_R_Results[,-c(5:6)], na.rm = TRUE)
+means = round(means,2)
+recap$R_squared = means
+
+subtitle <- sprintf("Abundance : %.2f ± %.2f ind/m²", mean(bdd_explo$AB_tot, na.rm = TRUE), sd(bdd_explo$AB_tot, na.rm = TRUE))
+result_AB_tot = ggplot()+
+  geom_sina(data=Results_long, aes(name, value), alpha = 0.2,shape=19, cex = 2,
+            method = "density")+
+  geom_point(data = recap, aes(name, mean.rmse), cex =2, col = "orange")+
+  geom_errorbar(data = recap, 
+                aes(x= name, ymin=mean.rmse-sd.rmse, ymax=mean.rmse+sd.rmse),
+                cex =1.2, width=.1, position = position_dodge(0.5), col = "orange")+
+  geom_text(data = recap, aes(x = name, y = mean.rmse, label = paste0 ("R² = ",round(R_squared, 2))),
+            vjust = -7, size = 6)+   # Ajoute le texte avec les valeurs R²
+  labs(y= "RMSE",x ="Models",title = subtitle)+ 
+  scale_y_continuous(limits = c(25, 50), breaks = seq(25, 50, by = 5))+
+  theme_bw()+
+  theme(line = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        panel.border = element_blank(),
+        axis.ticks =  element_line(colour = "black"),
+        axis.text.x = element_text(colour = "black", size=20,
+                                   angle = 45, hjust = 1),
+        axis.text.y = element_text(colour = "black", size=20),
+        legend.title = element_text(colour = "black", size=20),
+        legend.title.align=0.5,
+        legend.text = element_text(colour = "black", size=18),
+        axis.title=element_text(size=28),
+        strip.background = element_rect(fill="white"))
+
+ggsave("Results/Result_abundance.png", plot = result_AB_tot, dpi = 300)
+result_AB_tot
+
+#combined_plot <- grid.arrange(result_AB_tot, R_result_AB_tot, ncol = 2)
+```
+
+-   BM_tot
+```{r RMSE.plot BM_tot, fig.align='center', fig.height=5, fig.dpi=300}
+Results_long = BM_tot_RMSE_Results%>%
+  select(starts_with("RMSE"))%>%
+  pivot_longer(everything())
+
+Results_long$name = as.factor(Results_long$name)
+levels(Results_long$name) = c("ANN","GAM", "GBM", "GLM", "RF")
+ordonee = c("GLM","GAM","RF","GBM","ANN")
+Results_long$name <- factor(Results_long$name, levels = ordonee)
+Results_long = as.data.frame(Results_long)
+Results_long = Results_long[!Results_long$name=="ANN",]
+Results_long$value = Results_long$value^2 # Pour retrouver les données de base
+
+recap = Results_long%>%
+  group_by(name)%>%
+  summarise(mean.rmse = mean(value),
+            sd.rmse = sd(value),
+            max.rmse = max(value))
+
+means <- colMeans(BM_tot_R_Results[,-c(5:6)], na.rm = TRUE)
+means = round(means,2)
+recap$R_squared = means
+
+subtitle <- sprintf("Biomass : %.2f ± %.2f g/m²", mean(bdd_explo$BM_tot, na.rm = TRUE), sd(bdd_explo$BM_tot, na.rm = TRUE))
+result_BM_tot = ggplot()+
+  geom_sina(data=Results_long, aes(name, value), alpha = 0.2,shape=19, cex = 2,
+            method = "density")+
+  geom_point(data = recap, aes(name, mean.rmse), cex =2, col = "orange")+
+  geom_errorbar(data = recap, 
+                aes(x= name, ymin=mean.rmse-sd.rmse, ymax=mean.rmse+sd.rmse),
+                cex =1.2, width=.1, position = position_dodge(0.5), col = "orange")+
+    geom_text(data = recap, aes(x = name, y = max.rmse, label = paste0 ("R² = ",round(R_squared, 2))),
+            vjust = -1, size = 6)+   # Ajoute le texte avec les valeurs R²
+  labs(y= "RMSE",x ="Models",title = subtitle)+ 
+  scale_y_continuous(limits = c(6, 18), breaks = seq(6, 18, by = 4))+
+  theme_bw()+
+  theme(line = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        panel.border = element_blank(),
+        axis.ticks =  element_line(colour = "black"),
+        axis.text.x = element_text(colour = "black", size=20,
+                                   angle = 45, hjust = 1),
+        axis.text.y = element_text(colour = "black", size=20),
+        legend.title = element_text(colour = "black", size=20),
+        legend.title.align=0.5,
+        legend.text = element_text(colour = "black", size=18),
+        axis.title=element_text(size=28),
+        strip.background = element_rect(fill="white"))
+
+ggsave("Results/Result_biomass.png", plot = result_BM_tot, dpi = 300)
+result_BM_tot
+```
+
+-   Richesse_tot
+```{r RMSE.plot Richesse_tot, fig.align='center', fig.height=5, fig.dpi=300}
+Results_long = Richesse_tot_RMSE_Results%>%
+  select(starts_with("RMSE"))%>%
+  pivot_longer(everything())
+
+Results_long$name = as.factor(Results_long$name)
+levels(Results_long$name) = c("ANN","GAM", "GBM", "GLM", "RF")
+ordonee = c("GLM","GAM","RF","GBM","ANN")
+Results_long$name <- factor(Results_long$name, levels = ordonee)
+Results_long = as.data.frame(Results_long)
+Results_long = Results_long[!Results_long$name=="ANN",]
+#Results_long$value = Results_long$value^2 # Pour retrouver les données de base
+
+recap = Results_long%>%
+  group_by(name)%>%
+  summarise(mean.rmse = mean(value),
+            sd.rmse = sd(value),
+            max.rmse = max(value))
+
+means <- colMeans(Richesse_tot_R_Results[,-c(5:6)], na.rm = TRUE)
+means = round(means,2)
+recap$R_squared = means
+
+subtitle <- sprintf("Richness : %.2f ± %.2f", mean(bdd_explo$Richesse_tot, na.rm = TRUE), sd(bdd_explo$Richesse_tot, na.rm = TRUE))
+
+result_Richesse_tot = ggplot()+
+  geom_sina(data=Results_long, aes(name, value), alpha = 0.2,shape=19, cex = 2,
+            method = "density")+
+  geom_point(data = recap, aes(name, mean.rmse), cex =2, col = "orange")+
+  geom_errorbar(data = recap, 
+                aes(x= name, ymin=mean.rmse-sd.rmse, ymax=mean.rmse+sd.rmse),
+                cex =1.2, width=.1, position = position_dodge(0.5), col = "orange")+
+  geom_text(data = recap, aes(x = name, y = max.rmse, label = paste0 ("R² = ",round(R_squared, 2))),
+            vjust = -1, size = 6)+   # Ajoute le texte avec les valeurs R²
+  labs(y= "RMSE",x ="Models",title = subtitle)+ 
+  scale_y_continuous(limits = c(1.6, 2.4), breaks = seq(1.6, 2.4, by = 0.2))+
+  theme_bw()+
+  theme(line = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        panel.border = element_blank(),
+        axis.ticks =  element_line(colour = "black"),
+        axis.text.x = element_text(colour = "black", size=20,
+                                   angle = 45, hjust = 1),
+        axis.text.y = element_text(colour = "black", size=20),
+        legend.title = element_text(colour = "black", size=20),
+        legend.title.align=0.5,
+        legend.text = element_text(colour = "black", size=18),
+        axis.title=element_text(size=28),
+        strip.background = element_rect(fill="white"))
+
+ggsave("Results/Result_richness.png", plot = result_Richesse_tot, dpi = 300)
+result_Richesse_tot
+```
+
+
+<!--
+## R² sur le JDD test
+
+-   AB_tot
+```{r R.plot AB_tot}
+Results_long = AB_tot_R_Results [,-c(5:6)]%>%
+  select(starts_with("R"))%>%
+  pivot_longer(everything())
+
+Results_long$name = as.factor(Results_long$name)
+levels(Results_long$name) = c("GAM", "GBM", "GLM", "RF")
+ordonee = c("GLM","GAM","RF","GBM")
+Results_long$name <- factor(Results_long$name, levels = ordonee)
+Results_long = as.data.frame(Results_long)
+#Results_long = Results_long[!Results_long$name=="ANN",]
+#Results_long$value = Results_long$value^2 # Pour retrouver les données de base
+
+recap = Results_long%>%
+  group_by(name)%>%
+  summarise(mean.R = mean(value),
+            sd.R = sd(value))
+subtitle <- sprintf("Abundance : %.2f ± %.2f ind/m²", mean(bdd_explo$AB_tot, na.rm = TRUE), sd(bdd_explo$AB_tot, na.rm = TRUE))
+R_result_AB_tot = ggplot()+
+  geom_sina(data=Results_long, aes(name, value), alpha = 0.2,shape=19, cex = 2,
+            method = "density")+
+  geom_point(data = recap, aes(name, mean.R), cex =2, col = "orange")+
+  geom_errorbar(data = recap, 
+                aes(x= name, ymin=mean.R-sd.R, ymax=mean.R+sd.R),
+                cex =1.2, width=.1, position = position_dodge(0.5), col = "orange")+
+  labs(y= "R²",x ="Models",title = subtitle)+ 
+  scale_y_continuous(limits = c(0.2, 0.5), breaks = seq(0.2, 0.5, by = 0.1))+
+  theme_bw()+
+  theme(line = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        panel.border = element_blank(),
+        axis.ticks =  element_line(colour = "black"),
+        axis.text.x = element_text(colour = "black", size=20,
+                                   angle = 45, hjust = 1),
+        axis.text.y = element_text(colour = "black", size=20),
+        legend.title = element_text(colour = "black", size=20),
+        legend.title.align=0.5,
+        legend.text = element_text(colour = "black", size=18),
+        axis.title=element_text(size=28),
+        strip.background = element_rect(fill="white"))
+
+ggsave("Results/R_abundance.png", plot = R_result_AB_tot, dpi = 300)
+R_result_AB_tot
+```
+
+-   BM_tot
+```{r R.plot BM_tot}
+Results_long = BM_tot_R_Results [,-c(5:6)]%>%
+  select(starts_with("R"))%>%
+  pivot_longer(everything())
+
+Results_long$name = as.factor(Results_long$name)
+levels(Results_long$name) = c("GAM", "GBM", "GLM", "RF")
+ordonee = c("GLM","GAM","RF","GBM")
+Results_long$name <- factor(Results_long$name, levels = ordonee)
+Results_long = as.data.frame(Results_long)
+#Results_long = Results_long[!Results_long$name=="ANN",]
+#Results_long$value = Results_long$value^2 # Pour retrouver les données de base
+
+recap = Results_long%>%
+  group_by(name)%>%
+  summarise(mean.R = mean(value),
+            sd.R = sd(value))
+subtitle <- sprintf("Biomass : %.2f ± %.2f g/m²", mean(bdd_explo$BM_tot, na.rm = TRUE), sd(bdd_explo$BM_tot, na.rm = TRUE))
+R_result_BM_tot = ggplot()+
+  geom_sina(data=Results_long, aes(name, value), alpha = 0.2,shape=19, cex = 2,
+            method = "density")+
+  geom_point(data = recap, aes(name, mean.R), cex =2, col = "orange")+
+  geom_errorbar(data = recap, 
+                aes(x= name, ymin=mean.R-sd.R, ymax=mean.R+sd.R),
+                cex =1.2, width=.1, position = position_dodge(0.5), col = "orange")+
+  labs(y= "R²",x ="Models",title = subtitle)+ 
+  scale_y_continuous(limits = c(0, 0.5), breaks = seq(0, 0.5, by = 0.1))+
+  theme_bw()+
+  theme(line = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        panel.border = element_blank(),
+        axis.ticks =  element_line(colour = "black"),
+        axis.text.x = element_text(colour = "black", size=20,
+                                   angle = 45, hjust = 1),
+        axis.text.y = element_text(colour = "black", size=20),
+        legend.title = element_text(colour = "black", size=20),
+        legend.title.align=0.5,
+        legend.text = element_text(colour = "black", size=18),
+        axis.title=element_text(size=28),
+        strip.background = element_rect(fill="white"))
+
+ggsave("Results/R_biomass.png", plot = R_result_BM_tot, dpi = 300)
+R_result_BM_tot
+```
+
+-   Richesse_tot
+```{r R.plot Richesse_tot}
+Results_long = Richesse_tot_R_Results [,-c(5:6)] %>%
+  select(starts_with("R"))%>%
+  pivot_longer(everything())
+
+Results_long$name = as.factor(Results_long$name)
+levels(Results_long$name) = c("GAM", "GBM", "GLM", "RF")
+ordonee = c("GLM","GAM","RF","GBM")
+Results_long$name <- factor(Results_long$name, levels = ordonee)
+Results_long = as.data.frame(Results_long)
+#Results_long = Results_long[!Results_long$name=="ANN",]
+#Results_long$value = Results_long$value^2 # Pour retrouver les données de base
+
+recap = Results_long%>%
+  group_by(name)%>%
+  summarise(mean.R = mean(value),
+            sd.R = sd(value))
+subtitle <- sprintf("Richness : %.2f ± %.2f", mean(bdd_explo$Richesse_tot, na.rm = TRUE), sd(bdd_explo$Richesse_tot, na.rm = TRUE))
+
+R_result_Richesse_tot = ggplot()+
+  geom_sina(data=Results_long, aes(name, value), alpha = 0.2,shape=19, cex = 2,
+            method = "density")+
+  geom_point(data = recap, aes(name, mean.R), cex =2, col = "orange")+
+  geom_errorbar(data = recap, 
+                aes(x= name, ymin=mean.R-sd.R, ymax=mean.R+sd.R),
+                cex =1.2, width=.1, position = position_dodge(0.5), col = "orange")+
+  labs(y= "R²",x ="Models",title = subtitle)+ 
+  scale_y_continuous(limits = c(0.2, 0.6), breaks = seq(0.2, 0.6, by = 0.1))+
+  theme_bw()+
+  theme(line = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        panel.border = element_blank(),
+        axis.ticks =  element_line(colour = "black"),
+        axis.text.x = element_text(colour = "black", size=20,
+                                   angle = 45, hjust = 1),
+        axis.text.y = element_text(colour = "black", size=20),
+        legend.title = element_text(colour = "black", size=20),
+        legend.title.align=0.5,
+        legend.text = element_text(colour = "black", size=18),
+        axis.title=element_text(size=28),
+        strip.background = element_rect(fill="white"))
+
+ggsave("Results/R_richness.png", plot = R_result_Richesse_tot, dpi = 300)
+R_result_Richesse_tot
+```
+-->
+
+## Prediction
+-   AB_tot
+
+```{r predit AB_tot, fig.align='center'}
+# Prediction avec RF
+prediction <-predict(best20_var_AB_tot$model, df_test_AB_tot[,-1])
+
+RF_df_AB_tot = data.frame(Observed=df_test_AB_tot[,1],Predicted = prediction)
+
+  cor_RF_AB_tot <- cor(RF_df_AB_tot$Observed, RF_df_AB_tot$Predicted)
+# graphique avec ggplot
+    RF_AB_tot <- ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste("RF: R² = ", round(cor_RF_AB_tot^2,2), "; RMSE = ", best20_var_AB_tot$RMSE),x = "Real values", y = "Predicted values") + 
+      theme_classic() 
+RF_AB_tot
+
+
+
+
+
+# Prediction avec GBM
+GBM_best20_var_AB_tot = GBM(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot",best_20_AB_tot)], df_valid = df_test_AB_tot[,c("AB_tot",best_20_AB_tot)],distribution = 'gaussian',n.trees = 6000,
+shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+
+prediction <-predict(GBM_best20_var_AB_tot$model, df_test_AB_tot[,-1])
+
+GBM_df_AB_tot = data.frame(Observed=df_test_AB_tot[,1],Predicted = prediction)
+
+   cor_GBM_AB_tot<- cor(GBM_df_AB_tot$Observed, GBM_df_AB_tot$Predicted)
+# graphique avec ggplot
+    GBM_AB_tot <- ggplot(GBM_df_AB_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste("GBM: R² = ", round(cor_GBM_AB_tot^2,2) , "; RMSE = ", GBM_best20_var_AB_tot$RMSE),x = "Real values", y = "Predicted values") + 
+      theme_classic() 
+GBM_AB_tot
+
+
+
+
+
+# ANN_best20_var_AB_tot = ANN(var_rep ="AB_tot" , df_app= ANN_df_train_AB_tot, df_valid = ANN_df_test_AB_tot)
+# 
+# # ANN_best20_var_AB_tot$RMSE
+# # ANN_best20_var_AB_tot$R_squared
+# 
+# 
+# ANN_model = ANN_best20_var_AB_tot$model
+# plot(ANN_model, rep = 'best')
+# 
+# nn.results <- compute(ANN_model, ANN_df_test_AB_tot[,-1])
+# ANN_df_AB_tot <- data.frame(Observed = ANN_df_test_AB_tot[,1], Predicted = nn.results$net.result)
+# 
+# 
+#   correlation_AB_tot <- cor(ANN_df_AB_tot$Observed, ANN_df_AB_tot$Predicted)
+# # graphique avec ggplot
+#     ANN_AB_tot <- ggplot(ANN_df_AB_tot, aes(x = Observed, y = Predicted)) +
+#       geom_point() + # Ajout des points
+#       geom_smooth(method = "lm", se = TRUE, color = "red") + 
+#       labs(subtitle =paste("ANN: R² = ", round(correlation_AB_tot^2,2) ),x = "Real values", y = "Predicted values") + 
+#       theme_classic() 
+# # ANN_AB_tot
+# 
+# 
+#   
+# # Predict on test data 
+# ANN_data = data_mod
+# ANN_data = ANN_data[,c("AB_tot",best_20_AB_tot)]
+# colnames(ANN_data)[colnames(ANN_data) == "clcm_lvl3"] <- "clcm_lvl3"
+# 
+# dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = ANN_data)
+# ANN_data <- cbind(ANN_data, dummy_vars)
+# ANN_data <- ANN_data[, -which(names(ANN_data) == "clcm_lvl3")]
+# 
+# 
+#  
+#   
+# # Compute mean squared error 
+# predit <- nn.results$net.result * (max(ANN_df_train_AB_tot$AB_tot) - min(ANN_df_train_AB_tot$AB_tot))+ min(ANN_df_train_AB_tot$AB_tot) 
+
+```
+
+
+-   BM_tot
+```{r predit BM_tot , fig.align='center'}
+# Prediction avec RF
+prediction <-predict(best20_var_BM_tot$model, df_test_BM_tot[,-1])
+
+RF_df_BM_tot = data.frame(Observed=df_test_BM_tot[,1],Predicted = prediction)
+
+
+  cor_RF_BM_tot <- cor(RF_df_BM_tot$Observed, RF_df_BM_tot$Predicted)
+# graphique avec ggplot
+    p_BM_tot <- ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste("R² = ", round(cor_RF_BM_tot^2,2), "; RMSE = ", best20_var_BM_tot$RMSE),x = "Real values", y = "Predicted values") + 
+      theme_classic() 
+
+
+
+# Prediction avec GBM
+GBM_best20_var_BM_tot = GBM(var_rep ="BM_tot", df_app=df_train_BM_tot[,c("BM_tot",best_20_BM_tot)], df_valid = df_test_BM_tot[,c("BM_tot",best_20_BM_tot)],distribution = 'gaussian',n.trees = 6000,
+shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+
+
+prediction <-predict(GBM_best20_var_BM_tot$model, df_test_BM_tot[,-1])
+
+GBM_df_BM_tot = data.frame(Observed=df_test_BM_tot[,1],Predicted = prediction)
+
+  cor_GBM_BM_tot <- cor(GBM_df_BM_tot$Observed, GBM_df_BM_tot$Predicted)
+# graphique avec ggplot
+    GBM_BM_tot <- ggplot(GBM_df_BM_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste("GBM: R² = ", round(cor_GBM_BM_tot^2,2), "; RMSE = ", GBM_best20_var_BM_tot$RMSE),x = "Real values", y = "Predicted values") + 
+      theme_classic()
+    
+p_BM_tot
+GBM_BM_tot
+
+```
+
+-   Richesse_tot
+```{r predit Richesse_tot , fig.align='center'}
+# Étape 6) Évaluation du model modèle
+prediction <-predict(best20_var_Richesse_tot$model, df_test_Richesse_tot[,-1])
+
+RF_df_Richesse_tot = data.frame(Observed=df_test_Richesse_tot[,1],Predicted = prediction)
+
+
+  cor_RF_Richesse_tot <- cor(RF_df_Richesse_tot$Observed, RF_df_Richesse_tot$Predicted)
+# graphique avec ggplot
+    p_Richesse_tot <- ggplot(RF_df_Richesse_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste("RF: R² = ", round(cor_RF_Richesse_tot^2,2), "; RMSE = ", best20_var_Richesse_tot$RMSE),x = "Real values", y = "Predicted values") + 
+      theme_classic() 
+
+
+
+
+# Prediction avec GBM
+GBM_best20_var_Richesse_tot = GBM(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot[,c("Richesse_tot",best_20_Richesse_tot)], df_valid = df_test_Richesse_tot[,c("Richesse_tot",best_20_Richesse_tot)],distribution = 'gaussian',n.trees = 6000,
+shrinkage = 0.01,interaction.depth = 7,n.minobsinnode = 15)
+
+
+prediction <-predict(GBM_best20_var_Richesse_tot$model, df_test_Richesse_tot[,-1])
+
+GBM_df_Richesse_tot = data.frame(Observed=df_test_Richesse_tot[,1],Predicted = prediction)
+
+  cor_GBM_Richesse_tot <- cor(GBM_df_Richesse_tot$Observed, GBM_df_Richesse_tot$Predicted)
+# graphique avec ggplot
+    GBM_Richesse_tot <- ggplot(GBM_df_Richesse_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste("GBM: R² = ", round(cor_GBM_Richesse_tot^2,2), "; RMSE = ", GBM_best20_var_Richesse_tot$RMSE),x = "Real values", y = "Predicted values") + 
+      theme_classic() 
+    
+    
+    
+p_Richesse_tot   
+GBM_Richesse_tot
+
+```
+
+
+
+
+
+
+
+
 
 
 
 # Questions
+
+
+
+
 

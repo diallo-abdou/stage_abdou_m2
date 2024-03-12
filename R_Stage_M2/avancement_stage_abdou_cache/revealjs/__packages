@@ -76,3 +76,16 @@ xts
 PerformanceAnalytics
 terra
 usdm
+vcd
+prospectr
+glmnet
+randomForest
+foreach
+iterators
+doParallel
+gbm
+kernlab
+e1071
+ggforce
+neuralnet
+iml
