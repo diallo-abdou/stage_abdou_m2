@@ -1,0 +1,21 @@
+
+> # Flags
+> FLAGS <- flags(flag_integer('dense_units', 32))
+
+> # Model
+> model <- keras_model_sequential() %>% 
++   layer_dense(units = FLAGS$dense_units, activation = 'relu',input_shape = c(25)) %>% 
++   layer_ .... [TRUNCATED] 
+
+> # Compile
+> model %>% compile(loss = 'mse',
++                       optimizer = 'rmsprop',
++                       metrics = 'mae')
+
+> # Fit
+> history <- model %>% 
++   fit(training,
++       trainingtarget,
++       epochs = 50,
++       batch_size = 32,
++       validation_split = 0.2 .... [TRUNCATED] 

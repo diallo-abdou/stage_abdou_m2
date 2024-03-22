@@ -1,0 +1,7 @@
+{
+  "dense_units1": 32,
+  "dense_units2": 16,
+  "dropout1": 0.2,
+  "dropout2": 0.1,
+  "batch_size": 32
+}

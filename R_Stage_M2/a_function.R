@@ -1071,7 +1071,7 @@ fsg <-
            legend_title,
            couleurs,
            affiche_point = TRUE,
-           lettre_postion = 1.15 * max(donnee[[nom_var]]),
+           lettre_postion = max(donnee[[nom_var]]),
            ymin = min(donnee[[nom_var]]),
            ymax = 1.2 * max(donnee[[nom_var]])){
     library(dplyr)
