@@ -230,7 +230,9 @@ bdd_select = df_cleaned
 df_cleaned = bdd_select
 df_cleaned$ph_eau = as.numeric(df_cleaned$ph_eau)
 explo_num(nom_col = 'ph_eau', titre = 'ph_eau', df = df_cleaned)
-df_cleaned <- test_grub(df_cleaned, 'ph_eau', direction = 'maxi')
+# df_cleaned <- test_grub(df_cleaned, 'ph_eau', direction = 'maxi')
+# df_cleaned = df_cleaned[!df_cleaned$ph_eau == 2.09,]
+# df_cleaned = subset(df_cleaned, df_cleaned$ph_eau != 2.09 | is.na(df_cleaned$ph_eau))
 df_cleaned <- test_grub(df_cleaned, 'ph_eau', direction = 'mini')
 explo_num(nom_col = 'ph_eau', titre = 'ph_eau', df = df_cleaned)
 bdd_select = df_cleaned
@@ -286,7 +288,7 @@ shapiro.test(bdd_select$Richesse_tot)
 x = as.numeric (bdd_select$Richesse_tot)+1
 b <- boxcox(lm(x ~ 1),plotit = TRUE)
 lambda1 <- b$x[which.max(b$y)]
-# bdd_select$Richesse_tot = sqrt(bdd_select$Richesse_tot)
+bdd_select$Richesse_tot = sqrt(bdd_select$Richesse_tot)
 
 
 col_num <- c("gps_x", "gps_y", "clay", "fine_sand", "coarse_sand", "fine_silt", "coarse_silt", "ph_eau", "om", "n_tot")
@@ -333,26 +335,27 @@ stststs = ForetAlea(var_rep = "AB_tot",
                     ntree = 2000 , 
                     maxnodes = 80)
 stststs$RMSE
-stststs$R_squared_train
-stststs$R_squared_test
+stststs$R_adj_train
+stststs$R_adj_test
 stststs$MAE
 stststs$model
 stststs$predit
 
-pred <- stststs$predit
+pred <- stststs$predit^2
 
-RF_df_AB_tot = data.frame(Observed=df_test[,1],Predicted = pred)
+RF_df_AB_tot = data.frame(Observed=df_test[,1]^2,Predicted = pred)
 
 RF_AB_tot_fig = ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
   geom_point() + # Ajout des points
   geom_smooth(method = "lm", se = TRUE, color = "red") + 
-  labs(subtitle =paste("RF: R² adj (train) = ", round(stststs$R_squared_train,2), 
-                       "; R² adj (test) = ", round(stststs$R_squared_test,2),
-                       "; RMSE = ",  round(stststs$RMSE,2)),
+  labs(subtitle =paste0(" RF: R² adj (train) = ", round(stststs$R_adj_train,2), 
+                       "; \n R² adj (test) = ", round(stststs$R_adj_test,2),
+                       "; \n RMSE = ",  round(stststs$RMSE^2,2)),
        x = "Abundance: real values", 
-       y = "Abundance: predicted values") + 
-  theme_classic() 
-# ggsave("Results/original_data/RF_AB_tot_fig.png", plot = RF_AB_tot_fig, dpi = 300)
+       y = "Predicted values") + 
+  # theme(plot.title = element_text(size = 10)) +
+  theme_classic()
+ggsave("Results/original_data/RF_AB_tot_fig.png", plot = RF_AB_tot_fig,dpi = 300 ,width = 2.666667,height = 2.5)
 
 
 RF_df_AB_tot$observation = seq(1,nrow(df_test))
@@ -378,7 +381,7 @@ AB_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legend
 AB_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
 
 
-RF_AB_tot_fig = ggarrange(AB_tot_p1, AB_tot_p2, AB_tot_p3, AB_tot_p4,
+RF_AB_tot_p_o = ggarrange(AB_tot_p1, AB_tot_p2, AB_tot_p3, AB_tot_p4,
                           # labels = c('(a)', '(b)','(c)', '(d)'),
                           ncol = 1,vjust = 0.5,
                           common.legend = TRUE,
@@ -386,7 +389,7 @@ RF_AB_tot_fig = ggarrange(AB_tot_p1, AB_tot_p2, AB_tot_p3, AB_tot_p4,
 )
 
 RF_AB_tot_fig
-# ggsave("Results/RF_AB_tot_fig.png", plot = RF_AB_tot_fig, dpi = 300)
+ggsave("Results/RF_AB_tot_p_o.png", plot = RF_AB_tot_p_o, dpi = 300,height = 8)
 
 ## fin 
 
@@ -398,7 +401,7 @@ BM_tot_bdd_select = bdd_select[, c("BM_tot", "clcm_lvl2","gps_x","gps_y","clay",
                                    "fine_silt","coarse_silt","ph_eau","om","n_tot")]
 BM_tot_bdd_select = drop_na(BM_tot_bdd_select)
 summary(BM_tot_bdd_select)
-BM_tot_bdd_select = BM_tot_bdd_select[!BM_tot_bdd_select$clcm_lvl2=="Forests",]
+# BM_tot_bdd_select = BM_tot_bdd_select[!BM_tot_bdd_select$clcm_lvl2=="Forests",]
 BM_tot_bdd_select = droplevels(BM_tot_bdd_select)
 # Partission
 set.seed(1234)  # Pour rendre les résultats reproductibles
@@ -417,27 +420,27 @@ stststs = ForetAlea(var_rep = "BM_tot",
                     ntree = 2000 , 
                     maxnodes = 80)
 stststs$RMSE
-stststs$R_squared_train
-stststs$R_squared_test
+stststs$R_adj_train
+stststs$R_adj_test
 stststs$MAE
 stststs$model
 stststs$predit
 
-pred <- stststs$predit
+pred <- stststs$predit^2
 
-RF_df_BM_tot = data.frame(Observed=df_test[,1],Predicted = pred)
+RF_df_BM_tot = data.frame(Observed=df_test[,1]^2,Predicted = pred)
 
 RF_BM_tot_fig = ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
   geom_point() + # Ajout des points
   geom_smooth(method = "lm", se = TRUE, color = "red") + 
-  labs(subtitle =paste("RF: R² adj (train) = ", round(stststs$R_squared_train,2), 
-                       "; R² adj (test) = ", round(stststs$R_squared_test,2),
-                       "; RMSE = ",  round(stststs$RMSE,2)),
+  labs(subtitle =paste0(" RF: R² adj (train) = ", round(stststs$R_adj_train,2), 
+                       "; \n R² adj (test) = ", round(stststs$R_adj_test,2),
+                       "; \n RMSE = ",  round(stststs$RMSE^2,2)),
        x = "Biomass: real values", 
        y = "Biomass: predicted values") + 
   theme_classic() 
 
-# ggsave("Results/original_data/RF_BM_tot_fig.png", plot = RF_BM_tot_fig, dpi = 300)
+ggsave("Results/original_data/RF_BM_tot_fig.png", plot = RF_BM_tot_fig, dpi = 300,width = 2.666667,height = 2.5)
 
 RF_df_BM_tot$observation = seq(1,nrow(df_test))
 
@@ -462,15 +465,15 @@ BM_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legend
 BM_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
 
 
-RF_BM_tot_fig = ggarrange(BM_tot_p1, BM_tot_p2, BM_tot_p3, BM_tot_p4,
+RF_BM_tot_p_o = ggarrange(BM_tot_p1, BM_tot_p2, BM_tot_p3, BM_tot_p4,
                           # labels = c('(a)', '(b)','(c)', '(d)'),
                           ncol = 1,vjust = 0.5,
                           common.legend = TRUE,
                           legend = 'right'
 )
 
-RF_BM_tot_fig
-# ggsave("Results/RF_BM_tot_fig.png", plot = RF_BM_tot_fig, dpi = 300)
+RF_BM_tot_p_o
+ggsave("Results/RF_BM_tot_p_o.png", plot = RF_BM_tot_p_o, dpi = 300,height = 8)
 
 ## fin 
 
@@ -500,27 +503,27 @@ stststs = ForetAlea(var_rep = "Richesse_tot",
                     ntree = 2000 , 
                     maxnodes = 80)
 stststs$RMSE
-stststs$R_squared_train
-stststs$R_squared_test
+stststs$R_adj_train
+stststs$R_adj_test
 stststs$MAE
 stststs$model
 stststs$predit
 
-pred <- stststs$predit
+pred <- stststs$predit^2
 
-RF_df_Richesse_tot = data.frame(Observed=df_test[,1],Predicted = pred)
+RF_df_Richesse_tot = data.frame(Observed=df_test[,1]^2,Predicted = pred)
 
 RF_Richesse_tot_fig = ggplot(RF_df_Richesse_tot, aes(x = Observed, y = Predicted)) +
   geom_point() + # Ajout des points
   geom_smooth(method = "lm", se = TRUE, color = "red") + 
-  labs(subtitle =paste("RF: R² adj (train) = ", round(stststs$R_squared_train,2), 
-                       "; R² adj (test) = ", round(stststs$R_squared_test,2),
-                       "; RMSE = ",  round(stststs$RMSE,2)),
+  labs(subtitle =paste0(" RF: R² adj (train) = ", round(stststs$R_adj_train,2), 
+                       "; \n R² adj (test) = ", round(stststs$R_adj_test,2),
+                       "; \n RMSE = ",  round(stststs$RMSE^2,2)),
        x = "Richness: real values", 
        y = "Richness: predicted values") + 
   theme_classic() 
 
-# ggsave("Results/original_data/RF_Richesse_tot_fig.png", plot = RF_Richesse_tot_fig, dpi = 300)
+ggsave("Results/original_data/RF_Richesse_tot_fig.png", plot = RF_Richesse_tot_fig, dpi = 300,width = 2.666667,height = 2.5)
 
 RF_df_Richesse_tot$observation = seq(1,nrow(df_test))
 
@@ -545,15 +548,26 @@ Richesse_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,
 Richesse_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
 
 
-RF_Richesse_tot_fig = ggarrange(Richesse_tot_p1, Richesse_tot_p2, Richesse_tot_p3, Richesse_tot_p4,
+RF_Richesse_tot_p_o = ggarrange(Richesse_tot_p1, Richesse_tot_p2, Richesse_tot_p3, Richesse_tot_p4,
                                 # labels = c('(a)', '(b)','(c)', '(d)'),
                                 ncol = 1,vjust = 0.5,
                                 common.legend = TRUE,
                                 legend = 'right'
 )
 
-RF_Richesse_tot_fig
-# ggsave("Results/RF_Richesse_tot_fig.png", plot = RF_Richesse_tot_fig, dpi = 300)
+RF_Richesse_tot_p_o
+ggsave("Results/RF_Richesse_tot_p_o.png", plot = RF_Richesse_tot_p_o, dpi = 300,height = 8)
 
 ## fin 
+
+
+
+# All ---------------------------------------------------------------------
+all_graphe_poly = ggarrange(RF_AB_tot_fig, RF_BM_tot_fig, RF_Richesse_tot_fig,
+                            labels = c('(a)', '(b)','(c)'),ncol = 3,
+                            common.legend = TRUE,
+                            legend = 'right'
+)
+ggsave("Results/original_data/all_graphe_ori.png", plot = all_graphe_poly, dpi = 300,height = 2.5,width = 8)
+
 

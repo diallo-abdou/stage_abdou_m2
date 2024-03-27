@@ -22,20 +22,14 @@ test = read.csv2("datas/BM_tot_test.csv")
 data = rbind(training,test)
 
 
-
-
 ind_var_rep <- which(names(training) == VAR_REP)
 trainingtarget <- training[, ind_var_rep]
-trainingtarget = sqrt(trainingtarget)
-# trainingtarget = round(trainingtarget/25)
 training = training[,-ind_var_rep]
 
 
 
 ind_var_rep <- which(names(test) == VAR_REP)
 testtarget <- test[, ind_var_rep]
-testtarget = sqrt(testtarget)
-# testtarget = round(testtarget/25)
 test = test[,-ind_var_rep]
 
 
@@ -51,83 +45,6 @@ test %<>% mutate_if(is.factor, as.numeric)
 test <- as.matrix(test)
 dimnames(test) <- NULL
 
-
-# Distribution de toute les variables 
-data_long <- melt(data)
-
-ggplot(data_long, aes(x=value)) +
-  geom_histogram(bins=20) +
-  facet_wrap(~variable, scales="free") +
-  theme_gray() +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  labs(title="Histogramme", x="Valeur", y="Fréquence")
-
-
-
-# Distribution de var rep
-#par(mfrow=c(1,2))
-df <- data.frame(y =trainingtarget)
-biomass_dist_train = ggplot(df, aes(x=y)) +
-  geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
-  geom_density(fill="black", alpha=0.2) +
-  theme_gray() +
-  labs(title="Biomass: Train", x="Value", y="Density") +
-  theme(plot.title = element_text(hjust = 0.5))
-ggsave("Results/biomass_dist_train.png", plot = biomass_dist_train, dpi = 300,width = 3,height = 2)
-
-df <- data.frame(y =testtarget)
-biomass_dist_test = ggplot(df, aes(x=y)) +
-  geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
-  geom_density(fill="black", alpha=0.2) +
-  theme_gray() +
-  labs(title="Biomass: Test", x="Value", y="Density") +
-  theme(plot.title = element_text(hjust = 0.5))
-ggsave("Results/biomass_dist_test.png", plot = biomass_dist_test, dpi = 300,width = 3,height = 2)
-
-biomass_dist_train
-biomass_dist_test
-
-
-# Distrvitbution de var rep dans train et de test: est ce homogene ?
-
-biomass_dist_train_and_test = ggarrange(biomass_dist_train, biomass_dist_test,
-                                          labels = c('(a)', '(b)'),
-                                          common.legend = TRUE,
-                                          legend = 'right'
-)
-
-
-ggsave("Results/biomass_dist_train_and_test.png", plot = biomass_dist_train_and_test, dpi = 300 ,height = 2,width = 4)
-
-
-df_train <- data.frame(y = trainingtarget, set = "Training set")
-df_test <- data.frame(y = testtarget, set = "Test set")
-
-df <- rbind(df_train, df_test)
-
-biomass_dist_train_and_test= ggplot(df, aes(x=y, fill=set)) +
-  geom_histogram(aes(y=..density..), bins=200, alpha=0.75, position="identity") +
-  scale_fill_manual(values=c("Training set"="#F8766D", "Test set"="#00BFC4")) +
-  labs(title="Distribution of training and test data",
-       x="biomass",
-       y="Density",
-       fill="Set") +
-  theme_gray() +
-  theme(plot.title = element_text(hjust = 0.5))
-ggsave("Results/biomass_dist_train_and_test.png", plot = biomass_dist_train_and_test, dpi = 300 ,height = 2,width = 4)
-biomass_dist_train_and_test
-
-
-
-
-
-
-
-# Normalize
-m <- colMeans(training)
-s <- apply(training, 2, sd)
-training <- scale(training, center = m, scale = s)
-test <- scale(test, center = m, scale = s)
 
 
 

@@ -25,16 +25,12 @@ df_tot = rbind(training,test)
 
 ind_var_rep <- which(names(training) == VAR_REP)
 trainingtarget <- training[, ind_var_rep]
-#trainingtarget = sqrt(trainingtarget)
-# trainingtarget = round(trainingtarget/25)
 training = training[,-ind_var_rep]
 
 
 
 ind_var_rep <- which(names(test) == VAR_REP)
 testtarget <- test[, ind_var_rep]
-#testtarget = sqrt(testtarget)
-# testtarget = round(testtarget/25)
 test = test[,-ind_var_rep]
 
 
