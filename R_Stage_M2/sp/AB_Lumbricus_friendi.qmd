@@ -1,0 +1,24 @@
+##  AB_Lumbricus_friendi
+[Menu]
+```{r  AB_Lumbricus_friendi , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_friendi'
+titre <- paste('
+AB_Lumbricus_friendi
+& clcm_lvl3')
+cat(titre)
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+

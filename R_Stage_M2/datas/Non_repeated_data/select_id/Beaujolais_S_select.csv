@@ -1,9 +1,13 @@
-"Programme";"ID"
-"Beaujolais-SICAREX";"Dephy Bio_AMAN_C_2019_NA_NA"
-"Beaujolais-SICAREX";"Dephy Bio_EAN1_C_2019_NA_NA"
-"Beaujolais-SICAREX";"Dephy Bio_EAN2_C_2019_NA_NA"
-"Beaujolais-SICAREX";"Dephy Bio_LEPE_C_2019_NA_NA"
-"Beaujolais-SICAREX";"Dephy Bio_MART_C_2019_NA_NA"
-"Beaujolais-SICAREX";"Dephy Bio_MOUT_C_2019_NA_NA"
-"Beaujolais-SICAREX";"Dephy Bio_PIRE_C_2019_NA_NA"
-"Beaujolais-SICAREX";"Dephy Bio_SADC_C_2019_NA_NA"
+"ID_2";"AB_tot";"BM_tot";"Richesse_tot"
+"Beaujolais-SICAREX_CIB_2002_B1";100;55,3675;4
+"Beaujolais-SICAREX_CIB_2002_B2";46;29,2295;4
+"Beaujolais-SICAREX_CIB_2002_C1";18,3333333333333;21,7973666666667;2
+"Beaujolais-SICAREX_CIB_2002_C2";37,3333333333333;19,5288666666667;2
+"Beaujolais-SICAREX_CIB_2002_I1";50,6666666666667;53,2218666666667;3
+"Beaujolais-SICAREX_CIB_2002_I2";49,3333333333333;37,2139;3
+"Beaujolais-SICAREX_EntretienSol-C_2014_C - EC";39,5;NA;2
+"Beaujolais-SICAREX_EntretienSol-C_2014_C - MM";88;NA;2
+"Beaujolais-SICAREX_EntretienSol-C_2014_C - T";59,25;NA;1,5
+"Beaujolais-SICAREX_EntretienSol-E_2014_E - EC";108,75;NA;2
+"Beaujolais-SICAREX_EntretienSol-E_2014_E - EM";87,25;NA;1,5
+"Beaujolais-SICAREX_EntretienSol-E_2014_E - MM";65,25;NA;1,75

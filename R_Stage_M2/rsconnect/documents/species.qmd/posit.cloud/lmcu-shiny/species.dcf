@@ -1,0 +1,14 @@
+name: species
+title: species
+username: lmcu-shiny
+account: lmcu-shiny
+server: posit.cloud
+hostUrl: https://api.posit.cloud/v1
+appId: 7997063
+bundleId: 8484551
+url: https://posit.cloud/content/7997063
+version: 1
+quarto_version: 1.3.353
+quarto_engines: knitr
+asMultiple: FALSE
+asStatic: FALSE

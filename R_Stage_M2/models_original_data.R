@@ -355,7 +355,7 @@ RF_AB_tot_fig = ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
        y = "Predicted values") + 
   # theme(plot.title = element_text(size = 10)) +
   theme_classic()
-ggsave("Results/original_data/RF_AB_tot_fig.png", plot = RF_AB_tot_fig,dpi = 300 ,width = 2.666667,height = 2.5)
+ggsave("Results/original_data/RF_AB_tot_fig.png", plot = RF_AB_tot_fig,dpi = 300 ,width = 2.333333,height = 3)
 
 
 RF_df_AB_tot$observation = seq(1,nrow(df_test))
@@ -440,7 +440,7 @@ RF_BM_tot_fig = ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
        y = "Biomass: predicted values") + 
   theme_classic() 
 
-ggsave("Results/original_data/RF_BM_tot_fig.png", plot = RF_BM_tot_fig, dpi = 300,width = 2.666667,height = 2.5)
+ggsave("Results/original_data/RF_BM_tot_fig.png", plot = RF_BM_tot_fig, dpi = 300,width = 2.333333,height = 3)
 
 RF_df_BM_tot$observation = seq(1,nrow(df_test))
 
@@ -523,7 +523,7 @@ RF_Richesse_tot_fig = ggplot(RF_df_Richesse_tot, aes(x = Observed, y = Predicted
        y = "Richness: predicted values") + 
   theme_classic() 
 
-ggsave("Results/original_data/RF_Richesse_tot_fig.png", plot = RF_Richesse_tot_fig, dpi = 300,width = 2.666667,height = 2.5)
+ggsave("Results/original_data/RF_Richesse_tot_fig.png", plot = RF_Richesse_tot_fig, dpi = 300,width = 2.333333,height = 3)
 
 RF_df_Richesse_tot$observation = seq(1,nrow(df_test))
 
@@ -568,6 +568,6 @@ all_graphe_poly = ggarrange(RF_AB_tot_fig, RF_BM_tot_fig, RF_Richesse_tot_fig,
                             common.legend = TRUE,
                             legend = 'right'
 )
-ggsave("Results/original_data/all_graphe_ori.png", plot = all_graphe_poly, dpi = 300,height = 2.5,width = 8)
+ggsave("Results/original_data/all_graphe_ori.png", plot = all_graphe_poly, dpi = 300,height = 3,width = 7)
 
 

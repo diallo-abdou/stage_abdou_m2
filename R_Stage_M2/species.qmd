@@ -1,0 +1,449 @@
+---
+title: "Species explorations"
+author: "Abdourahmane Diallo"
+date: '`r Sys.Date()`'
+format: 
+  revealjs
+multiplex: true
+#smaller: true
+scrollable: true
+#theme: sky
+editor: visual
+number-sections: true
+toc: FALSE
+#toc-expand: false
+#toc_float: 'yes'
+code_download: 'yes'
+slide-number: true
+margin: 0.1
+#center: true
+code-fold: true
+width: 1700
+height: 900
+toc_depth: 1
+execute:
+  cache: true
+---
+
+# Species explorations
+
+```{r setup, include=FALSE,fig.align='center',message=FALSE,warning=FALSE,message=FALSE}
+# rm(list=ls()) # Properly clear workspace
+# source("function_abdou.R")
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(rmarkdown)
+library(DT)
+library(gtExtras) # pour la
+```
+
+
+```{r function}
+nuage_point <- function(df, var_rep, predicteur, titre_x, titre_y) {
+  # Convertir les variables en numériques
+  df[[predicteur]] <- as.numeric(df[[predicteur]])
+  df[[var_rep]] <- as.numeric(df[[var_rep]])
+  
+  df= df[,c(predicteur,var_rep)]
+  df = drop_na(df)
+  # corrélation entre les deux variables
+  correlation <- round(cor(df[[predicteur]], df[[var_rep]]), 2)
+  
+  #  le graphique
+  g <- ggplot(df, aes(x = !!rlang::sym(predicteur), y = !!rlang::sym(var_rep))) +
+    geom_point() + # Ajout des points
+    geom_smooth(method = "lm", se = TRUE, color = "red") + 
+    labs(
+      # title = paste("Relationship between",var_rep, "and", predicteur),
+         subtitle = paste0(" r = ", correlation),
+         x = titre_x, 
+         y = titre_y) +
+    theme_classic()   
+  
+  return(g)
+}
+
+
+box_plot <- function(df, var_rep, predicteur, titre_x, titre_y) {
+  g <- ggplot(df, aes(x = !!rlang::sym(predicteur), y = !!rlang::sym(var_rep))) +
+    geom_boxplot() + # Ajout des boxplots
+    labs(
+      # title = paste("Boxplot of", var_rep, "by", predicteur),
+         x = titre_x, 
+         y = titre_y) +
+    theme_classic()   
+  
+  print(g)
+}
+
+
+# Fonction pour générer le code pour chaque espèce
+generate_species_code <- function(var_rep) {
+  code <- character()
+
+  code <- c(code, paste("## ", var_rep))
+  code <- c(code, "[Menu]")
+  code <- c(code, paste("```{r ", var_rep, ", fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}"))
+
+  code <- c(code, paste0("var_rep <- '", var_rep, "'"))
+  code <- c(code, "titre <- paste('", var_rep, "& clcm_lvl3')")
+  code <- c(code, "cat(titre)\n")
+
+  # Boxplot
+  code <- c(code, paste("box_plot(df = bdd_sp_explo,",
+                        "var_rep = var_rep,",
+                        "predicteur = 'clcm_lvl3',",
+                        "titre_x = 'clcm_lvl3',",
+                        "titre_y = var_rep)"))
+
+  # Nuage de points
+  code <- c(code, "for (i in 1:length(predictors)) {",
+               "  cat(paste('- ', var_rep, '&', predictors[i]))",
+               "  g <- nuage_point(df = bdd_sp_explo,",
+               "                    var_rep = var_rep,",
+               "                    predicteur = predictors[i],",
+               "                    titre_x = predictors[i],",
+               "                    titre_y = var_rep)",
+               "  print(g)",
+               "}")
+
+  code <- c(code, "```", "[Menu] \n\n\n")
+
+  return(code)
+}
+```
+
+```{r import}
+bdd_sp = read.csv2("datas/Non_repeated_data/bdd_all.csv")
+# Speces
+# names(bdd_sp)
+# colnames(bdd_sp)[colSums(is.na(bdd_sp)) == nrow(bdd_sp)]
+colonnes_AB <- grep("^AB_", names(bdd_sp), value = TRUE)
+# On supprimme les colonnes AB_ qui ne sont pas des espèces dans le calcule
+ab_supprimee =  c("AB_AD","AB_JV","AB_SA","AB_STAD_X","AB_indéterminable","AB_Indéterminable","AB_indéterminable_endogeic","AB_tot","AB_Indéterminable_epigeic","AB_indéterminable_endogeic","AB_Ep.X","AB_vide", "AB_Ep.X1","AB_Ep.X2","AB_A.X","AB_Adult","AB_cocon","AB_indéterminé","AB_Juvenile","AB_Sub.adult","AB_Indéterminé")
+colonnes_AB <- colonnes_AB[!colonnes_AB %in% ab_supprimee]
+# colonnes_AB
+
+```
+
+- Database size: `r dim(bdd_sp)`
+
+## Species list
+
+<br/> 
+<div style="text-align: center">*List of 88 species present on EcoBioSoil data (3311 observations).*</div>
+
+```{r}
+df_colonnes_AB = colonnes_AB
+df_colonnes_AB <- sub("^AB_", "", df_colonnes_AB)
+df_colonnes_AB = data.frame(species=df_colonnes_AB)
+df_colonnes_AB_italique <- df_colonnes_AB
+df_colonnes_AB_italique$species <- sprintf("<i>%s</i>", df_colonnes_AB_italique$species)
+df_colonnes_AB_italique %>% datatable(options = list(pageLength = 5), escape=TRUE)
+
+# kable(df_colonnes_AB_italique, "html", escape = FALSE,caption = "List of 88 species present on EcoBioSoil data (3311 observations)") %>%
+#   kable_styling(full_width = FALSE)
+
+# expl_sp = bdd_sp[, colonnes_AB]
+# na_counts <- colSums(is.na(expl_sp))
+# column_order <- order(na_counts)
+# expl_sp <- expl_sp[, column_order]
+# 
+# expl_sp[, c(1:10)] %>% gt_plt_summary()
+```
+
+
+## Species occurrence
+
+<br/> 
+<div style="text-align: center">*Taxonomic occurence on the 3311 observations. P = presence (number of values > 0), A = abscence (number of 0) and NA = number of NA.*</div>
+```{r ocuu}
+df_occu <- data.frame(species = character(),
+                      nbr_P = integer(),
+                      nbr_A = integer(),
+                      nbr_NA = integer(),
+                      stringsAsFactors = FALSE)
+
+# Boucle à travers chaque colonne d'espèce
+for (i in colonnes_AB) {
+  
+  # Nombre de NA de l'espèce/colonne
+  i_nbr_NA <- sum(is.na(bdd_sp[, i]))
+  
+  # Nombre de 0 de l'espèce/colonne
+  i_nbr_A <- sum(bdd_sp[, i] == 0, na.rm = TRUE)
+  
+  # Nombre de cellules dont la valeur n'est pas NA et est supérieure à 0
+  i_nbr_P <- sum(!is.na(bdd_sp[, i]) & bdd_sp[, i] > 0)
+  
+  # Création du dataframe temporaire pour l'espèce actuelle
+  df_temp <- data.frame(species = i,
+                        nbr_P = i_nbr_P,
+                        nbr_A = i_nbr_A,
+                        nbr_NA = i_nbr_NA,
+                        stringsAsFactors = FALSE)
+  
+  # Ajout du dataframe temporaire au dataframe global
+  df_occu <- rbind(df_occu, df_temp)
+  
+  # Nettoyage de l'objet temporaire
+  rm(df_temp)
+}
+df_occu = df_occu %>% arrange(desc(nbr_P))
+col_ab = df_occu$species
+rownames(df_occu) <- sub("^AB_", "", rownames(df_occu))
+df_occu$species <- sub("^AB_", "", df_occu$species)
+df_occu_print=df_occu
+colnames(df_occu_print)= c("species","P", "A", "NA")
+# kable(df_occu_print,format ="pipe" ,align = "c",padding=5,caption = "Taxonomic occurence on the 3311 observations. P = presence (number of values > 0), A = abscence (number of 0) and NA = number of NA.")
+
+
+df_occu_print %>% datatable(options = list(pageLength = 5))
+```
+
+## Species occurrence (%)
+
+<br/> 
+<div style="text-align: center">*Taxonomic occurence on the 3311 observations. P = presence (% number of values > 0), A = abscence (% number of 0) and NA = % number of NA.*</div>
+```{r occu pourc}
+# OCCU valeur relative _____________________________________________________
+# Calcul des pourcentages pour chaque colonne
+df_occu_pourc= df_occu
+df_occu_pourc <- df_occu_pourc %>%
+  mutate(pct_P = sprintf("%.2f%%", (nbr_P / nrow(bdd_sp)) * 100),
+         pct_A = sprintf("%.2f%%", (nbr_A / nrow(bdd_sp)) * 100),
+         pct_NA = sprintf("%.2f%%", (nbr_NA / nrow(bdd_sp)) * 100))
+
+# Supprimer les colonnes de comptage originales si nécessaire
+df_occu_pourc <- df_occu_pourc %>%
+  select(-nbr_P, -nbr_A, -nbr_NA)
+df_occu_print=df_occu_pourc
+colnames(df_occu_print)= c("species","P", "A", "NA")
+# kable(df_occu_print,format = "pipe",align = "c",padding=5,caption = "Taxonomic occurence on the 3311 observations. P = presence (% number of values > 0), A = abscence (% number of 0) and NA = % number of NA.\n")
+
+df_occu_print %>% datatable(options = list(pageLength = 5))
+```
+
+## Land use and species occurrence
+
+<br/> 
+<div style="text-align: center">*Lists of land uses present on the 3311 observations of the EcoBioSoil database with n = number of levels of each land use.*</div>
+
+```{r occu par os}
+# levels(bdd_sp$clcm_lvl3)
+bdd_sp$clcm_lvl3= as.factor(bdd_sp$clcm_lvl3)
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3)=="Broad-leaved forest"]="Mixed forest"
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Coniferous forest"] <- "Mixed forest"
+bdd_sp$clcm_lvl3= as.factor(bdd_sp$clcm_lvl3)
+bdd_sp = droplevels(bdd_sp)
+cl_original <- levels(bdd_sp$clcm_lvl3)
+
+
+bdd_sp$clcm_lvl3= as.factor(bdd_sp$clcm_lvl3)
+bdd_sp = droplevels(bdd_sp)
+sum_os <- as.data.frame(summary(bdd_sp$clcm_lvl3))
+
+
+new_cl <- c("mf", "gua", "ng", "nial", "p", "v")
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Mixed forest"] <- "mf"
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Green urban areas"] <- "gua"
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Natural grasslands"] <- "ng"
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Non-irrigated arable land"] <- "nial"
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Pastures, meadows and other permanent grasslands under agricultural use"] <- "p"
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Vineyards"] <- "v"
+
+#bdd_sp$clcm_lvl3 <- factor(bdd_sp$clcm_lvl3, levels = cl_original, labels = new_cl)
+
+
+bdd_sp = droplevels(bdd_sp)
+# Définir les niveaux de clcm_lvl3 et les métriques
+metric <- c("P", "A")
+
+# for (i in new_cl){
+#   cat(paste0(" P_in_", i," = as.numeric(),"))
+#   cat(paste0(" A_in_", i," = as.numeric(),"))
+# }
+
+# Initialisation du dataframe pour stocker les résultats
+df_occu <- data.frame(
+                      # species = character(),
+                      P_in_mf = as.numeric(), 
+                      A_in_mf = as.numeric(), 
+                      P_in_gua = as.numeric(), 
+                      A_in_gua = as.numeric(), 
+                      P_in_ng = as.numeric(), 
+                      A_in_ng = as.numeric(), 
+                      P_in_nial = as.numeric(), 
+                      A_in_nial = as.numeric(), 
+                      P_in_p = as.numeric(), 
+                      A_in_p = as.numeric(), 
+                      P_in_v = as.numeric(), 
+                      A_in_v = as.numeric(),
+                      stringsAsFactors = FALSE)
+
+
+
+# Boucle à travers chaque espèce
+for (col in colonnes_AB) {
+  for (level in new_cl) {
+    # Nombre de cellules avec une valeur différente de 0 et non NA
+    P_count <- sum(bdd_sp[[col]] != 0 & !is.na(bdd_sp[[col]]) & bdd_sp$clcm_lvl3 == level)
+    # Nombre de cellules avec une valeur égale à 0
+    A_count <- sum(bdd_sp[[col]] == 0 & bdd_sp$clcm_lvl3 == level, na.rm = TRUE)
+    
+    # Assigner les valeurs calculées aux colonnes correspondantes
+    df_occu[col, paste0("P_in_", level)] <- P_count
+    df_occu[col, paste0("A_in_",level)] <- A_count
+  }
+}
+# df_occu$species = row.names(df_occu)
+
+# rowsum(df_occu,group = 1:nrow(df_occu))
+rownames(df_occu) <- sub("^AB_", "", rownames(df_occu))
+# kable(df_occu,align = "c")
+
+
+
+rownames(sum_os) = paste0(rownames(sum_os), " (",new_cl,")")
+colnames(sum_os) <- c("n")
+
+
+# kable(sum_os,padding = 5,format = "pipe")
+sum_os %>% datatable(options = list(pageLength = 6))
+
+# 
+# 
+# # -- Redefinition des noms colonnes
+# colnames(sum_os) = c("Numbers",paste( "Global Obs \n N=", nrow(df_occu), sep=""))
+# colnames(tab_occu_final) <- c( "GF", "TAXON", "Code_Taxon", 
+#                                      paste( "Global Obs \n N=", nrow(tab_mod), sep=""), 
+#                                      paste( "Global Moda\n P=", length(unique(tab_mod$Moda)), sep=""),
+#                                      paste( levels(tab_mod$Moda), "\n n=", table(tab_mod$Moda), sep="") ) 
+      
+```
+
+## Occurrence of species by land use: presence
+
+<br/> 
+<div style="text-align: center">*Taxonomic occurence on the 3311 observations by land use: Presence only (number of values > 0) and n = number of levels in land use.*</div>
+
+```{r,out.width=2100}
+df= df_occu
+df$mf <- df$P_in_mf
+df$gua <- df$P_in_gua
+df$ng <- df$P_in_ng
+df$nial <-df$P_in_nial
+df$p <- df$P_in_p
+df$v <- df$P_in_v
+df = df [,new_cl]
+df <- data.frame( Tot=apply(df,1,sum, na.rm=T ),df)
+df = df %>% arrange(desc(Tot))
+colnames(df) = c("Tot",paste( levels(bdd_sp$clcm_lvl3), "\n n=", table(bdd_sp$clcm_lvl3), sep="") ) 
+# kable(df, format = "html", align = "c", padding = 10,caption = "Taxonomic occurence on the 3311 observations by land use: Presence only (number of values > 0) and n = number of levels in land use.") %>%
+#   kable_styling(full_width = FALSE) %>%
+#   kable_styling(font_size = 35)
+
+df$Tot = round (df$Tot*100/nrow(bdd_sp),1)
+# rownames(sum_os) = new_cl
+# df[,c(2:7)] = round (df[,c(2:7)]*100/sum_os$n,1)
+
+df$Tot = paste0(df$Tot,"%")
+df[,2] =  paste0(round(df$mf*100/107),"%")
+df[,3] =  paste0(round(df$gua*100/609),"%")
+df[,4]=  paste0(round(df$ng*100/57),"%")
+df[,5] = paste0(round(df$nial*100/1467),"%")
+df[,6] =  paste0(round(df$p*100/343),"%")
+df[,7] =  paste0(round(df$v*100/728),"%")
+
+
+df %>% datatable(options = list(pageLength = 5))
+
+```
+
+## Occurrence of species by land use : absence
+
+<br/> 
+<div style="text-align: center">*Taxonomic occurence on the 3311 observations by land use: Absence only (number of 0) and n = number of levels in land use.*</div>
+
+```{r,out.width=1800}
+df= df_occu
+df$mf <- df$A_in_mf
+df$gua <- df$A_in_gua
+df$ng <- df$A_in_ng
+df$nial <-df$A_in_nial
+df$p <- df$A_in_p
+df$v <- df$A_in_v
+df = df [,new_cl]
+df <- data.frame( Tot=apply(df,1,sum, na.rm=T ),df)
+df = df %>% arrange(desc(Tot))
+colnames(df) = c("Tot",paste( levels(bdd_sp$clcm_lvl3), "\n n=", table(bdd_sp$clcm_lvl3), sep="") ) 
+# kable(df, format = "html", align = "c", padding = 10 ,caption = "Taxonomic occurence on the 3311 observations by land use: Absence only (number of 0) and n = number of levels in land use") %>%
+#   kable_styling(full_width = FALSE) %>%
+#   kable_styling(font_size = 35)
+
+df %>% datatable(options = list(pageLength = 5))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+## OCuu
+```{r}
+df_occu <- data.frame(species = character(),
+                      nbr_P = integer(),
+                      nbr_A = integer(),
+                      nbr_NA = integer(),
+                      stringsAsFactors = FALSE)
+
+# Boucle à travers chaque colonne d'espèce
+for (i in colonnes_AB) {
+  
+  # Nombre de NA de l'espèce/colonne
+  i_nbr_NA <- sum(is.na(bdd_sp[, i]))
+  
+  # Nombre de 0 de l'espèce/colonne
+  i_nbr_A <- sum(bdd_sp[, i] == 0, na.rm = TRUE)
+  
+  # Nombre de cellules dont la valeur n'est pas NA et est supérieure à 0
+  i_nbr_P <- sum(!is.na(bdd_sp[, i]) & bdd_sp[, i] > 0)
+  
+  # Création du dataframe temporaire pour l'espèce actuelle
+  df_temp <- data.frame(species = i,
+                        nbr_P = i_nbr_P,
+                        nbr_A = i_nbr_A,
+                        nbr_NA = i_nbr_NA,
+                        stringsAsFactors = FALSE)
+  
+  # Ajout du dataframe temporaire au dataframe global
+  df_occu <- rbind(df_occu, df_temp)
+  
+  # Nettoyage de l'objet temporaire
+  rm(df_temp)
+}
+df_occu = df_occu %>% arrange(desc(nbr_P))
+col_ab = df_occu$species
+rownames(df_occu) <- sub("^AB_", "", rownames(df_occu))
+df_occu$species <- sub("^AB_", "", df_occu$species)
+df_occu_print=df_occu
+colnames(df_occu_print)= c("species","P", "A", "NA")
+# kable(df_occu_print,format ="pipe" ,align = "c",padding=5,caption = "Taxonomic occurence on the 3311 observations. P = presence (number of values > 0), A = abscence (number of 0) and NA = number of NA.")
+
+
+df_occu_print %>% datatable(options = list(pageLength = 5))
+```
+
+
+
+

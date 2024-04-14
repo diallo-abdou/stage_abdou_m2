@@ -4,6 +4,7 @@ author: "Abdourahmane Diallo"
 date: '`r Sys.Date()`'
 format: 
   revealjs
+multiplex: true
 #smaller: true
 scrollable: true
 #theme: sky
@@ -24,15 +25,16 @@ execute:
   cache: true
 ---
 
-# Setting
+# Setting {.unnumbered}
 
 ```{r setup, include=FALSE,fig.align='center',message=FALSE,warning=FALSE,message=FALSE,echo=TRUE}
 # rm(list=ls()) # Properly clear workspace
 # source("function_abdou.R")
+# knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
-## Packages
+## Packages {.unnumbered}
 
 ```{r packages,echo=TRUE}
   library(tidyverse)
@@ -74,7 +76,7 @@ execute:
   library(mgcv)
   library(ggeffects)
   library(gratia)
-  library(GGally)
+  library(GGally) # pour ggpair
   library(caTools)
   library(rpart)
   library(rpart.plot)
@@ -105,12 +107,13 @@ execute:
   library(iml) # pour l'interpretabilité des models https://cran.r-project.org/web/packages/iml/vignettes/intro.html
   library(e1071)
   library(stats)
+  library(Boruta) # importance des predicteurs
 
 
 
 ```
 
-## Functions
+## Functions {.unnumbered}
 
 ```{r fonction, echo=TRUE}
 
@@ -452,7 +455,7 @@ calcule_R2 = function(x, y) {cor(x, y)^2}
 
 ```
 
-## Plan
+## Plan {.unnumbered}
 
 -   Database exploration
 
@@ -974,40 +977,36 @@ bdd = df_cleaned
 
 ## Graphe valeurs aberant AB_tot
 
-```{r,fig.align='center'}
+```{r,fig.align='center', echo=TRUE}
 # summary(AB_tot_aberant)
 AB_tot_aberant_2 = AB_tot_aberant[AB_tot_aberant$AB_tot > max(bdd$AB_tot),]
 AB_tot_aberant_2$clcm_lvl1 =as.factor(AB_tot_aberant_2$clcm_lvl1)
 AB_tot_aberant_2$clcm_lvl2 =as.factor(AB_tot_aberant_2$clcm_lvl2)
 AB_tot_aberant_2$clcm_lvl3 =as.factor(AB_tot_aberant_2$clcm_lvl3)
 AB_tot_aberant_2 = droplevels(AB_tot_aberant_2)
-# summary(AB_tot_aberant_2)
-# nrow(AB_tot_aberant_2)
 kable(unique(AB_tot_aberant_2[,c("Programme","Annee","clcm_lvl3")]))
 
 df = AB_tot_aberant_2
-
 df$observation = 1:nrow(df)
 df$Richesse_tot_10 = df$Richesse_tot*100
 g_AB_tot_aberant = ggplot(df, aes(x = observation)) + 
   geom_point(aes(y = AB_tot, color = "Abundance")) +
   geom_line(aes(y = AB_tot, color = "Abundance")) + 
-  
   geom_point(aes(y = Richesse_tot_10, color="Richness*100")) +
   geom_line(aes(y = Richesse_tot_10, color="Richness*100")) + 
   # ggtitle(title)
   theme(plot.title = element_text(hjust = 0.5)) + 
   labs(title = "  ",x="Observation", y="Values", color = "Legend:") +
-    
   scale_color_manual(values = c("Abundance"='red', "Richness*100"='green'))
-
 ggsave("g_AB_tot_aberant.png", plot = g_AB_tot_aberant, dpi = 300)
 g_AB_tot_aberant = ggplotly(g_AB_tot_aberant)
-
 g_AB_tot_aberant 
-
-
 ```
+
+<!-- <p align="center"> -->
+<!--   <img src="g_AB_tot_aberant.png"> -->
+<!-- </p> -->
+
 
 <!--
 # Synthèse du taux de remplissage
@@ -2041,9 +2040,10 @@ bdd_explo$clcm_lvl3 <- factor(bdd_explo$clcm_lvl3, levels = cl_original, labels 
 
 **Fork (Bifurcation) **
 ```{r}
-bdd_n_rep = bdd
+bdd_all = bdd
+bdd_sp = bdd
 
-write.csv2(x =bdd_n_rep,file = "datas/Non_repeated_data/bdd_n_rep.csv", row.names = FALSE)
+write.csv2(x =bdd_all,file = "datas/Non_repeated_data/bdd_all.csv", row.names = FALSE)
 ```
 
 
@@ -2117,7 +2117,7 @@ ggplot(df_2, aes(x=y)) +
 x = as.numeric ( bdd_explo$AB_tot )+1
 
 
-b <- boxcox(lm(x ~ 1),plotit = FALSE)
+b <- boxcox(lm(x ~ 1),plotit = FALSE) # ou bestNormalize
 
 # Exact lambda
 lambda1 <- b$x[which.max(b$y)]
@@ -2356,7 +2356,7 @@ qqline(df_2$y)
 ```{r}
 bdd_explo$AB_tot = sqrt(bdd_explo$AB_tot)
 bdd_explo$BM_tot = sqrt(bdd_explo$BM_tot)
-bdd_explo$Richesse_tot = sqrt(bdd_explo$Richesse_tot)
+# bdd_explo$Richesse_tot = sqrt(bdd_explo$Richesse_tot)
 
 
 
@@ -2558,97 +2558,6 @@ head(data_lm[,clc3_col])
 # summary(data_lm$clc3)
 ```
 
-
-
-## ACP
-```{r ACP, echo=TRUE, fig.align='center'}
-# On supprime les lignes avec des NA dans toutes les colonnes sauf BM_tot
-# colSums(is.na(data_lm))
-data_lm <- data_lm[apply(data_lm[, !colnames(data_lm) %in% "BM_tot"], 1, function(x) all(!is.na(x))), ]
-# colSums(is.na(data_lm))
-
-
-var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3",
-      "bio8","bio12","bio15","hurs_mean")
-
-data_acp = data_lm[, var]
-acp0 <- PCA(data_acp, graph = FALSE)
-
-
-## Choix du nombre d'axes
-# acp0$eig
-fviz_eig(acp0, addlabels = TRUE) # on prend les trois premiers axes
-contrib_axes <- acp0$var$contrib[, 1:3]  # 3 premiers axes
-contrib_axes <- round(contrib_axes, 3)   # Plus facile a lire
-fviz_contrib(acp0, choice = "var", axes = 1)
-fviz_contrib(acp0, choice = "var", axes = 2)
-fviz_contrib(acp0, choice = "var", axes = 3)
-
-seuil <- 1 / ncol(data_acp) * 100
-lignes_superieures <- rownames(contrib_axes)[apply(contrib_axes, 1,
-                                                   function(x)
-                                                     any(x >= seuil))]
-var [! var %in% lignes_superieures]
-
-#  **** En consderant les Trois premiers axes:
-# seul K n'est pas trés influant
-
-
-
-
-
-# coloree les variables selon leurs contributions aux axes
-fviz_pca_var(
-  axes = c(1, 2),
-  acp0,
-  col.var = "contrib",
-  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-  repel = TRUE
-) # evite le chevauchement de texte
-
-
-
-
-# coul = c("yellow", "green", "violet", "blue", "black", "red")
-# fviz_pca_ind(
-#   axes = c(1, 2),
-#   acp0,
-#   geom.ind = "text",
-#   pointshape = 21,
-#   pointsize = 2,
-#   #palette = coul,
-#   palette = "viridis",
-#   addEllipses = TRUE,
-#   legend.title = "CLC",
-#   fill.ind = data_lm$clc3
-# )
-
-
-fviz_pca_ind(
-  axes = c(1, 2),
-  acp0,
-  geom.ind = "point",
-  pointshape = 21,
-  pointsize = 2,
-  palette = "viridis",
-  addEllipses = TRUE,
-  legend.title = "CLC",
-  fill.ind = data_lm$clc3
-)
-```
-
-
-```{r}
-# Classification
-# class1 = HCPC(acp0)
-# plot(class1$call$t$inert.gain, type = "s")
-# #Je choisis finalement 4 groupes
-# class1 = HCPC(acp0, nb.clust = 4)
-# fviz_dend(class1)
-# fviz_cluster(class1)
-# fviz_cluster(class1, ellipse.type = "norm", ellipse.level = 0.8)    #Groupes
-```
-
 -->
 
 # Selecting variables with regsubsets()
@@ -2828,14 +2737,6 @@ kable(resultat_tableau,padding=10)
 **hurs_mean** = Mean monthly near-surface relative humidity
 
 
-
-
-
-
-
-
-
-
 -->
 
 
@@ -2849,28 +2750,44 @@ kable(resultat_tableau,padding=10)
 
 ## Importance of variables for total abundance
 ```{r}
-ForetAlea <- function(var_rep, df_app, df_valid,mtry =9,ntree= 2000,maxnodes=60){
+ForetAlea <- function(var_rep, df_app, df_valid,mtry =9,ntree= 2000,maxnodes = NULL){
   
-  # Nombre de variables tirées aléatoirement pour la construction des arbre : mtry =    1/nombre de variable explicatives totales # nombre d'arbres : ntree = 250
-  
-  # var_mod=c(var_rep,predicteurs)
-  # df_app = df_app[,var_mod]
-  # df_valid = df_valid[,var_mod]
-  
-  
+  set.seed(1234)
   col_posi <- which(names(df_app) == var_rep)
-  ForeVDT <- randomForest(df_app[-col_posi], df_app[[col_posi]], mtry=mtry, ntree=ntree,maxnodes=maxnodes)
+  ForeVDT <- randomForest::randomForest(df_app[-col_posi], df_app[[col_posi]], mtry = mtry, ntree = ntree, maxnodes = maxnodes)
   
-  # Prediction sur le jeu de validation
+  # Prediction on the validation dataset
   col_posi <- which(names(df_valid) == var_rep)
-  pred.RF<-predict(ForeVDT,newdata=as.data.frame(df_valid[,-col_posi]))
+  pred.RF <- predict(ForeVDT, newdata = df_valid[, -col_posi])
   
-  # Calcul du RMSE pour évaluer la qualité du modele
-  rmse <- round (sqrt(mean((df_valid[,col_posi] - pred.RF)^2)),2)
+  # Calculate RMSE to evaluate model quality
+  rmse <- sqrt(mean((df_valid[, col_posi] - pred.RF)^2))
   
-  r_adj = round (mean(ForeVDT$rsq),2)
   
-    results <- list(RMSE = rmse, R_squared= r_adj, model=ForeVDT)
+  # Calcul du R² ajusté pour train
+  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(ForeVDT, data=df_app))
+  n_train <- nrow(df_app)
+  p_train <- ncol(df_app) - 1
+  r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
+  
+  # Calcul du R² ajusté pour test
+  R_adj_test <-calcule_R2(df_valid[,col_posi],pred.RF)
+  n_test <- nrow(df_valid)
+  p_test <- ncol(df_valid) - 1
+  r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  
+  
+  # Calculate MAE
+  MAE <- mean(abs(pred.RF - df_valid[, col_posi]))
+  
+  # Round results
+  rmse <- round(rmse, 2)
+  r_adj_train <- round(r_adj_train, 2)
+  r_adj_test <- round(r_adj_test, 2)
+  MAE <- round(MAE, 2)
+  
+  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = ForeVDT, predit = pred.RF)
+  
   return(results)
 }
 ```
@@ -2891,8 +2808,11 @@ df_train_AB_tot = droplevels(df_train_AB_tot)
 df_test_AB_tot = droplevels(df_test_AB_tot)
 
 
-all_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot, df_valid = df_test_AB_tot,mtry =9,ntree= 2000)
+all_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot, df_valid = df_test_AB_tot,mtry =9,ntree= 2000,maxnodes = NULL)
 
+# all_var_AB_tot$RMSE
+# all_var_AB_tot$R_adj_train
+# all_var_AB_tot$R_adj_test
 AB_tot_fit_rf = all_var_AB_tot$model
 # AB_tot_fit_rf #display fitted model
 # which.min(AB_tot_fit_rf$mse) #find number of trees that produce lowest test MSE
@@ -2905,20 +2825,32 @@ importance_rf$nom=rownames(importance_rf)
 importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
 
 best_20_AB_tot = c(importance_rf$nom[1:20])
-
-
 var_a_sup_AB_tot= setdiff(y = best_20_AB_tot,x = importance_rf$nom)
-best20_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot",best_20_AB_tot)], df_valid = df_test_AB_tot [,c("AB_tot",best_20_AB_tot)],mtry =9,ntree= 2000)
+
+
+
+
+best20_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot",best_20_AB_tot)], df_valid = df_test_AB_tot [,c("AB_tot",best_20_AB_tot)],mtry =9,ntree= 2000,maxnodes = NULL)
+
+# best20_var_AB_tot$RMSE # 5.4
+# best20_var_AB_tot$R_adj_train # 0.37
+# best20_var_AB_tot$R_adj_test # 0.36
+# best20_var_AB_tot$MAE
+# rf.model = best20_var_AB_tot$model
+# rf.model # 36.74, 36.73
+
 
 varImpPlot(best20_var_AB_tot$model, main = "Abundance") #produce variable importance plot
-
-
 importance_rf <- as.data.frame(importance(best20_var_AB_tot$model))
 importance_rf$nom=rownames(importance_rf)
 importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
 row.names(importance_rf)=NULL
 importance_rf$percent <- importance_rf$IncNodePurity / sum(importance_rf$IncNodePurity)*100
 barplot(importance_rf$percent, main = "Importance of variables for total abundance", names.arg = importance_rf$nom, ylab = "Importance (%)", las = 2)
+
+
+
+
 
 
 ### sans OS
@@ -2972,8 +2904,10 @@ BM_tot_fit_rf = all_var_BM_tot$model
 importance_rf <- as.data.frame(importance(BM_tot_fit_rf))
 importance_rf$nom=rownames(importance_rf)
 importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
-
 best_20_BM_tot = c(importance_rf$nom[1:20])
+
+
+
 var_a_sup_BM_tot= setdiff(y = best_20_BM_tot,x = importance_rf$nom)
 
 best20_var_BM_tot= ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot[, c("BM_tot",best_20_BM_tot)], df_valid = df_test_BM_tot [, c("BM_tot",best_20_BM_tot)],mtry =9,ntree= 2000)
@@ -3045,6 +2979,7 @@ importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TR
 best_20_Richesse_tot = c(importance_rf$nom[1:20])
 var_a_sup_Richesse_tot= setdiff(y = best_20_Richesse_tot,x = importance_rf$nom)
 
+
 best20_var_Richesse_tot= ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot[, c("Richesse_tot",best_20_Richesse_tot)], df_valid = df_test_Richesse_tot [, c("Richesse_tot",best_20_Richesse_tot)],mtry =9,ntree= 2000)
 
 
@@ -3072,6 +3007,453 @@ row.names(importance_rf)=NULL
 importance_rf$percent <- importance_rf$IncNodePurity / sum(importance_rf$IncNodePurity)*100
 barplot(importance_rf$percent, main = "Importance of variables for richness \n Without land cover", names.arg = importance_rf$nom, ylab = "Importance (%)", las = 2)
 
+```
+
+# Relationship between variables
+[Explanatory power of variables]
+
+## Abundance
+```{r re AB_tot,fig.align='center',fig.show='animate'}
+df_re_AB_tot= data_deep[,c("AB_tot",best_20_AB_tot)]
+for (i in names(df_re_AB_tot[,-1])){
+  plot(df_re_AB_tot[,i],df_re_AB_tot[,1], main = paste("AB_tot &",i), xlab = i,ylab="Abundance" )
+   # col_posi <- which(names(df_re_AB_tot) == i)
+   # g =ggpairs(df_re_AB_tot[,c(1,col_posi)])
+   # print(g)
+}
+```
+-   Plots
+```{r re AB_tot2,fig.align='center'}
+df_re_AB_tot= data_deep[,c("AB_tot",best_20_AB_tot)]
+for (i in names(df_re_AB_tot[,-1])){
+  # plot(df_re_AB_tot[,i],df_re_AB_tot[,1], main = paste("AB_tot &",i), xlab = i,ylab="Abundance" )
+  cat(paste("- Abundance &",i,"\n"))
+   col_posi <- which(names(df_re_AB_tot) == i)
+   g =ggpairs(df_re_AB_tot[,c(1,col_posi)])
+   print(g)
+}
+
+```
+
+## Biomass
+```{r re BM_tot,fig.align='center',fig.show='animate'}
+df_re_BM_tot= data_deep[,c("BM_tot",best_20_BM_tot)]
+for (i in names(df_re_BM_tot[,-1])){
+  plot(df_re_BM_tot[,i],df_re_BM_tot[,1], main = paste("BM_tot &",i), xlab = i,ylab="Biomass" )
+   # col_posi <- which(names(df_re_BM_tot) == i)
+   # g =ggpairs(df_re_BM_tot[,c(1,col_posi)])
+   # print(g)
+}
+```
+-   Plots
+```{r re BM_tot2,fig.align='center'}
+df_re_BM_tot= data_deep[,c("BM_tot",best_20_BM_tot)]
+for (i in names(df_re_BM_tot[,-1])){
+  # plot(df_re_BM_tot[,i],df_re_BM_tot[,1], main = paste("BM_tot &",i), xlab = i,ylab="Biomass" )
+  cat(paste("- Biomass &",i,"\n"))
+   col_posi <- which(names(df_re_BM_tot) == i)
+   g =ggpairs(df_re_BM_tot[,c(1,col_posi)])
+   print(g)
+}
+
+```
+
+## Richness
+```{r re Richesse_tot,fig.align='center',fig.show='animate'}
+df_re_Richesse_tot= data_deep[,c("Richesse_tot",best_20_Richesse_tot)]
+for (i in names(df_re_Richesse_tot[,-1])){
+  plot(df_re_Richesse_tot[,i],df_re_Richesse_tot[,1], main = paste("Richesse_tot &",i), xlab = i,ylab="Richness" )
+   # col_posi <- which(names(df_re_Richesse_tot) == i)
+   # g =ggpairs(df_re_Richesse_tot[,c(1,col_posi)])
+   # print(g)
+}
+```
+-   Plots
+```{r re Richesse_tot2,fig.align='center'}
+df_re_Richesse_tot= data_deep[,c("Richesse_tot",best_20_Richesse_tot)]
+for (i in names(df_re_Richesse_tot[,-1])){
+  # plot(df_re_Richesse_tot[,i],df_re_Richesse_tot[,1], main = paste("Richesse_tot &",i), xlab = i,ylab="Richness" )
+  cat(paste("- Richness &",i,"\n"))
+   col_posi <- which(names(df_re_Richesse_tot) == i)
+   g =ggpairs(df_re_Richesse_tot[,c(1,col_posi)])
+   print(g)
+}
+
+```
+
+# Species
+
+Plan:
+
+Explorations de l'occurence des espèces
+
+Exploration des relations entre les espèces et les predicteurs
+
+ACP sur les predicteurs de l'abondance, la biomasse et la richesse
+
+Resultats
+
+Dicussion
+
+
+See [species explorations](https://posit.cloud/content/7997063){target="_blank"}
+
+
+# ACP
+
+## Abundance
+
+```{r ACP abundance, echo=TRUE, fig.align='center'}
+
+df_acp_AB_tot = data_deep[,c("AB_tot",best_20_AB_tot)]
+# # # colnames(df_acp_AB_tot)[colnames(df_acp_AB_tot) == "clcm_lvl3"] <- "clc3"
+# dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_acp_AB_tot)
+# df_acp_AB_tot <- cbind(df_acp_AB_tot, dummy_vars)
+# df_acp_AB_tot <- df_acp_AB_tot[, -which(names(df_acp_AB_tot) == "clcm_lvl3")]
+
+df_acp_AB_tot = drop_na(df_acp_AB_tot)
+df_acp_AB_tot = droplevels(df_acp_AB_tot)
+
+
+acp_AB_tot <- PCA(df_acp_AB_tot, graph = FALSE,quanti.sup=1,quali.sup=2)
+
+## Choix du nombre d'axes
+# acp_AB_tot$eig
+fviz_eig(acp_AB_tot, addlabels = TRUE) # on prend les trois premiers axes
+contrib_axes <- acp_AB_tot$var$contrib[, 1:2]  # 3 premiers axes
+contrib_axes <- round(contrib_axes, 2)   # Plus facile a lire
+fviz_contrib(acp_AB_tot, choice = "var", axes = 1)
+fviz_contrib(acp_AB_tot, choice = "var", axes = 2)
+# fviz_contrib(acp_AB_tot, choice = "var", axes = 3)
+
+
+# coloree les variables selon leurs contributions aux axes
+fviz_pca_var(
+  axes = c(1, 2),
+  acp_AB_tot,
+  col.var = "contrib",
+  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+  repel = TRUE
+) # evite le chevauchement de texte
+
+
+seuil <- 1 / ncol(df_acp_AB_tot[,-c(1:2)]) * 100
+lignes_superieures <- rownames(contrib_axes)[apply(contrib_axes, 1,
+                                                   function(x)
+                                                     any(x >= seuil))]
+
+#  En consderant les deux premiers axes, les predicteurs les moins importants sont:
+names(df_acp_AB_tot[,-c(1:2)]) [! names(df_acp_AB_tot[,-c(1:2)]) %in% lignes_superieures]
+
+
+
+
+
+coul = c("yellow", "green", "violet", "blue", "black", "red")
+coul <- c("077255000", "255166255", "204242077", "255255168", "230230077", "230128000")
+
+# Convertir les codes de couleur hexadécimaux en couleurs RGB
+colors <- sapply(coul, function(hex) {
+  r <- as.numeric(substr(hex, 1, 3)) / 255
+  g <- as.numeric(substr(hex, 4, 6)) / 255
+  b <- as.numeric(substr(hex, 7, 9)) / 255
+  rgb(r, g, b)
+})
+colors = unname(colors)
+
+
+fviz_pca_ind(
+  axes = c(1, 2),
+  acp_AB_tot,
+  geom.ind = "point",
+  pointshape = 21,
+  pointsize = 2,
+  palette = "viridus",
+  # addEllipses = TRUE,
+  legend.title = "Abundance",
+  fill.ind = df_acp_AB_tot$AB_tot^2
+)
+
+
+
+fviz_pca_ind(
+  axes = c(1, 2),
+  acp_AB_tot,
+  geom.ind = "point",
+  pointshape = 21,
+  pointsize = 2,
+  palette = colors,
+  addEllipses = TRUE,
+  legend.title = "Land use",
+  fill.ind = df_acp_AB_tot$clcm_lvl3
+  )
+
+
+# Graphique biplot
+fviz_pca_biplot(
+  axes = c(1, 2),
+  acp_AB_tot,
+  geom.ind = "point",
+  pointshape = 21,
+  pointsize = 2,
+  palette = colors,
+  addEllipses = TRUE,
+  legend.title = "Land use",
+  fill.ind = df_acp_AB_tot$clcm_lvl3
+  )
+
+
+```
+
+
+```{r hcp abundance}
+#Classification
+# class1 = HCPC(acp_AB_tot)
+# plot(class1$call$t$inert.gain, type = "s")
+#Je choisis finalement 4 groupes
+class1 = HCPC(acp_AB_tot, nb.clust = 3)
+# fviz_dend(class1)
+# fviz_cluster(class1)
+# fviz_cluster(class1, ellipse.type = "norm", ellipse.level = 0.8)    #Groupes
+```
+
+
+
+## Biomass
+
+```{r ACP Biomass, echo=TRUE, fig.align='center'}
+
+df_acp_BM_tot = data_deep[,c("BM_tot",best_20_BM_tot)]
+# # # colnames(df_acp_BM_tot)[colnames(df_acp_BM_tot) == "clcm_lvl3"] <- "clc3"
+# dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_acp_BM_tot)
+# df_acp_BM_tot <- cbind(df_acp_BM_tot, dummy_vars)
+# df_acp_BM_tot <- df_acp_BM_tot[, -which(names(df_acp_BM_tot) == "clcm_lvl3")]
+
+df_acp_BM_tot = drop_na(df_acp_BM_tot)
+df_acp_BM_tot = droplevels(df_acp_BM_tot)
+
+
+acp_BM_tot <- PCA(df_acp_BM_tot, graph = FALSE,quanti.sup=1,quali.sup=2)
+
+## Choix du nombre d'axes
+# acp_BM_tot$eig
+fviz_eig(acp_BM_tot, addlabels = TRUE) # on prend les trois premiers axes
+contrib_axes <- acp_BM_tot$var$contrib[, 1:2]  # 3 premiers axes
+contrib_axes <- round(contrib_axes, 2)   # Plus facile a lire
+fviz_contrib(acp_BM_tot, choice = "var", axes = 1)
+fviz_contrib(acp_BM_tot, choice = "var", axes = 2)
+# fviz_contrib(acp_BM_tot, choice = "var", axes = 3)
+
+
+# coloree les variables selon leurs contributions aux axes
+fviz_pca_var(
+  axes = c(1, 2),
+  acp_BM_tot,
+  col.var = "contrib",
+  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+  repel = TRUE
+) # evite le chevauchement de texte
+
+
+seuil <- 1 / ncol(df_acp_BM_tot[,-c(1:2)]) * 100
+lignes_superieures <- rownames(contrib_axes)[apply(contrib_axes, 1,
+                                                   function(x)
+                                                     any(x >= seuil))]
+
+#  En consderant les deux premiers axes, les predicteurs les moins importants sont:
+names(df_acp_BM_tot[,-c(1:2)]) [! names(df_acp_BM_tot[,-c(1:2)]) %in% lignes_superieures]
+
+
+
+
+
+coul = c("yellow", "green", "violet", "blue", "black", "red")
+coul <- c("077255000", "255166255", "204242077", "255255168", "230230077", "230128000")
+
+# Convertir les codes de couleur hexadécimaux en couleurs RGB
+colors <- sapply(coul, function(hex) {
+  r <- as.numeric(substr(hex, 1, 3)) / 255
+  g <- as.numeric(substr(hex, 4, 6)) / 255
+  b <- as.numeric(substr(hex, 7, 9)) / 255
+  rgb(r, g, b)
+})
+colors = unname(colors)
+
+
+fviz_pca_ind(
+  axes = c(1, 2),
+  acp_BM_tot,
+  geom.ind = "point",
+  pointshape = 21,
+  pointsize = 2,
+  palette = "viridus",
+  # addEllipses = TRUE,
+  legend.title = "Biomass",
+  fill.ind = df_acp_BM_tot$BM_tot^2
+)
+
+
+
+fviz_pca_ind(
+  axes = c(1, 2),
+  acp_BM_tot,
+  geom.ind = "point",
+  pointshape = 21,
+  pointsize = 2,
+  palette = colors,
+  addEllipses = TRUE,
+  legend.title = "Land use",
+  fill.ind = df_acp_BM_tot$clcm_lvl3
+  )
+
+
+# Graphique biplot
+fviz_pca_biplot(
+  axes = c(1, 2),
+  acp_BM_tot,
+  geom.ind = "point",
+  pointshape = 21,
+  pointsize = 2,
+  palette = colors,
+  addEllipses = TRUE,
+  legend.title = "Land use",
+  fill.ind = df_acp_BM_tot$clcm_lvl3
+  )
+
+
+```
+
+
+```{r hcp biomass}
+#Classification
+# class1 = HCPC(acp_BM_tot)
+# plot(class1$call$t$inert.gain, type = "s")
+#Je choisis finalement 4 groupes
+class1 = HCPC(acp_BM_tot, nb.clust = 3)
+# fviz_dend(class1)
+# fviz_cluster(class1)
+# fviz_cluster(class1, ellipse.type = "norm", ellipse.level = 0.8)    #Groupes
+```
+
+
+
+
+
+## Richness
+
+```{r ACP Richness, echo=TRUE, fig.align='center'}
+
+df_acp_Richesse_tot = data_deep[,c("Richesse_tot",best_20_Richesse_tot)]
+# # # colnames(df_acp_Richesse_tot)[colnames(df_acp_Richesse_tot) == "clcm_lvl3"] <- "clc3"
+# dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_acp_Richesse_tot)
+# df_acp_Richesse_tot <- cbind(df_acp_Richesse_tot, dummy_vars)
+# df_acp_Richesse_tot <- df_acp_Richesse_tot[, -which(names(df_acp_Richesse_tot) == "clcm_lvl3")]
+
+df_acp_Richesse_tot = drop_na(df_acp_Richesse_tot)
+df_acp_Richesse_tot = droplevels(df_acp_Richesse_tot)
+
+posi_co = which(names(df_acp_Richesse_tot)=="clcm_lvl3")
+
+acp_Richesse_tot <- PCA(df_acp_Richesse_tot, graph = FALSE,quanti.sup=1,quali.sup=posi_co)
+
+## Choix du nombre d'axes
+# acp_Richesse_tot$eig
+fviz_eig(acp_Richesse_tot, addlabels = TRUE) # on prend les trois premiers axes
+contrib_axes <- acp_Richesse_tot$var$contrib[, 1:2]  # 3 premiers axes
+contrib_axes <- round(contrib_axes, 2)   # Plus facile a lire
+fviz_contrib(acp_Richesse_tot, choice = "var", axes = 1)
+fviz_contrib(acp_Richesse_tot, choice = "var", axes = 2)
+# fviz_contrib(acp_Richesse_tot, choice = "var", axes = 3)
+
+
+# coloree les variables selon leurs contributions aux axes
+fviz_pca_var(
+  axes = c(1, 2),
+  acp_Richesse_tot,
+  col.var = "contrib",
+  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+  repel = TRUE
+) # evite le chevauchement de texte
+
+
+seuil <- 1 / ncol(df_acp_Richesse_tot[,-c(1,posi_co)]) * 100
+lignes_superieures <- rownames(contrib_axes)[apply(contrib_axes, 1,
+                                                   function(x)
+                                                     any(x >= seuil))]
+
+#  En consderant les deux premiers axes, les predicteurs les moins importants sont:
+names(df_acp_Richesse_tot[,-c(1,posi_co)]) [! names(df_acp_Richesse_tot[,-c(1:2)]) %in% lignes_superieures]
+
+
+
+
+
+coul = c("yellow", "green", "violet", "blue", "black", "red")
+coul <- c("077255000", "255166255", "204242077", "255255168", "230230077", "230128000")
+
+# Convertir les codes de couleur hexadécimaux en couleurs RGB
+colors <- sapply(coul, function(hex) {
+  r <- as.numeric(substr(hex, 1, 3)) / 255
+  g <- as.numeric(substr(hex, 4, 6)) / 255
+  b <- as.numeric(substr(hex, 7, 9)) / 255
+  rgb(r, g, b)
+})
+colors = unname(colors)
+
+
+fviz_pca_ind(
+  axes = c(1, 2),
+  acp_Richesse_tot,
+  geom.ind = "point",
+  pointshape = 21,
+  pointsize = 2,
+  palette = "viridus",
+  # addEllipses = TRUE,
+  legend.title = "Richness",
+  fill.ind = df_acp_Richesse_tot$Richesse_tot
+)
+
+
+
+fviz_pca_ind(
+  axes = c(1, 2),
+  acp_Richesse_tot,
+  geom.ind = "point",
+  pointshape = 21,
+  pointsize = 2,
+  palette = colors,
+  addEllipses = TRUE,
+  legend.title = "Land use",
+  fill.ind = df_acp_Richesse_tot$clcm_lvl3
+  )
+
+
+# Graphique biplot
+fviz_pca_biplot(
+  axes = c(1, 2),
+  acp_Richesse_tot,
+  geom.ind = "point",
+  pointshape = 21,
+  pointsize = 2,
+  palette = colors,
+  addEllipses = TRUE,
+  legend.title = "Land use",
+  fill.ind = df_acp_Richesse_tot$clcm_lvl3
+  )
+
+
+```
+
+
+```{r hcp richness}
+#Classification
+# class1 = HCPC(acp_Richesse_tot)
+# plot(class1$call$t$inert.gain, type = "s")
+#Je choisis finalement 4 groupes
+class1 = HCPC(acp_Richesse_tot, nb.clust = 4)
+# fviz_dend(class1)
+# fviz_cluster(class1)
+# fviz_cluster(class1, ellipse.type = "norm", ellipse.level = 0.8)    #Groupes
 ```
 
 
@@ -3267,9 +3649,9 @@ Richesse_tot_test = as.data.frame(Richesse_tot_test)
 
 -   Data partition (`r dim(df_mod_AB_tot)`):
 
-    -   train data (80 %) = `r dim(AB_tot_train)`
+    -   train data (80 %) = `r dim(AB_tot_train) `
     
-    -   test data (20 %) = `r dim(AB_tot_test)`
+    -   test data (20 %) = `r dim(AB_tot_test) `
     
 
 
@@ -3277,9 +3659,9 @@ Richesse_tot_test = as.data.frame(Richesse_tot_test)
 
 -   Data partition (`r dim(df_mod_BM_tot)`):
 
-    -   train data (80 %) = `r dim(BM_tot_train)`
+    -   train data (80 %) = `r dim(BM_tot_train) `
     
-    -   test data (20 %) = `r dim(BM_tot_test)`
+    -   test data (20 %) = `r dim(BM_tot_test) `
     
 
 
@@ -3287,9 +3669,9 @@ Richesse_tot_test = as.data.frame(Richesse_tot_test)
 
 -   Data partition (`r dim(df_mod_Richesse_tot)`):
 
-    -   train data (80 %) = `r dim(Richesse_tot_train)`
+    -   train data (80 %) = `r dim(Richesse_tot_train) `
     
-    -   test data (20 %) = `r dim(Richesse_tot_test)` 
+    -   test data (20 %) = `r dim(Richesse_tot_test) ` 
 
 :::
 
@@ -3524,10 +3906,10 @@ GAM <- function(var_rep, df_app, df_valid, family = 'gaussian',method = "REML", 
   
   if(var_rep == "Richesse_tot"){ 
     if (interaction == FALSE){
-  modelgam<-gam(Richesse_tot ~ s(gps_y) + s(gps_x) + s(bio4) + s(bio10) + s(bio7) + s(CaCO3) + s(P) + s(N) + s(gdd10) + s(pH) + s(bio18) + s(hurs_mean) + s(bio5) + s(bio9) + s(bio13) + s(bio15) + s(bio16) + s(bio11) + s(bio6) + clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v ,
+  modelgam<-gam(Richesse_tot ~ s(gps_x) + s(bio4) + s(bio7) + s(gps_y) + s(pH) + s(CaCO3) + s(bio18) + s(P) + s(CEC) + s(bio13) + s(N) + s(bio16) + s(hurs_mean) + s(bio10) + s(PET) + s(bio15) + s(elevation) + s(gdd10) + s(bio9) + clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v ,
         family=family,method = method,data = df_app)
     } else { 
-          modelgam<-gam(Richesse_tot ~ s(bio7) + s(CaCO3) + s(pH) + s(elevation) + s(bio18) + s(CEC) + s(P) + s(N) + s(bio15) + s(bio10) + s(gdd10) + s(bio5) + s(PET) + clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v + s(bio4.inter.pH) + s(gps_x.inter.PET) + s(gps_x.inter.hurs_mean) + s(gps_x.inter.gdd10) + s(gps_x.inter.pH) + s(pH.inter.elevation) + s(CEC.inter.hurs_mean) + s(gps_x.inter.bio10) + s(bio7.inter.pH) + s(gps_x.inter.gps_y) + s(bio4.inter.P) + s(CEC.inter.bio10) + s(bio4.inter.CaCO3) + s(pH.inter.bio18) + s(gps_x.inter.bio5) + s(gps_x.inter.CaCO3) + s(bio18.inter.hurs_mean) + s(bio4.inter.PET) + s(bio18.inter.bio10) + s(bio4.inter.CEC),
+          modelgam<-gam(Richesse_tot ~ s(gps_x) + s(bio4) + s(bio7) + s(gps_y) + s(pH) + s(CaCO3) + s(bio18) + s(P) + s(CEC) + s(bio13) + s(N) + s(bio16) + s(hurs_mean) + s(bio10) + s(PET) + s(bio15) + s(elevation) + s(gdd10) + s(bio9) + clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v + s(bio4.inter.pH) + s(gps_x.inter.PET) + s(gps_x.inter.hurs_mean) + s(gps_x.inter.gdd10) + s(gps_x.inter.pH) + s(pH.inter.elevation) + s(CEC.inter.hurs_mean) + s(gps_x.inter.bio10) + s(bio7.inter.pH) + s(gps_x.inter.gps_y) + s(bio4.inter.P) + s(CEC.inter.bio10) + s(bio4.inter.CaCO3) + s(pH.inter.bio18) + s(gps_x.inter.bio5) + s(gps_x.inter.CaCO3) + s(bio18.inter.hurs_mean) + s(bio4.inter.PET) + s(bio18.inter.bio10) + s(bio4.inter.CEC),
         family=family,method = method,data = df_app)
     }
   }
@@ -3606,8 +3988,9 @@ RF_df_grid <- expand.grid(ntree = c(100,300,500,700,900,1000,1300,1500,1700,2000
 ```{r function RF, echo=TRUE,fig.align='center'}
 
 ForetAlea <- function(var_rep, df_app, df_valid, mtry, ntree, maxnodes) {
+  set.seed(1234)
   col_posi <- which(names(df_app) == var_rep)
-  ForeVDT <- randomForest::randomForest(df_app[-col_posi], df_app[[col_posi]], mtry = 3, ntree = ntree, maxnodes = maxnodes)
+  ForeVDT <- randomForest::randomForest(df_app[-col_posi], df_app[[col_posi]], mtry = mtry, ntree = ntree, maxnodes = maxnodes)
   
   # Prediction on the validation dataset
   col_posi <- which(names(df_valid) == var_rep)
@@ -4737,6 +5120,7 @@ RF_result_AB_tot = ForetAlea(var_rep ="AB_tot",
 # RF_result_AB_tot$predit
 # RF_result_AB_tot$model
 
+# varImpPlot(RF_result_AB_tot$model)
 
 RF_AB_tot_pred <- RF_result_AB_tot$predit^2
 
@@ -4850,13 +5234,15 @@ graphe_AB_tot = ggarrange(GLM_AB_tot, GAM_AB_tot, RF_AB_tot, GBM_AB_tot, ANN_AB_
   common.legend = TRUE,
   legend = 'right'
 )
-ggsave("Results/graphe_AB_tot.png", plot = graphe_AB_tot, dpi = 300,height = 5,width = 8)
+ggsave("Results/graphe_AB_tot.png", plot = graphe_AB_tot, dpi = 300,height = 6,width = 7)
 
 
 
 
 df_tot = RF_df_AB_tot
 df_tot$observation = seq(1,nrow(df_tot))
+
+
 
 # Calcul des quartiles
 q1 <- quantile(df_tot$Observed, 0.25)
@@ -4887,9 +5273,16 @@ RF_AB_tot_fig = ggarrange(AB_tot_p1, AB_tot_p2, AB_tot_p3, AB_tot_p4,
   legend = 'right'
 )
 
-
-RF_AB_tot_fig
 ggsave("Results/RF_AB_tot_fig.png", plot = RF_AB_tot_fig, dpi = 300,height = 8)
+
+
+# df_tot$diff = abs(df_tot$Observed - df_tot$Predicted)
+# df_best = df_tot[df_tot$diff<=15,]
+# 
+# plot_comp(df = df_best,ylabel = "Abundance" ,title_class = "     Best prediction",legende = TRUE,plotly = TRUE)
+
+
+
 ```
 
 
@@ -4900,9 +5293,9 @@ ggsave("Results/RF_AB_tot_fig.png", plot = RF_AB_tot_fig, dpi = 300,height = 8)
 
 **The best algorithm for total abundance is: RF**
 
-<p align="center">
-  <img src="Results/RF_AB_tot_fig.png">
-</p>
+<!-- <p align="center"> -->
+<!--   <img src="Results/RF_AB_tot_fig.png"> -->
+<!-- </p> -->
 
 
 ## Prediction of total biomass
@@ -5133,7 +5526,7 @@ graphe_BM_tot = ggarrange(GLM_BM_tot, GAM_BM_tot, RF_BM_tot, GBM_BM_tot, ANN_BM_
   common.legend = TRUE,
   legend = 'right'
 )
-ggsave("Results/graphe_BM_tot.png", plot = graphe_BM_tot, dpi = 300, height = 5,width = 8)
+ggsave("Results/graphe_BM_tot.png", plot = graphe_BM_tot, dpi = 300, height = 6,width = 7)
 
 
 
@@ -5171,8 +5564,14 @@ RF_BM_tot_fig = ggarrange(BM_tot_p1, BM_tot_p2, BM_tot_p3, BM_tot_p4,
 )
 
 
-RF_BM_tot_fig
 ggsave("Results/RF_BM_tot_fig.png", plot = RF_BM_tot_fig, dpi = 300,height = 8)
+
+
+
+# df_tot$diff = abs(df_tot$Observed - df_tot$Predicted)
+# df_best = df_tot[df_tot$diff<=15,]
+# 
+# plot_comp(df = df_best,ylabel = "Biomass" ,title_class = "     Best prediction",legende = TRUE,plotly = TRUE)
 ```
 
 
@@ -5183,9 +5582,9 @@ ggsave("Results/RF_BM_tot_fig.png", plot = RF_BM_tot_fig, dpi = 300,height = 8)
 
 **The best algorithm for total Biomass is: RF**
 
-<p align="center">
-  <img src="Results/RF_BM_tot_fig.png">
-</p>
+<!-- <p align="center"> -->
+<!--   <img src="Results/RF_BM_tot_fig.png"> -->
+<!-- </p> -->
 
 
 ## Prediction of total taxonomic richness
@@ -5210,9 +5609,9 @@ GLM_result_Richesse_tot = GLM(var_rep ="Richesse_tot",
 
 
 
-GLM_Richesse_tot_pred <- GLM_result_Richesse_tot$predit^2
+GLM_Richesse_tot_pred <- GLM_result_Richesse_tot$predit
 
-GLM_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1]^2,Predicted = GLM_Richesse_tot_pred)
+GLM_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1],Predicted = GLM_Richesse_tot_pred)
 
 cor_GLM_Richesse_tot <- cor(GLM_df_Richesse_tot$Observed, GLM_df_Richesse_tot$Predicted)
 
@@ -5222,7 +5621,7 @@ GLM_Richesse_tot <- ggplot(GLM_df_Richesse_tot, aes(x = Observed, y = Predicted)
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GLM: R² adj (train) = ", round(GLM_result_Richesse_tot$R_adj_train,2),
                            "; \n R² adj (test) = ", round(GLM_result_Richesse_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GLM_result_Richesse_tot$RMSE^2,2)),
+                           "; \n RMSE (test) = ",  round(GLM_result_Richesse_tot$RMSE,2)),
                             x = "Real values", 
                             y = "Predicted values") +
       theme_classic() 
@@ -5258,9 +5657,9 @@ GAM_result_Richesse_tot = GAM(var_rep ="Richesse_tot",
 
 
 
-GAM_Richesse_tot_pred <- GAM_result_Richesse_tot$predit^2
+GAM_Richesse_tot_pred <- GAM_result_Richesse_tot$predit
 
-GAM_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1]^2,Predicted = GAM_Richesse_tot_pred)
+GAM_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1],Predicted = GAM_Richesse_tot_pred)
 
 cor_GAM_Richesse_tot <- cor(GAM_df_Richesse_tot$Observed, GAM_df_Richesse_tot$Predicted)
 
@@ -5270,7 +5669,7 @@ GAM_Richesse_tot <- ggplot(GAM_df_Richesse_tot, aes(x = Observed, y = Predicted)
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GAM: R² adj (train) = ", round(GAM_result_Richesse_tot$R_adj_train,2),
                            "; \n R² adj (test) = ", round(GAM_result_Richesse_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GAM_result_Richesse_tot$RMSE^2,2)),
+                           "; \n RMSE (test) = ",  round(GAM_result_Richesse_tot$RMSE,2)),
                             x = "Real values", 
                             y = "Predicted values") +
       theme_classic() 
@@ -5307,9 +5706,9 @@ RF_result_Richesse_tot = ForetAlea(var_rep ="Richesse_tot",
 # RF_result_Richesse_tot$model
 
 
-RF_Richesse_tot_pred <- RF_result_Richesse_tot$predit^2
+RF_Richesse_tot_pred <- RF_result_Richesse_tot$predit
 
-RF_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1]^2,Predicted = RF_Richesse_tot_pred)
+RF_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1],Predicted = RF_Richesse_tot_pred)
 
 cor_RF_Richesse_tot <- cor(RF_df_Richesse_tot$Observed, RF_df_Richesse_tot$Predicted)
 
@@ -5319,10 +5718,11 @@ RF_Richesse_tot <- ggplot(RF_df_Richesse_tot, aes(x = Observed, y = Predicted)) 
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" RF: R² adj (train) = ", round(RF_result_Richesse_tot$R_adj_train,2), 
                            "; \n R² adj (test) = ", round(RF_result_Richesse_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(RF_result_Richesse_tot$RMSE^2,2)),
+                           "; \n RMSE (test) = ",  round(RF_result_Richesse_tot$RMSE,2)),
                             x = "Real values", 
                             y = "Predicted values") + 
       theme_classic() 
+best_algo_Richesse_tot = RF_Richesse_tot
 
 # Prediction avec GBM -----------------------------------------
 Richesse_tot_GBM_tuning = read.csv2("results_tuning/Richesse_tot_GBM_tuning.csv")
@@ -5365,9 +5765,9 @@ GBM_result_Richesse_tot =  GBM(var_rep ="Richesse_tot",
 
 
 
-GBM_Richesse_tot_pred = GBM_result_Richesse_tot$predit^2
+GBM_Richesse_tot_pred = GBM_result_Richesse_tot$predit
 
-GBM_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1]^2,Predicted = GBM_Richesse_tot_pred)
+GBM_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1],Predicted = GBM_Richesse_tot_pred)
 
 cor_GBM_Richesse_tot<- cor(GBM_df_Richesse_tot$Observed, GBM_df_Richesse_tot$Predicted)
 
@@ -5377,12 +5777,12 @@ GBM_Richesse_tot <- ggplot(GBM_df_Richesse_tot, aes(x = Observed, y = Predicted)
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GBM: R² adj (train) = ", round(GBM_result_Richesse_tot$R_adj_train,2),
                            "; \n R² adj (test) = ", round(GBM_result_Richesse_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GBM_result_Richesse_tot$RMSE^2,2)),
+                           "; \n RMSE (test) = ",  round(GBM_result_Richesse_tot$RMSE,2)),
                             x = "Real values", 
                             y = "Predicted values") +
       theme_classic() 
 
-best_algo_Richesse_tot = GBM_Richesse_tot
+
 
 
 
@@ -5394,9 +5794,9 @@ best_algo_Richesse_tot = GBM_Richesse_tot
 # ANN_tune_Richesse_tot_results$r_adj_test
 
 
-ANN_Richesse_tot_pred = ANN_tune_Richesse_tot_pred^2
+ANN_Richesse_tot_pred = ANN_tune_Richesse_tot_pred
 
-ANN_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1]^2,Predicted = ANN_Richesse_tot_pred)
+ANN_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1],Predicted = ANN_Richesse_tot_pred)
 
 cor_ANN_Richesse_tot <- cor(ANN_df_Richesse_tot$Observed, ANN_df_Richesse_tot$Predicted)
 
@@ -5406,7 +5806,7 @@ ANN_Richesse_tot <- ggplot(ANN_df_Richesse_tot, aes(x = Observed, y = Predicted)
       geom_smooth(method = "lm", se = TRUE, color = "red") +
 labs(subtitle =paste0(" ANN: R² adj (train) = ", round(ANN_tune_Richesse_tot_results$R_adj_train,2),
                            "; \n R² adj (test) = ", round(ANN_tune_Richesse_tot_results$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(ANN_tune_Richesse_tot_results$rmse^2,2)),
+                           "; \n RMSE (test) = ",  round(ANN_tune_Richesse_tot_results$rmse,2)),
                             x = "Real values", 
                             y = "Predicted values") +
       theme_classic()
@@ -5417,12 +5817,12 @@ graphe_Richesse_tot = ggarrange(GLM_Richesse_tot, GAM_Richesse_tot, RF_Richesse_
   common.legend = TRUE,
   legend = 'right'
 )
-ggsave("Results/graphe_Richesse_tot.png", plot = graphe_Richesse_tot, dpi = 300, height = 5,width = 8)
+ggsave("Results/graphe_Richesse_tot.png", plot = graphe_Richesse_tot, dpi = 300, height = 6,width = 7)
 
 
 
 
-df_tot = GBM_df_Richesse_tot
+df_tot = RF_df_Richesse_tot
 df_tot$observation = seq(1,nrow(df_tot))
 
 df_tot$Predicted = round(df_tot$Predicted)
@@ -5441,7 +5841,7 @@ df4 <- df_tot[df_tot$Observed > q3,]
 
 
 
-Richesse_tot_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "GBM: Richness predicted and observed values \n for different quartiles")
+Richesse_tot_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "RF: Richness predicted and observed values \n for different quartiles")
 
 Richesse_tot_p2 = plot_comp(df = df2,ylabel = "" ,title_class = "Q1 to median",legende = FALSE,xlabel = "")
 Richesse_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legende = FALSE,xlabel = "")
@@ -5455,9 +5855,14 @@ GBM_Richesse_tot_fig = ggarrange(Richesse_tot_p1, Richesse_tot_p2, Richesse_tot_
   legend = 'right'
 )
 
+ggsave("Results/RF_Richesse_tot_fig.png", plot = GBM_Richesse_tot_fig, dpi = 300,height = 8)
 
-GBM_Richesse_tot_fig
-ggsave("Results/GBM_Richesse_tot_fig.png", plot = GBM_Richesse_tot_fig, dpi = 300,height = 8)
+
+# df_tot$diff = abs(df_tot$Observed - df_tot$Predicted)
+# df_best = df_tot[df_tot$diff<=0.5,]
+# 
+# 
+# plot_comp(df = df_best,ylabel = "Richness" ,title_class = "     Best prediction",legende = TRUE,plotly = FALSE)
 ```
 
 
@@ -5466,23 +5871,127 @@ ggsave("Results/GBM_Richesse_tot_fig.png", plot = GBM_Richesse_tot_fig, dpi = 30
 </p>
 
 
-**The best algorithm for total Richness is: GBM **
+**The best algorithm for total Richness is: RF **
+
+<!-- <p align="center"> -->
+<!--   <img src="Results/RF_Richesse_tot_fig.png"> -->
+<!-- </p> -->
+
+## Best algo: RF
+
+**-   Summary: ** *Results Case 1 -> repeated data*
+<br/> 
+```{r saving best algo1,fig.align='center'}
+best_algo_RF_1 = ggpubr::ggarrange(best_algo_AB_tot, best_algo_BM_tot, best_algo_Richesse_tot,
+                          labels = c('(a)', '(b)','(c)'),ncol = 3,
+                          common.legend = TRUE,
+                          legend = 'right'
+)
+ggsave("Results/best_algo_RF_1.png", plot = best_algo_RF_1, dpi = 300,height = 3,width = 7)
+```
 
 <p align="center">
-  <img src="Results/GBM_Richesse_tot_fig.png">
+  <img src="Results/best_algo_RF_1.png">
 </p>
 
 
-## Polynomial model results
 
+## Transformations effect
+
+- ata without transformations
+<p align="center">
+  <img src="Results/non_transformation/all_fig_RF.png">
+</p>
+
+- Data transformed with *sqrt()*
+<p align="center">
+  <img src="Results/best_algo_RF_1.png">
+</p>
+
+
+
+
+
+
+## Comparaison data partition
 ```{r}
-# comp_graphe_poly = ggpubr::ggarrange(best_algo_AB_tot, best_algo_BM_tot, best_algo_Richesse_tot,
-#                           labels = c('(a)', '(b)','(c)'),ncol = 3,
-#                           common.legend = TRUE,
-#                           legend = 'right'
-# )
-# ggsave("Results/POLY/comp_graphe_poly.png", plot = comp_graphe_poly, dpi = 300,height = 2.5,width = 8)
+# voir scrip select_var.R
 ```
+
+**Abundance partition**
+<p align="center">
+  <img src="Results/kenSton_partition/AB_tot_sample_fig.png">
+</p>
+
+- Comparison with kenStone method
+
+<p align="center">
+  <img src="Results/kenSton_partition/AB_tot_kenStone_fig.png">
+</p>
+
+
+**CaCO3 partition**
+<p align="center">
+  <img src="Results/kenSton_partition/CaCO3_sample_fig.png">
+</p>
+
+- Comparison with kenStone method
+
+<p align="center">
+  <img src="Results/kenSton_partition/CaCO3_kenStone_fig.png">
+</p>
+
+**Kolmogorov-Smirnov test**
+
+-   sample methode
+```{r}
+### model **R² adj RF abundance (train, test)**
+AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+AB_tot_test = read.csv2("datas/AB_tot_test.csv")
+RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
+                             df_app=AB_tot_train, 
+                             df_valid = AB_tot_test,
+                             mtry = AB_tot_best_mtry,
+                             ntree= AB_tot_best_ntree,
+                             maxnodes = AB_tot_best_maxnodes)
+# RF_result_AB_tot$R_adj_train
+# RF_result_AB_tot$R_adj_test
+
+
+# Test de Kolmogorov-Smirnov: # Do x and y come from the same distribution?
+ks.test(AB_tot_train$AB_tot, AB_tot_test$AB_tot)
+
+```
+
+-   kenStone methode
+```{r}
+#   **R² adj RF kenStone abundance (train, test)**
+AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+AB_tot_test = read.csv2("datas/AB_tot_test.csv")
+df_AB_tot = rbind(AB_tot_train,AB_tot_test)
+partition = kenStone(df_AB_tot,k= round (nrow(AB_tot_train)))
+AB_tot_train = df_AB_tot[partition$model,]
+AB_tot_test = df_AB_tot[partition$test,]
+RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
+                             df_app=AB_tot_train, 
+                             df_valid = AB_tot_test,
+                             mtry = AB_tot_best_mtry,
+                             ntree= AB_tot_best_ntree,
+                             maxnodes = AB_tot_best_maxnodes)
+# RF_result_AB_tot$R_adj_train
+# RF_result_AB_tot$R_adj_test
+# plot(RF_result_AB_tot$predit)
+# 
+# kable(data.frame(Observed = AB_tot_test$AB_tot, Predicted =RF_result_AB_tot$predit))
+
+
+# Test de Kolmogorov-Smirnov: # Do x and y come from the same distribution?
+ks.test(AB_tot_train$AB_tot, AB_tot_test$AB_tot)
+```
+
+
+
+## Polynomial model results
 
 <p align="center">
   <img src="Results/POLY/all_graphe_poly.png">
@@ -5491,12 +6000,293 @@ ggsave("Results/GBM_Richesse_tot_fig.png", plot = GBM_Richesse_tot_fig, dpi = 30
 - Comparison with the best algorithms
 
 <p align="center">
-  <img src="Results/POLY/comp_graphe_poly.png">
+  <img src="Results/best_algo_RF_1.png">
 </p>
 
-## Explanatory power of variables
 
--   Abundance (X1 = LC, soil, climate; X2 = Space)
+
+## Improved prediction of extreme values
+
+```{r increase prediction}
+### model AB_tot
+AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+AB_tot_test = read.csv2("datas/AB_tot_test.csv")
+RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
+                             df_app=AB_tot_train, 
+                             df_valid = AB_tot_test,
+                             mtry = AB_tot_best_mtry,
+                             ntree= AB_tot_best_ntree,
+                             maxnodes = NULL)
+# RF_result_AB_tot$RMSE
+# RF_result_AB_tot$MAE
+# RF_result_AB_tot$R_adj_train
+# RF_result_AB_tot$R_adj_test
+# # RF_result_AB_tot$predit
+# RF_result_AB_tot$model
+
+RF_AB_tot_pred <- RF_result_AB_tot$predit^2
+RF_df_AB_tot = data.frame(Observed=AB_tot_test[,1]^2,Predicted = RF_AB_tot_pred)
+cor_RF_AB_tot <- cor(RF_df_AB_tot$Observed, RF_df_AB_tot$Predicted)
+
+# summary(RF_df_AB_tot)
+  # graphique avec ggplot
+RF_AB_tot <- ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" RF: R² adj (train) = ", round(RF_result_AB_tot$R_adj_train,2), 
+                           "; \n R² adj (test) = ", round(RF_result_AB_tot$R_adj_test,2),
+                           "; \n RMSE (test) = ",  round(RF_result_AB_tot$RMSE^2,2)),
+                            x = "Real values", 
+                            y = "Predicted values") + 
+      theme_classic() 
+
+
+
+### model BM_tot
+BM_tot_train = read.csv2("datas/BM_tot_train.csv")
+BM_tot_test = read.csv2("datas/BM_tot_test.csv")
+RF_result_BM_tot = ForetAlea(var_rep ="BM_tot", 
+                             df_app=BM_tot_train, 
+                             df_valid = BM_tot_test,
+                             mtry = BM_tot_best_mtry,
+                             ntree= BM_tot_best_ntree,
+                             maxnodes = NULL)
+# RF_result_BM_tot$RMSE
+# RF_result_BM_tot$MAE
+# RF_result_BM_tot$R_adj_train
+# RF_result_BM_tot$R_adj_test
+# # RF_result_BM_tot$predit
+# RF_result_BM_tot$model
+
+RF_BM_tot_pred <- RF_result_BM_tot$predit^2
+RF_df_BM_tot = data.frame(Observed=BM_tot_test[,1]^2,Predicted = RF_BM_tot_pred)
+cor_RF_BM_tot <- cor(RF_df_BM_tot$Observed, RF_df_BM_tot$Predicted)
+
+# summary(RF_df_BM_tot)
+  # graphique avec ggplot
+RF_BM_tot <- ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" RF: R² adj (train) = ", round(RF_result_BM_tot$R_adj_train,2), 
+                           "; \n R² adj (test) = ", round(RF_result_BM_tot$R_adj_test,2),
+                           "; \n RMSE (test) = ",  round(RF_result_BM_tot$RMSE^2,2)),
+                            x = "Real values", 
+                            y = "Predicted values") + 
+      theme_classic()
+
+
+
+### model Richesse_tot
+Richesse_tot_train = read.csv2("datas/Richesse_tot_train.csv")
+Richesse_tot_test = read.csv2("datas/Richesse_tot_test.csv")
+RF_result_Richesse_tot = ForetAlea(var_rep ="Richesse_tot", 
+                             df_app=Richesse_tot_train, 
+                             df_valid = Richesse_tot_test,
+                             mtry = Richesse_tot_best_mtry,
+                             ntree= Richesse_tot_best_ntree,
+                             maxnodes = NULL)
+# RF_result_Richesse_tot$RMSE
+# RF_result_Richesse_tot$MAE
+# RF_result_Richesse_tot$R_adj_train
+# RF_result_Richesse_tot$R_adj_test
+# # RF_result_Richesse_tot$predit
+# RF_result_Richesse_tot$model
+
+RF_Richesse_tot_pred <- RF_result_Richesse_tot$predit
+RF_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1],Predicted = RF_Richesse_tot_pred)
+cor_RF_Richesse_tot <- cor(RF_df_Richesse_tot$Observed, RF_df_Richesse_tot$Predicted)
+
+# summary(RF_df_Richesse_tot)
+  # graphique avec ggplot
+RF_Richesse_tot <- ggplot(RF_df_Richesse_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" RF: R² adj (train) = ", round(RF_result_Richesse_tot$R_adj_train,2), 
+                           "; \n R² adj (test) = ", round(RF_result_Richesse_tot$R_adj_test,2),
+                           "; \n RMSE (test) = ",  round(RF_result_Richesse_tot$RMSE,2)),
+                            x = "Real values", 
+                            y = "Predicted values") + 
+      theme_classic()
+
+
+
+best_algo_RF_2 = ggarrange(RF_AB_tot, RF_BM_tot, RF_Richesse_tot,
+                          labels = c('(a)', '(b)','(c)'),ncol = 3,
+                          common.legend = TRUE,
+                          legend = 'right'
+)
+ggsave("Results/best_algo_RF_2.png", plot = best_algo_RF_2, dpi = 300,height = 3,width = 7)
+
+```
+
+- best 1
+
+<p align="center">
+  <img src="Results/best_algo_RF_1.png">
+</p>
+
+
+- best 2
+
+<p align="center">
+  <img src="Results/best_algo_RF_2.png">
+</p>
+
+
+## Model without Elevation
+<!-- -   Suppression Elevation -->
+<!-- -   Remplacement de CaCO3 par le pH -->
+
+```{r delete vars}
+### model AB_tot
+AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+AB_tot_test = read.csv2("datas/AB_tot_test.csv")
+AB_tot_train <- AB_tot_train %>%
+  select(-elevation) 
+# %>%  
+#   rename(pH = CaCO3)  
+AB_tot_test <- AB_tot_test %>%
+  select( -elevation) 
+# %>%
+#   rename(pH = CaCO3)
+RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
+                             df_app=AB_tot_train, 
+                             df_valid = AB_tot_test,
+                             mtry = AB_tot_best_mtry,
+                             ntree= AB_tot_best_ntree,
+                             maxnodes = NULL)
+# RF_result_AB_tot$RMSE
+# RF_result_AB_tot$MAE
+# RF_result_AB_tot$R_adj_train
+# RF_result_AB_tot$R_adj_test
+# # RF_result_AB_tot$predit
+# RF_result_AB_tot$model
+
+RF_AB_tot_pred <- RF_result_AB_tot$predit^2
+RF_df_AB_tot = data.frame(Observed=AB_tot_test[,1]^2,Predicted = RF_AB_tot_pred)
+cor_RF_AB_tot <- cor(RF_df_AB_tot$Observed, RF_df_AB_tot$Predicted)
+
+# summary(RF_df_AB_tot)
+  # graphique avec ggplot
+RF_AB_tot <- ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" RF: R² adj (train) = ", round(RF_result_AB_tot$R_adj_train,2), 
+                           "; \n R² adj (test) = ", round(RF_result_AB_tot$R_adj_test,2),
+                           "; \n RMSE (test) = ",  round(RF_result_AB_tot$RMSE^2,2)),
+                            x = "Real values", 
+                            y = "Predicted values") + 
+      theme_classic() 
+
+
+
+### model BM_tot
+BM_tot_train = read.csv2("datas/BM_tot_train.csv")
+BM_tot_test = read.csv2("datas/BM_tot_test.csv")
+# BM_tot_train <- BM_tot_train %>%
+#   select(-CEC, -pH) %>%  
+#   rename(pH = CaCO3)  
+# BM_tot_test <- BM_tot_test %>%
+#   select(-CEC, -pH) %>%  
+#   rename(pH = CaCO3)
+RF_result_BM_tot = ForetAlea(var_rep ="BM_tot", 
+                             df_app=BM_tot_train, 
+                             df_valid = BM_tot_test,
+                             mtry = BM_tot_best_mtry,
+                             ntree= BM_tot_best_ntree,
+                             maxnodes = NULL)
+# RF_result_BM_tot$RMSE
+# RF_result_BM_tot$MAE
+# RF_result_BM_tot$R_adj_train
+# RF_result_BM_tot$R_adj_test
+# # RF_result_BM_tot$predit
+# RF_result_BM_tot$model
+
+RF_BM_tot_pred <- RF_result_BM_tot$predit^2
+RF_df_BM_tot = data.frame(Observed=BM_tot_test[,1]^2,Predicted = RF_BM_tot_pred)
+cor_RF_BM_tot <- cor(RF_df_BM_tot$Observed, RF_df_BM_tot$Predicted)
+
+# summary(RF_df_BM_tot)
+  # graphique avec ggplot
+RF_BM_tot <- ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" RF: R² adj (train) = ", round(RF_result_BM_tot$R_adj_train,2), 
+                           "; \n R² adj (test) = ", round(RF_result_BM_tot$R_adj_test,2),
+                           "; \n RMSE (test) = ",  round(RF_result_BM_tot$RMSE^2,2)),
+                            x = "Real values", 
+                            y = "Predicted values") + 
+      theme_classic()
+
+
+
+### model Richesse_tot
+Richesse_tot_train = read.csv2("datas/Richesse_tot_train.csv")
+Richesse_tot_test = read.csv2("datas/Richesse_tot_test.csv")
+Richesse_tot_train <- Richesse_tot_train %>%
+  select(-elevation) 
+# %>%  
+#   rename(pH = CaCO3)  
+Richesse_tot_test <- Richesse_tot_test %>%
+  select(-elevation) 
+# %>%  
+#   rename(pH = CaCO3)
+RF_result_Richesse_tot = ForetAlea(var_rep ="Richesse_tot", 
+                             df_app=Richesse_tot_train, 
+                             df_valid = Richesse_tot_test,
+                             mtry = Richesse_tot_best_mtry,
+                             ntree= Richesse_tot_best_ntree,
+                             maxnodes = NULL)
+# RF_result_Richesse_tot$RMSE
+# RF_result_Richesse_tot$MAE
+# RF_result_Richesse_tot$R_adj_train
+# RF_result_Richesse_tot$R_adj_test
+# # RF_result_Richesse_tot$predit
+# RF_result_Richesse_tot$model
+
+RF_Richesse_tot_pred <- RF_result_Richesse_tot$predit
+RF_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1],Predicted = RF_Richesse_tot_pred)
+cor_RF_Richesse_tot <- cor(RF_df_Richesse_tot$Observed, RF_df_Richesse_tot$Predicted)
+
+# summary(RF_df_Richesse_tot)
+  # graphique avec ggplot
+RF_Richesse_tot <- ggplot(RF_df_Richesse_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" RF: R² adj (train) = ", round(RF_result_Richesse_tot$R_adj_train,2), 
+                           "; \n R² adj (test) = ", round(RF_result_Richesse_tot$R_adj_test,2),
+                           "; \n RMSE (test) = ",  round(RF_result_Richesse_tot$RMSE,2)),
+                            x = "Real values", 
+                            y = "Predicted values") + 
+      theme_classic()
+
+
+# delete_var -> delete CEC, elevation and pH, pH = CaCO3
+RF_fig_delete_var = ggarrange(RF_AB_tot, RF_BM_tot, RF_Richesse_tot,
+                          labels = c('(a)', '(b)','(c)'),ncol = 3,
+                          common.legend = TRUE,
+                          legend = 'right'
+)
+ggsave("Results/RF_fig_delete_var.png", plot = RF_fig_delete_var, dpi = 300,height = 3,width = 7)
+
+```
+
+
+
+<p align="center">
+  <img src="Results/RF_fig_delete_var.png">
+</p>
+
+
+- best 2
+
+<p align="center">
+  <img src="Results/best_algo_RF_2.png">
+</p>
+
+## Explanatory power of variables 
+
+-   Abundance (X1 = LC, soil, climate; X2 = Spatial)
 ```{r,fig.align='center',fig.dpi=300}
 # AB_tot --------------------------------------------------------------
 VAR_REP = "AB_tot"
@@ -5520,7 +6310,7 @@ plot(mod, bg=2:5)
 ```
 
 
--   Biomass (X1 = LC, soil, climate; X2 = Space)
+-   Biomass (X1 = LC, soil, climate; X2 = Spatial)
 ```{r,fig.align='center',fig.dpi=300}
 # BM_tot --------------------------------------------------------------
 VAR_REP = "BM_tot"
@@ -5568,24 +6358,36 @@ plot(mod, bg=2:5)
 ```
 
 
-
+[Relationship between variables]
 
 
 # Results: Case 2 -> non-repeated data
-```{r}
 
-```
+## 100 % clean
+
+Zero duplicates in GPS and ID_Site
 
 
+<p align="center">
+  <img src="Results/100_clean/all_graphe_clean100.png">
+</p>
 
+- Comparison with the best algorithms
+
+<p align="center">
+  <img src="Results/best_algo_RF_2.png">
+</p>
 
 
 # Results: Case 3 -> original data
 
-## Data
+## Inputs
+
+<br/>
 
 Predicteurs =  c("gps_x", "gps_y", "clay", "fine_sand", "coarse_sand", "fine_silt", "coarse_silt", "ph_eau", "om", "n_tot")
 
+<br/>
 
 OS = c("Arable land", "Artificial, non-agricultural vegetated areas", "Forests"                         "Pastures", "Permanent crops"  )
 
@@ -5599,13 +6401,35 @@ OS = c("Arable land", "Artificial, non-agricultural vegetated areas", "Forests" 
 - Comparison with the best algorithms
 
 <p align="center">
-  <img src="Results/POLY/comp_graphe_poly.png">
+  <img src="Results/best_algo_RF_2.png">
 </p>
 
 
+# Dicussion
+
+## Comparison
+```{r comp}
+chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
+df <- read.xlsx(chemin_fichier_excel, sheet = "comp")
+kable(df)
+```
+
+-   Fig S3 of phillip et al., 2019
+<p align="center">
+  <img src="Results/phillips_et_al_2019_results.png">
+</p>
+
+<p align="center">
+  <img src="Results/best_algo_RF_2.png">
+</p>
 
 
-# To do next
+# Question {.unnumbered}
+-   Retransformation des données vdt
+-   Overfitting
+
+
+# To do next {.unnumbered}
 
 -   
 
@@ -5623,9 +6447,9 @@ OS = c("Arable land", "Artificial, non-agricultural vegetated areas", "Forests" 
 
     -   Création des models par OS ou equilibree les levels des OS;
 
+    -   Tester une classification pour la richesse totale taxonomique
 
-
-#
+# {.unnumbered}
 
 
  **THANK YOU FOR LISTENING**

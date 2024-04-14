@@ -1,0 +1,2112 @@
+##  AB_Allolobophora_chlorotica_chlorotica
+[Menu]
+```{r  AB_Allolobophora_chlorotica_chlorotica , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Allolobophora_chlorotica_chlorotica'
+titre <- paste('
+AB_Allolobophora_chlorotica_chlorotica
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_caliginosa
+[Menu]
+```{r  AB_Aporrectodea_caliginosa , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_caliginosa'
+titre <- paste('
+AB_Aporrectodea_caliginosa
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_rosea
+[Menu]
+```{r  AB_Aporrectodea_rosea , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_rosea'
+titre <- paste('
+AB_Aporrectodea_rosea
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_terrestris
+[Menu]
+```{r  AB_Lumbricus_terrestris , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_terrestris'
+titre <- paste('
+AB_Lumbricus_terrestris
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_castaneus
+[Menu]
+```{r  AB_Lumbricus_castaneus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_castaneus'
+titre <- paste('
+AB_Lumbricus_castaneus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_longa_longa
+[Menu]
+```{r  AB_Aporrectodea_longa_longa , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_longa_longa'
+titre <- paste('
+AB_Aporrectodea_longa_longa
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_icterica
+[Menu]
+```{r  AB_Aporrectodea_icterica , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_icterica'
+titre <- paste('
+AB_Aporrectodea_icterica
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_giardi
+[Menu]
+```{r  AB_Aporrectodea_giardi , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_giardi'
+titre <- paste('
+AB_Aporrectodea_giardi
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_sp
+[Menu]
+```{r  AB_Lumbricus_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_sp'
+titre <- paste('
+AB_Lumbricus_sp
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_nocturna
+[Menu]
+```{r  AB_Aporrectodea_nocturna , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_nocturna'
+titre <- paste('
+AB_Aporrectodea_nocturna
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Satchellius_mammalis
+[Menu]
+```{r  AB_Satchellius_mammalis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Satchellius_mammalis'
+titre <- paste('
+AB_Satchellius_mammalis
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_sp
+[Menu]
+```{r  AB_Aporrectodea_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_sp'
+titre <- paste('
+AB_Aporrectodea_sp
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_caliginosa_meridionalis
+[Menu]
+```{r  AB_Aporrectodea_caliginosa_meridionalis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_caliginosa_meridionalis'
+titre <- paste('
+AB_Aporrectodea_caliginosa_meridionalis
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Octolasion_cyaneum
+[Menu]
+```{r  AB_Octolasion_cyaneum , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Octolasion_cyaneum'
+titre <- paste('
+AB_Octolasion_cyaneum
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_rubellus_rubellus
+[Menu]
+```{r  AB_Lumbricus_rubellus_rubellus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_rubellus_rubellus'
+titre <- paste('
+AB_Lumbricus_rubellus_rubellus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_friendi
+[Menu]
+```{r  AB_Lumbricus_friendi , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_friendi'
+titre <- paste('
+AB_Lumbricus_friendi
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Murchieona_muldali
+[Menu]
+```{r  AB_Murchieona_muldali , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Murchieona_muldali'
+titre <- paste('
+AB_Murchieona_muldali
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_rubellus_castanoides
+[Menu]
+```{r  AB_Lumbricus_rubellus_castanoides , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_rubellus_castanoides'
+titre <- paste('
+AB_Lumbricus_rubellus_castanoides
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_centralis
+[Menu]
+```{r  AB_Lumbricus_centralis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_centralis'
+titre <- paste('
+AB_Lumbricus_centralis
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Octolasion_sp
+[Menu]
+```{r  AB_Octolasion_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Octolasion_sp'
+titre <- paste('
+AB_Octolasion_sp
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Allolobophora_chlorotica_postepheba
+[Menu]
+```{r  AB_Allolobophora_chlorotica_postepheba , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Allolobophora_chlorotica_postepheba'
+titre <- paste('
+AB_Allolobophora_chlorotica_postepheba
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_festivus
+[Menu]
+```{r  AB_Lumbricus_festivus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_festivus'
+titre <- paste('
+AB_Lumbricus_festivus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_indéterminable
+[Menu]
+```{r  AB_Aporrectodea_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_indéterminable'
+titre <- paste('
+AB_Aporrectodea_indéterminable
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Proctodrilus_antipai_antipai
+[Menu]
+```{r  AB_Proctodrilus_antipai_antipai , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Proctodrilus_antipai_antipai'
+titre <- paste('
+AB_Proctodrilus_antipai_antipai
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_caliginosa_indéterminable
+[Menu]
+```{r  AB_Aporrectodea_caliginosa_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_caliginosa_indéterminable'
+titre <- paste('
+AB_Aporrectodea_caliginosa_indéterminable
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Allolobophora_sp
+[Menu]
+```{r  AB_Allolobophora_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Allolobophora_sp'
+titre <- paste('
+AB_Allolobophora_sp
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_castaneus_disjonctus
+[Menu]
+```{r  AB_Lumbricus_castaneus_disjonctus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_castaneus_disjonctus'
+titre <- paste('
+AB_Lumbricus_castaneus_disjonctus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Eisenia_fetida
+[Menu]
+```{r  AB_Eisenia_fetida , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Eisenia_fetida'
+titre <- paste('
+AB_Eisenia_fetida
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Dendrobaena_octaedra
+[Menu]
+```{r  AB_Dendrobaena_octaedra , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Dendrobaena_octaedra'
+titre <- paste('
+AB_Dendrobaena_octaedra
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_trapezoides
+[Menu]
+```{r  AB_Aporrectodea_trapezoides , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_trapezoides'
+titre <- paste('
+AB_Aporrectodea_trapezoides
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Eiseniella_tetraedra
+[Menu]
+```{r  AB_Eiseniella_tetraedra , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Eiseniella_tetraedra'
+titre <- paste('
+AB_Eiseniella_tetraedra
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_rubellus_indéterminable
+[Menu]
+```{r  AB_Lumbricus_rubellus_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_rubellus_indéterminable'
+titre <- paste('
+AB_Lumbricus_rubellus_indéterminable
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Eisenia_andrei
+[Menu]
+```{r  AB_Eisenia_andrei , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Eisenia_andrei'
+titre <- paste('
+AB_Eisenia_andrei
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_cupulifera
+[Menu]
+```{r  AB_Aporrectodea_cupulifera , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_cupulifera'
+titre <- paste('
+AB_Aporrectodea_cupulifera
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Dendrodrilus_rubidus
+[Menu]
+```{r  AB_Dendrodrilus_rubidus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Dendrodrilus_rubidus'
+titre <- paste('
+AB_Dendrodrilus_rubidus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Dendrobaena_attemsi
+[Menu]
+```{r  AB_Dendrobaena_attemsi , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Dendrobaena_attemsi'
+titre <- paste('
+AB_Dendrobaena_attemsi
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Prosellodrilus_amplisetosus_amplisetosus
+[Menu]
+```{r  AB_Prosellodrilus_amplisetosus_amplisetosus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Prosellodrilus_amplisetosus_amplisetosus'
+titre <- paste('
+AB_Prosellodrilus_amplisetosus_amplisetosus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_georgii
+[Menu]
+```{r  AB_Aporrectodea_georgii , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_georgii'
+titre <- paste('
+AB_Aporrectodea_georgii
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Dendrobaena_sp
+[Menu]
+```{r  AB_Dendrobaena_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Dendrobaena_sp'
+titre <- paste('
+AB_Dendrobaena_sp
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Avelona_ligra
+[Menu]
+```{r  AB_Avelona_ligra , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Avelona_ligra'
+titre <- paste('
+AB_Avelona_ligra
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Octolasion_lacteum_lacteum
+[Menu]
+```{r  AB_Octolasion_lacteum_lacteum , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Octolasion_lacteum_lacteum'
+titre <- paste('
+AB_Octolasion_lacteum_lacteum
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Allolobophora_burgondiae
+[Menu]
+```{r  AB_Allolobophora_burgondiae , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Allolobophora_burgondiae'
+titre <- paste('
+AB_Allolobophora_burgondiae
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_ripicola
+[Menu]
+```{r  AB_Aporrectodea_ripicola , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_ripicola'
+titre <- paste('
+AB_Aporrectodea_ripicola
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Prosellodrilus_fragilis_indéterminable
+[Menu]
+```{r  AB_Prosellodrilus_fragilis_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Prosellodrilus_fragilis_indéterminable'
+titre <- paste('
+AB_Prosellodrilus_fragilis_indéterminable
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Dendrodrilus_rubidus_subrubicundus
+[Menu]
+```{r  AB_Dendrodrilus_rubidus_subrubicundus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Dendrodrilus_rubidus_subrubicundus'
+titre <- paste('
+AB_Dendrodrilus_rubidus_subrubicundus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Scherotheca_sp
+[Menu]
+```{r  AB_Scherotheca_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Scherotheca_sp'
+titre <- paste('
+AB_Scherotheca_sp
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Microscolex_dubius
+[Menu]
+```{r  AB_Microscolex_dubius , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Microscolex_dubius'
+titre <- paste('
+AB_Microscolex_dubius
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Prosellodrilus_sp
+[Menu]
+```{r  AB_Prosellodrilus_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Prosellodrilus_sp'
+titre <- paste('
+AB_Prosellodrilus_sp
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_tuberculata
+[Menu]
+```{r  AB_Aporrectodea_tuberculata , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_tuberculata'
+titre <- paste('
+AB_Aporrectodea_tuberculata
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Scherotheca_savignyi_savignyi
+[Menu]
+```{r  AB_Scherotheca_savignyi_savignyi , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Scherotheca_savignyi_savignyi'
+titre <- paste('
+AB_Scherotheca_savignyi_savignyi
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_longa
+[Menu]
+```{r  AB_Aporrectodea_longa , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_longa'
+titre <- paste('
+AB_Aporrectodea_longa
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Eisenia_veneta
+[Menu]
+```{r  AB_Eisenia_veneta , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Eisenia_veneta'
+titre <- paste('
+AB_Eisenia_veneta
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_limicola
+[Menu]
+```{r  AB_Aporrectodea_limicola , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_limicola'
+titre <- paste('
+AB_Aporrectodea_limicola
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Microscolex_phosphoreus
+[Menu]
+```{r  AB_Microscolex_phosphoreus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Microscolex_phosphoreus'
+titre <- paste('
+AB_Microscolex_phosphoreus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Eisenia_sp
+[Menu]
+```{r  AB_Eisenia_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Eisenia_sp'
+titre <- paste('
+AB_Eisenia_sp
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Eisenia_fetida_indéterminable
+[Menu]
+```{r  AB_Eisenia_fetida_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Eisenia_fetida_indéterminable'
+titre <- paste('
+AB_Eisenia_fetida_indéterminable
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Prosellodrilus_fragilis_fragilis
+[Menu]
+```{r  AB_Prosellodrilus_fragilis_fragilis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Prosellodrilus_fragilis_fragilis'
+titre <- paste('
+AB_Prosellodrilus_fragilis_fragilis
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_friendi_lineatus
+[Menu]
+```{r  AB_Lumbricus_friendi_lineatus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_friendi_lineatus'
+titre <- paste('
+AB_Lumbricus_friendi_lineatus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Dendrobaena_cognettii
+[Menu]
+```{r  AB_Dendrobaena_cognettii , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Dendrobaena_cognettii'
+titre <- paste('
+AB_Dendrobaena_cognettii
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Dendrobaena_hortensis
+[Menu]
+```{r  AB_Dendrobaena_hortensis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Dendrobaena_hortensis'
+titre <- paste('
+AB_Dendrobaena_hortensis
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Bimastos_eiseni
+[Menu]
+```{r  AB_Bimastos_eiseni , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Bimastos_eiseni'
+titre <- paste('
+AB_Bimastos_eiseni
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Allolobophora_chlorotica_indéterminable
+[Menu]
+```{r  AB_Allolobophora_chlorotica_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Allolobophora_chlorotica_indéterminable'
+titre <- paste('
+AB_Allolobophora_chlorotica_indéterminable
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_rubellus_friendoides
+[Menu]
+```{r  AB_Lumbricus_rubellus_friendoides , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_rubellus_friendoides'
+titre <- paste('
+AB_Lumbricus_rubellus_friendoides
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Haplotaxis_sp
+[Menu]
+```{r  AB_Haplotaxis_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Haplotaxis_sp'
+titre <- paste('
+AB_Haplotaxis_sp
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Octodrilus_complanatus
+[Menu]
+```{r  AB_Octodrilus_complanatus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Octodrilus_complanatus'
+titre <- paste('
+AB_Octodrilus_complanatus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Lumbricus_meliboeus
+[Menu]
+```{r  AB_Lumbricus_meliboeus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Lumbricus_meliboeus'
+titre <- paste('
+AB_Lumbricus_meliboeus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Prosellodrilus_occidentalis_occidentalis
+[Menu]
+```{r  AB_Prosellodrilus_occidentalis_occidentalis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Prosellodrilus_occidentalis_occidentalis'
+titre <- paste('
+AB_Prosellodrilus_occidentalis_occidentalis
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Scherotheca_dinoscolex
+[Menu]
+```{r  AB_Scherotheca_dinoscolex , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Scherotheca_dinoscolex'
+titre <- paste('
+AB_Scherotheca_dinoscolex
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Dendrobaena_alpina_zeugochaeta
+[Menu]
+```{r  AB_Dendrobaena_alpina_zeugochaeta , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Dendrobaena_alpina_zeugochaeta'
+titre <- paste('
+AB_Dendrobaena_alpina_zeugochaeta
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Microscolex_sp
+[Menu]
+```{r  AB_Microscolex_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Microscolex_sp'
+titre <- paste('
+AB_Microscolex_sp
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Hemigastrodrilus_monicae
+[Menu]
+```{r  AB_Hemigastrodrilus_monicae , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Hemigastrodrilus_monicae'
+titre <- paste('
+AB_Hemigastrodrilus_monicae
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Prosellodrilus_praticola
+[Menu]
+```{r  AB_Prosellodrilus_praticola , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Prosellodrilus_praticola'
+titre <- paste('
+AB_Prosellodrilus_praticola
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Octolasion_lacteum
+[Menu]
+```{r  AB_Octolasion_lacteum , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Octolasion_lacteum'
+titre <- paste('
+AB_Octolasion_lacteum
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Scherotheca_savignyi_indéterminable
+[Menu]
+```{r  AB_Scherotheca_savignyi_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Scherotheca_savignyi_indéterminable'
+titre <- paste('
+AB_Scherotheca_savignyi_indéterminable
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Aporrectodea_rubra
+[Menu]
+```{r  AB_Aporrectodea_rubra , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Aporrectodea_rubra'
+titre <- paste('
+AB_Aporrectodea_rubra
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Scherotheca_rhodana
+[Menu]
+```{r  AB_Scherotheca_rhodana , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Scherotheca_rhodana'
+titre <- paste('
+AB_Scherotheca_rhodana
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Pheretima_indéterminable
+[Menu]
+```{r  AB_Pheretima_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Pheretima_indéterminable'
+titre <- paste('
+AB_Pheretima_indéterminable
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Prosellodrilus_pyrenaicus
+[Menu]
+```{r  AB_Prosellodrilus_pyrenaicus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Prosellodrilus_pyrenaicus'
+titre <- paste('
+AB_Prosellodrilus_pyrenaicus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Scherotheca_nivicola
+[Menu]
+```{r  AB_Scherotheca_nivicola , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Scherotheca_nivicola'
+titre <- paste('
+AB_Scherotheca_nivicola
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Panoniona_leoni
+[Menu]
+```{r  AB_Panoniona_leoni , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Panoniona_leoni'
+titre <- paste('
+AB_Panoniona_leoni
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Pheritima_Diffringens
+[Menu]
+```{r  AB_Pheritima_Diffringens , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Pheritima_Diffringens'
+titre <- paste('
+AB_Pheritima_Diffringens
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Scherotheca_aquitana
+[Menu]
+```{r  AB_Scherotheca_aquitana , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Scherotheca_aquitana'
+titre <- paste('
+AB_Scherotheca_aquitana
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Proctodrilus_antipai_indéterminable
+[Menu]
+```{r  AB_Proctodrilus_antipai_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Proctodrilus_antipai_indéterminable'
+titre <- paste('
+AB_Proctodrilus_antipai_indéterminable
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Prosellodrilus_amplisetosus
+[Menu]
+```{r  AB_Prosellodrilus_amplisetosus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Prosellodrilus_amplisetosus'
+titre <- paste('
+AB_Prosellodrilus_amplisetosus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Scherotheca_porotheca
+[Menu]
+```{r  AB_Scherotheca_porotheca , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Scherotheca_porotheca'
+titre <- paste('
+AB_Scherotheca_porotheca
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Orodrilus_paradoxus_paradoxus
+[Menu]
+```{r  AB_Orodrilus_paradoxus_paradoxus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Orodrilus_paradoxus_paradoxus'
+titre <- paste('
+AB_Orodrilus_paradoxus_paradoxus
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Octolasion_lacteum_gracile
+[Menu]
+```{r  AB_Octolasion_lacteum_gracile , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Octolasion_lacteum_gracile'
+titre <- paste('
+AB_Octolasion_lacteum_gracile
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+
+##  AB_Flabellodrilus_bartolii
+[Menu]
+```{r  AB_Flabellodrilus_bartolii , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_Flabellodrilus_bartolii'
+titre <- paste('
+AB_Flabellodrilus_bartolii
+& clcm_lvl3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = bdd_sp_explo, var_rep = var_rep, predicteur = 'clcm_lvl3', titre_x = 'clcm_lvl3', titre_y = var_rep)
+for (i in 1:length(predictors)) {
+  cat(paste('- ', var_rep, '&', predictors[i]))
+  g <- nuage_point(df = bdd_sp_explo,
+                    var_rep = var_rep,
+                    predicteur = predictors[i],
+                    titre_x = predictors[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+[Menu] 
+
+
+

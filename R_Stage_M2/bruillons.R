@@ -1,5 +1,75 @@
 
 
+# occu --------------------------------------------------------------------
+
+
+
+value1 = c(20,20,25,25,40,35,30,20,35)
+hist(value1,col = "red")
+
+
+value1 = c(20,20,25,25,40,35,30,20,35)
+value2 = c(15,25,30,25,25,20,40,40,40)
+
+hist(value1,col = "red")
+hist(value2, add = T, col = "blue")
+
+
+ggplot(data=iris, aes(x=Sepal.Width,fill = Species)) + geom_histogram()
+
+
+ggplot(data=iris, aes(x=Species, y=Sepal.Width,fill = Species)) +
+  theme(panel.background=element_rect(fill="grey90"), # #7B7B7B15
+        axis.title=element_text(face="bold"), # Mettre en gras axis
+        axis.text.x=element_text(size=14, face="bold", color="black"),
+        axis.text.y=element_text(size=14, face="bold", color="black"),
+        axis.title.y=element_text(face="bold", vjust=1.5 ,size=15),
+        panel.grid.major=element_line(size=1.2, color="white"), # Augmenter taille ligne y
+        legend.title=element_blank(),
+        legend.text=element_text(size=14),
+        plot.margin=unit(c(1, 1, 1.5, 1), "cm"), # (top, right, bottom, left)
+        legend.position="none" ) +
+  geom_bar( stat="identity", width=0.75, bg="grey50")
+
++ # Barplot
+  scale_y_continuous( limits=c(0, 100), breaks=seq(0,100,10) )  +
+  scale_colour_manual(values="black") + # couleur texte
+  xlab(NULL) + ylab(NULL)
+
+
+
+
+# Exemple de données (vous pouvez remplacer ces valeurs par vos propres données)
+occupation_du_sol <- c("Prairie", "Culture", "Forêt", "Zone humide")
+espece_A <- c(20, 20, 20, 50)  # % d'occurrence de l'espèce A
+espece_B <- c(50, 25, 75, 20)   # % d'occurrence de l'espèce B
+espece_C <- c(30, 55, 15, 30)  # % d'occurrence de l'espèce C
+
+# Création d'un DataFrame
+donnees <- data.frame(Occupation = occupation_du_sol,
+                      Espece_A = espece_A,
+                      Espece_B = espece_B,
+                      Espece_C = espece_C)
+
+# Installation et chargement du package ggplot2 (si ce n'est pas déjà fait)
+# install.packages("ggplot2")
+library(ggplot2)
+
+# Création de l'histogramme empilé
+ggplot(donnees, aes(x = Occupation)) +
+  geom_bar(aes(y = Espece_A, fill = "Espèce A"), stat = "identity") +
+  geom_bar(aes(y = Espece_B, fill = "Espèce B"), stat = "identity") +
+  geom_bar(aes(y = Espece_C, fill = "Espèce C"), stat = "identity") +
+  labs(x = "Occupation du sol", y = "% d'occurrence des espèces",
+       title = "Répartition des espèces par occupation du sol") +
+  scale_fill_manual(values = c("Espèce A" = "blue", "Espèce B" = "green", "Espèce C" = "red")) +
+  theme_minimal()
+
+
+# CV ----------------------------------------------------------------------
+
+
+
 # Validation croissée manuelle
 {
   # Validation croisée avec la méthode de K fold
