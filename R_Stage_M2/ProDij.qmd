@@ -1,0 +1,6127 @@
+---
+title: "ProDij"
+author: "Abdourahmane Diallo"
+date: '`r Sys.Date()`'
+format: 
+  revealjs
+# preview-links: auto
+# logo: logo-FRB-Cesab-francais.png
+# css: styles.css
+# footer: "prodij WS3"
+# multiplex: true
+#smaller: true
+scrollable: true
+#theme: sky
+editor: visual
+number-sections: true
+toc: FALSE
+#toc-expand: false
+#toc_float: 'yes'
+code_download: 'yes'
+slide-number: true
+margin: 0.1
+#center: true
+code-fold: true
+width: 1400
+height: 800
+toc_depth: 1
+# execute:
+#   cache: true
+# quarto render ProDij.qmd --cache-refresh 
+---
+
+## Setting {.unnumbered}
+
+```{r setup, include=FALSE,fig.align='center',message=FALSE,warning=FALSE,message=FALSE,echo=TRUE}
+# rm(list=ls()) # Properly clear workspace
+# source("function_abdou.R")
+# knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+**Packages**
+
+```{r packages,echo=TRUE}
+  library(tidyverse)
+  library(corrplot)
+  library(lme4)
+  library(multcomp)
+  library(MASS)
+  library(arm)
+  library(ade4)
+  library(Hmisc)
+  library(labdsv)
+  library(vegan)
+  library(cowplot)
+  library(ggpubr)
+  library(rstatix)
+  library(patchwork)
+  library(multcompView)
+  library(ggsignif)
+  library(grid)
+  library(FactoMineR)
+  library(factoextra)
+  library(explore)
+  library(ggrepel)
+  library(naniar)
+  library(outliers)
+  library(leaps)
+  library(fastDummies)
+  library(caret) # pour l'entrainement des models
+  library(mgcv)
+  library(ggeffects)
+  library(gratia)
+  library(GGally) # pour ggpair
+  library(openxlsx)
+  library(readxl)
+  library(leaflet) # pour la carto
+  library(quarto)
+  library(raster)
+  library(knitr)
+  library(kableExtra)
+  library(stringr)
+  library(plotly)
+  library(vcd) # pour la distribution des var reponse
+  library(prospectr)# pour split data avec kenSton()
+  library(randomForest)
+  library(gbm)
+  library(kernlab)
+  library(ggforce)
+  library(keras)
+  library(tensorflow)
+  library(neuralnet)
+  library(iml) # pour l'interpretabilité des models https://cran.r-project.org/web/packages/iml/vignettes/intro.html
+  library(stats)
+  library(bestNormalize)
+  library(rmarkdown)
+  library(DT)
+  library(gtExtras) # pour la
+  library(reshape2)
+  library(sf)
+  library(ggplot2)
+  library(maptools)
+  library(ggsn)
+  library(spThin)
+  library(sp)
+  library(gstat)
+
+```
+
+**Functions**
+
+```{r fonction, echo=TRUE}
+
+## Identification des NA dans un df -----------------------------------------------
+taux_completion<-
+  function(df, afficher_zero_percent = FALSE, seuil, trie=FALSE) {
+    # Calcule du pourcentage de NA dans le dataframe
+    pourcentage_total <-
+      round(sum(is.na(df)) / (nrow(df) * ncol(df)) * 100, 1)
+    
+    # Calcule du pourcentage de NA par colonne
+    pourcentage_colonnes <- round(colMeans(is.na(df)) * 100, 1)
+    
+    # Creation d'un dataframe résultat avec deux colonnes
+    result <-
+      data.frame(
+        Variables = names(df),
+        CR = pourcentage_colonnes,
+        row.names = NULL
+      )
+    
+    if (afficher_zero_percent) {
+      result <- result[result$CR == 0, ]
+      result$CR = 100 -result$CR
+    } else {
+      result <- result[result$CR > 0, ]
+      result$CR = 100 -result$CR
+      
+    }
+    
+    result <- rbind(result, c("Total", pourcentage_total))
+    #result <- rbind(result, c("Total", paste0(pourcentage_total, "")))
+    
+    result <- result[, c("Variables", "CR")]
+    result$CR = as.numeric(result$CR)
+    result$CR = round(result$CR,1)
+    if (trie){
+      result = result %>% arrange(desc(CR))
+    }
+    result$CR = paste0(result$CR,"%")
+    
+    return(result)
+  }
+# Converssion des colonne en num ou factor-----------------------------------------------
+conv_col <- function (data, columns_to_convert, to_types) {
+  if (to_types == "numeric") {
+    # Conversion des colonnes en numeric
+    for (col in columns_to_convert) {
+      data[, col] <- as.numeric(data[, col])
+    }
+  } else {
+    # Conversion des colonnes en facteurs
+    for (col in columns_to_convert) {
+      data[, col] <- as.factor(data[, col])
+    }
+  }
+  return(data)
+}
+#data_converted <- conv_col(data, names(data [, c(1, 3)]), "factor")
+
+# exploration graphiques des variables numeriques -----------------------------------------------
+explo_num <- function(nom_col, titre, df = prodij, ligne_col = c(2, 2),mini = min(df[[nom_col]]), maxi=max(df[[nom_col]]) ) {
+  par(mfrow = ligne_col)
+  
+  df[complete.cases(df[[nom_col]]), ]
+  df <- df %>%filter(!is.na(df[[nom_col]]))
+  df[[nom_col]] = as.numeric(df[[nom_col]])
+  # Boxplot
+  boxplot(df[[nom_col]], col = 'blue', ylab = titre, ylim = c(mini, maxi))
+  # Cleveland plot
+  dotchart(df[[nom_col]], pch = 16, col = 'blue', xlab = titre)
+  # Histogram
+  hist(df[[nom_col]], col = 'blue', xlab = titre, main = "")
+  # Quantile-Quantile plot
+  qqnorm(df[[nom_col]], pch = 16, col = 'blue', xlab = '')
+  qqline(df[[nom_col]], col = 'red') 
+}
+
+# Extraction des predictors + moyennes -----------------------------------------------
+
+extraction <- function(nom_col, tif_file_path, df = prodij, conv = 1) {
+  #df <- df %>%filter(!is.na(GPS_X) & !is.na(GPS_Y))
+  raster_data <- raster(tif_file_path)
+  
+  # Création d'un dataframe pour stocker les valeurs extraites
+  df_interne <- data.frame(GPS_X = df$GPS_X, GPS_Y = df$GPS_Y)
+  proj4Str <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+  # Transformer les coordonnées GPS en système de coordonnées du raster
+  gps_coords_sp <- SpatialPoints(df_interne, proj4string = CRS(proj4Str))
+  gps_coords_proj <- spTransform(gps_coords_sp, crs(raster_data))
+  
+  # Extraction des valeurs du raster 
+  values <- raster::extract(raster_data, gps_coords_proj)
+  
+  # Ajout des valeurs extraites comme nouvelles colonnes a df
+  #df_save = data.frame()
+  #df_save[[nom_col]] <- values / conv
+  
+  df[[nom_col]] <- values / conv
+  
+  return(df)
+}
+
+# la moyenne des predictores -----------------------------------------------
+moyenne_val_extrct <- function(nom_col, vec_col, df=prodij) {
+  df[[nom_col]] <- rowMeans(as.matrix(df[, vec_col, drop = FALSE]), na.rm = TRUE)
+  df[[nom_col]] = round(df[[nom_col]],1)
+  return(as.data.frame(df))
+}
+
+
+# tests de corrélation avec un seuil -----------------------------------------------
+cor_function_seuil <- function(data, seuil,affiche=FALSE) {
+  # Création d'un vecteur pour stocker les paires de variables corrélées
+  variables_corr <- c()
+  
+  # Boucle pour tester la corrélation entre chaque paire de variables
+  for (i in 1:(ncol(data) - 1)) {
+    for (j in (i + 1):ncol(data)) {
+      # Calcul de la corrélation entre les variables i et j
+      cor_value <- stats::cor(data[, i], data[, j], use = "na.or.complete")
+      
+      # Stockage du résultat dans le vecteur si supérieur au seuil
+      if (cor_value >= seuil | cor_value <= -seuil) {
+        if(affiche){
+        cat(
+          "***",
+          colnames(data)[i],
+          "  __est correlee a__  ",
+          colnames(data)[j],
+          "avec un R =",
+          cor_value,
+          "\n \n \n"
+        )
+      }
+        
+        variables_corr <-
+          c(variables_corr, colnames(data)[i], colnames(data)[j])
+      }
+    }
+  }
+  
+  return(variables_corr)
+}
+
+
+# tests de valeurs aberant -----------------------------------------------
+test_grub <- function(data, variable, direction = "maxi") {
+  
+  if (direction == "maxi") { 
+    repeat {
+      #le test de Grubbs
+      test_aberrant <- grubbs.test(data[[variable]], opposite = FALSE)
+      
+      # Obtenir la p-valeur du test
+      p.value <- test_aberrant$p.value
+      # Si la p-valeur est inférieure au seuil de 0.05, on supprime la valeur aberrante
+      if (p.value < 0.05) {
+        max_value <- max(data[[variable]],na.rm=TRUE)
+        data <- subset(data, data[[variable]] != max_value | is.na(data[[variable]]))
+      } else {
+        # S'il n'y a plus de valeurs aberrantes, sortir de la boucle
+        break
+      }
+    }
+  }
+  
+  
+  if (direction == "mini") { 
+    repeat {
+      test_aberrant <- grubbs.test(data[[variable]], opposite = TRUE)
+      # Obtenir la p-valeur du test
+      p.value <- test_aberrant$p.value
+      # Si la p-valeur est inférieure au seuil de 0.05, on supprime la valeur aberrante
+      if (p.value < 0.05) {
+        min_value <- min(data[[variable]],na.rm=TRUE)
+        data <- subset(data, data[[variable]] != min_value | is.na(data[[variable]]))
+      } else {
+        # S'il n'y a plus de valeurs aberrantes, sortir de la boucle
+        break
+      }
+    }
+  }
+  
+  
+  return(data)
+}
+
+
+
+
+# boxplote -----------------------------------------------
+plot_boxplot <-function(donnee,
+           x_col,y_col,x_label,y_label,title,legend_title,
+           couleurs,
+           affiche_point = TRUE,
+           ymin = min(donnee[[y_col]]),
+           ymax = 1.2 * max(donnee[[y_col]])) {
+    
+  graphe <-ggplot(donnee,
+             aes_string(
+               x = x_col,
+               y = y_col,
+               colour = x_col
+             )) +
+  geom_boxplot(
+        outlier.shape = NA,
+        outlier.colour = "black",
+        alpha = 0.20,
+        size = 1.5 
+      ) +
+  labs(title = title,x = x_label,y = y_label) +
+  scale_color_manual(values = couleurs, name = legend_title) +
+  theme_classic(base_size = 12, base_family = "Arial") +
+  theme(axis.text = element_text(size = 10),
+        axis.title.y = element_text(
+          vjust = 5, size = 12, face = "bold"),
+        axis.title.x = element_text(face = "bold"),
+        axis.ticks.length = unit(0.2, "cm"),
+        legend.position = "none",  # Cette ligne supprime la lÃ©gende
+        #legend.position = "right",
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, face = "bold"),
+        plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")
+      )
+    if (affiche_point) {
+      graphe <-
+        graphe + geom_jitter(position = position_jitter(seed = 0.5), size = 0.8)
+    }
+    
+    if (y_col %in% names(donnee)) {
+      graphe <- graphe +
+        coord_cartesian(ylim = c(ymin, ymax))
+    }
+  
+    graphe = graphe + stat_summary(
+      fun.y = mean,
+      geom = "point",
+      shape = 15,
+      size = 1.5,
+      col = "black",
+      fill = "black"
+    )
+    
+    return(graphe)
+}
+
+
+
+#pour le  pairwise.t.test() -----------------------------------------------------
+tri.to.squ <- function(x) {
+  rn <- row.names(x)
+  cn <- colnames(x)
+  an <- unique(c(cn, rn))
+  myval <- x[!is.na(x)]
+  mymat <-
+    matrix(
+      1,
+      nrow = length(an),
+      ncol = length(an),
+      dimnames = list(an, an)
+    )
+  for (ext in 1:length(cn))
+  {
+    for (int in 1:length(rn))
+    {
+      if (is.na(x[row.names(x) == rn[int], colnames(x) == cn[ext]]))
+        next
+      mymat[row.names(mymat) == rn[int], colnames(mymat) == cn[ext]] <-
+        x[row.names(x) == rn[int], colnames(x) == cn[ext]]
+      mymat[row.names(mymat) == cn[ext], colnames(mymat) == rn[int]] <-
+        x[row.names(x) == rn[int], colnames(x) == cn[ext]]
+    }
+  }
+  return(mymat)
+}
+
+
+
+# Selection interaction -------------------------------
+select_inter <- function(response_var, df, explanatory_vars) {
+  results <- data.frame()
+  combinations <- combn(explanatory_vars, 2, simplify = FALSE)
+
+  for(i in seq_along(combinations)) {
+
+    formula <- as.formula(paste(response_var, "~", paste(combinations[[i]], collapse = "*")))
+    model <- gam(formula, data = df)
+    r_squared <- summary(model)$r.sq
+    aic <- AIC(model)
+    results <- rbind(results, data.frame("variables" = paste0(combinations[[i]], collapse = ".inter."), 
+                                         "r_squared" = r_squared, 
+                                 "aic" = aic))
+  }
+  return(results)
+}
+
+# Comparaion betwen predtited and observed -----------------------------------
+plot_comp = function (df,ylabel, title_class, legende = TRUE,plotly = FALSE,xlabel = "observations",title=""){ 
+
+  
+  p = ggplot(df, aes(x = observation)) + 
+  #graph representant observed
+  geom_point(aes(y = Observed, color = "Observed values")) +
+  geom_line(aes(y = Observed, color = "Observed values")) + 
+  
+  #graph representant  preticted
+  geom_point(aes(y = Predicted, color="Predicted values")) +
+  geom_line(aes(y = Predicted, color="Predicted values")) + 
+  # ggtitle(title)
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(title = title,x=xlabel, y=ylabel, color = "Legend :") + 
+  ylim(min(c(min(df$Predicted), min(df$Observed))),
+            max(c(max(df$Predicted), max(df$Observed)))+1  ) +
+    
+  scale_color_manual(values = c("Observed values"='red', "Predicted values"='green')) +
+  annotate("text", x = 8, y =  max(c(max(df$Predicted), max(df$Observed)))+1, 
+           label = title_class, col = "black", size = 3)
+
+  
+  if (!legende) {
+    p <- p + theme(legend.position = "none")
+  }
+  
+  if(plotly){
+    p = ggplotly(p)
+  }
+
+return (p)
+
+}
+
+
+# Calcul R²
+# calcule_R2 = function(x, y) {cor(x, y)^2}
+calcule_R2 <- function(y_true, y_pred) {
+  sse <- sum((y_true - y_pred)^2)
+  sst <- sum((y_true - mean(y_true))^2)
+  r_squared <- 1 - (sse / sst)
+  return(r_squared)
+}
+
+```
+
+# Database import
+
+-   Import of database **T_synth_sit_TIDM_21_22_23.xlsx** (june 16, 2024)
+
+```{r import,echo=FALSE}
+chemin_fichier_excel = "C:/Users/diall/Downloads/datas/T_synth_sit_TIDM_21_22_23.xlsx"
+prodij <- read.xlsx(chemin_fichier_excel, sheet = "Sheet3")
+```
+
+-   The database contains **`r nrow(prodij)`** rows and **`r ncol(prodij)`** columns
+
+## Colonnes ayant que des NA
+
+Pour faciliter la lecture du jeu de donnée, j'identifie et j'enleve tout les colonne ayant que des NA:
+
+```{r}
+cols_with_all_na <- apply(prodij, 2, function(col) all(is.na(col)))
+print(names(prodij)[cols_with_all_na])
+prodij <- prodij[, !cols_with_all_na]
+
+```
+
+-   The database contains **`r nrow(prodij)`** rows and **`r ncol(prodij)`** columns
+
+```{r conversion,echo=FALSE}
+col_en_factor = names(prodij)[c(1:6,93:98,101:105,113,124)]
+prodij = conv_col(prodij, col_en_factor, "factor")
+
+col_en_numeric = names(prodij)[-c(1:6,93:98,101:105,113,124)]
+prodij = conv_col(prodij, col_en_numeric, "numeric")
+```
+
+# Database exploration
+
+-   CR = Completion rate
+
+## Complete columns
+
+Les colonnes suivants sont remplis a 100% (0 NA)
+
+```{r Complete columns, echo=TRUE}
+df_col=taux_completion(prodij,TRUE,trie=FALSE)
+df_col = df_col[df_col$Variables != "Total",]
+#print("table")
+# kable(df_col, caption = "", col.width = c("75%", "25%"))
+DT::datatable(df_col, options = list(pageLength = 5))
+rm("df_col")
+```
+
+## Non-complete columns
+
+Les colonnes suivants ont des NA
+
+```{r Non-complete columns}
+df_col= taux_completion(prodij,FALSE,trie = TRUE)
+df_col = df_col[df_col$Variables != "Total",]
+DT::datatable(df_col, options = list(pageLength = 5))
+rm("df_col")
+
+```
+
+## Focus ont protocols
+
+-   **List of protocols available on the database ( `r length(levels(prodij$Protocole))` levels)**
+
+```{r protocols1,echo=TRUE}
+prodij$Protocole = as.factor(prodij$Protocole)
+df <- as.data.frame(summary(prodij$Protocole))
+colnames(df) <- c("Numbers")
+kable(df)
+rm("df")
+```
+
+Toutes les parcelles ont été échantillonnée avec le protocol **TB**
+
+## Focus on GPS coordinates
+
+-   There is **`r sum(is.na(prodij$GPS_X))`** NA in **GPS_X**
+-   There is **`r sum(is.na(prodij$GPS_Y))`** NA in **GPS_Y**
+
+```{r transformation coord GPS}
+result = prodij
+# Définir le système de coordonnées de départ (Lambert 93) et le système de coordonnées d'arrivée (WGS84)
+src_crs <- CRS("EPSG:2154")  # Lambert 93 (EPSG:2154)
+dst_crs <- CRS("+init=epsg:4326")  # WGS84 (EPSG:4326)
+
+# head(result[, c("GPS_X", "GPS_Y")])
+# Créer un objet "SpatialPoints" à partir des colonnes GPS_X et GPS_Y du tableau rmqs_description
+coords <- SpatialPoints(coords = result[, c("GPS_X", "GPS_Y")], proj4string = src_crs)
+
+# Effectuer la transformation de Lambert 93 vers WGS84 (degrés décimaux)
+coords_transformed <- spTransform(coords, dst_crs)
+
+# Mettre à jour les colonnes GPS_X et GPS_Y du tableau rmqs_description avec les nouvelles valeurs transformées
+result$GPS_X <- coords_transformed@coords[, 1]
+result$GPS_Y <- coords_transformed@coords[, 2]
+
+prodij = result
+```
+
+```{r GPS,echo=TRUE}
+
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+prodij$GPS_X <- as.numeric(prodij$GPS_X)
+prodij$GPS_Y <- as.numeric(prodij$GPS_Y)
+prodij <- prodij[complete.cases(prodij$GPS_X, prodij$GPS_Y), ]
+prodij <- prodij %>%filter(!is.na(GPS_X) & !is.na(GPS_Y))
+#sum(is.na(prodij$GPS_X))
+#sum(is.na(prodij$GPS_Y))
+```
+
+```{r, eval=FALSE}
+# 
+# df_suivi = prodij
+# n_line = nrow(df_suivi)
+# 
+# # sum (duplicated(prodij$ID_Site) )
+# # length (unique(prodij$ID_Site) )
+# 
+# chemin_fichier_excel = "C:/Users/diall/Downloads/datas/LandWorm_dataset_site_V1.9.xlsx"
+# gps_prodij_landworm <- read.xlsx(chemin_fichier_excel, sheet = "Sheet1")
+# gps_prodij_landworm$Programme = as.factor(gps_prodij_landworm$Programme)
+# 
+# gps_prodij_l = gps_prodij_landworm[, c("Programme", "ID_Site", "GPS_X", "GPS_Y")]
+# gps_prodij_l= drop_na(gps_prodij_l)
+# gps_prodij_l = gps_prodij_l[gps_prodij_l$Programme =="TIGA",]
+# gps_prodij_l$Programme = NULL
+# # sum (duplicated(gps_prodij_l$ID_Site) )
+# # length (unique(gps_prodij_l$ID_Site) )
+# 
+# prodij <- prodij %>%
+#   mutate(ID_Site = gsub("URBA", "URBAN", ID_Site))
+# prodij <- prodij %>%
+#   mutate(ID_Site = gsub("URBANN", "URBAN", ID_Site))
+# 
+# gps_prodij = prodij[, c("ID_Site", "GPS_X", "GPS_Y")]
+# 
+# 
+# 
+# rows_not_in_gps_prodij <- anti_join(gps_prodij_l, prodij, by = "ID_Site")
+# 
+# 
+# rows_not_in_gps_prodij_l <- anti_join(prodij, gps_prodij_l, by = "ID_Site")
+# 
+# 
+# 
+# merged_df <- merge(gps_prodij_l, prodij, by = "ID_Site")
+# 
+# ids_not_matching <- anti_join( gps_prodij_l, merged_df, by = "ID_Site")
+# ids_not_matching <- anti_join( prodij, merged_df, by = "ID_Site")
+# 
+# prodij = merged_df
+# prodij$GPS_X = NULL
+# prodij$GPS_Y = NULL
+# 
+# prodij$GPS_X <- as.numeric(prodij$GPS_X)
+# prodij$GPS_Y <- as.numeric(prodij$GPS_Y)
+# prodij <- prodij[complete.cases(prodij$GPS_X, prodij$GPS_Y), ]
+# prodij <- prodij %>%filter(!is.na(GPS_X) & !is.na(GPS_Y))
+# #sum(is.na(prodij$GPS_X))
+# #sum(is.na(prodij$GPS_Y))
+
+```
+
+-   We delete the *NA* lines in the GPS coordinates
+-   The database therefore changes from **`r n_line`** to **`r nrow(prodij)`** observations.
+
+## Cartography
+
+```{r Cartography,echo=TRUE}
+df_coord <- prodij[, c("GPS_X", "GPS_Y")] %>% mutate(GPS_X = as.numeric(GPS_X),GPS_Y = as.numeric(GPS_Y))
+
+df_coord$num_ligne <- seq(nrow(df_coord))
+carte <- leaflet(df_coord) %>%
+  addTiles() %>%
+  addCircleMarkers(lng = ~GPS_X, lat = ~GPS_Y, radius = 0.8, fillOpacity = 0.8, fillColor = "blue")
+carte
+```
+
+<!-- ## Dijon (tous les 1km) -->
+
+```{r , eval =FALSE}
+dijon = prodij
+dijon = dijon %>% mutate(GPS_X = as.numeric(GPS_X),GPS_Y = as.numeric(GPS_Y))
+
+cat("nrow dijon befor thinning: ",nrow(dijon))
+
+
+
+df_coord <- dijon[, c("GPS_X", "GPS_Y")] 
+leaflet(df_coord) %>%
+  addTiles() %>%
+  addCircleMarkers(lng = ~GPS_X, lat = ~GPS_Y, radius = 0.8, fillOpacity = 0.8, fillColor = "blue")
+
+
+
+df = dijon
+df$AB_tot = rep("AB_tot")
+
+set.seed(455)
+thinned_dataset_full <-
+  spThin::thin( loc.data = df, 
+        lat.col = "GPS_Y", long.col = "GPS_X", 
+        spec.col = "AB_tot", 
+        thin.par = 1, reps = 5, 
+        locs.thinned.list.return = TRUE, 
+        write.files = FALSE, 
+        write.log.file = FALSE)
+
+# plotThin( thinned_dataset_full )
+df_dijon_thine= thinned_dataset_full[[1]]
+
+df_coord <- df_dijon_thine[, c("Longitude", "Latitude")] 
+leaflet(df_coord) %>%
+  addTiles() %>%
+  addCircleMarkers(lng = ~Longitude, lat = ~Latitude, radius = 0.8, fillOpacity = 0.8, fillColor = "blue")
+
+
+dijon_thining = dijon[rownames(dijon) %in% rownames(df_dijon_thine),]
+
+
+cat("nrow dijon after thinning: ",nrow(dijon_thining))
+```
+
+## Focus on years
+
+-   Cleaning the Annee column <br/>
+
+```{r years2, scrollable = TRUE}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+prodij$Annee= as.factor(prodij$Annee)
+prodij = droplevels(prodij)
+summary_df <- as.data.frame(summary(prodij$Annee))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df)
+rm("summary_df")
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(prodij)`** observations.
+
+## Focus on Categorie_Milieu_Niv1
+
+```{r Categorie_Milieu_Niv1, echo=TRUE}
+prodij$Categorie_Milieu_Niv1= as.factor(prodij$Categorie_Milieu_Niv1)
+summary_df <- as.data.frame(summary(prodij$Categorie_Milieu_Niv1))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df)
+rm("summary_df")
+```
+
+## Focus on SousCategorie_Milieu_Niv2
+
+```{r SousCategorie_Milieu_Niv2 , echo=TRUE}
+prodij$SousCategorie_Milieu_Niv2= as.factor(prodij$SousCategorie_Milieu_Niv2)
+summary_df <- as.data.frame(summary(prodij$SousCategorie_Milieu_Niv2))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df)
+rm("summary_df")
+```
+
+## Focus on Details_Milieu_Niv3
+
+```{r select Details_Milieu_Niv3, echo=TRUE}
+prodij$Details_Milieu_Niv3 = as.factor(prodij$Details_Milieu_Niv3)
+summary_df <- as.data.frame(summary(prodij$Details_Milieu_Niv3))
+colnames(summary_df) <- c("Numbers")
+datatable(summary_df, options = list(pageLength = 5))
+rm("summary_df")
+
+```
+
+## Selection de l'occupation du sol
+
+J'ai choisi d'utilisé l'occupation du sol du niveau 3 : **Details_Milieu_Niv3**
+
+Uniquement le Rural:
+
+```{r Details_Milieu_Niv31, echo=TRUE}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# prodij = s_prodij
+# prodij$Details_Milieu_Niv3 = as.factor(prodij$Details_Milieu_Niv3)
+# summary_df <- as.data.frame(summary(prodij$Details_Milieu_Niv3))
+# colnames(summary_df) <- c("Numbers")
+# datatable(summary_df, options = list(pageLength = 5))
+# rm("summary_df")
+
+
+select_os= c("111_Forêt de feuillus", "210_Prairie agricole permanente", 
+"214_Culture annuelle", "218_Vignes et autres Cultures pérennes")
+
+s_prodij = prodij
+prodij <- prodij[prodij$Details_Milieu_Niv3 %in% select_os, ]
+prodij=droplevels(prodij)
+prodij$Details_Milieu_Niv3 = as.factor(prodij$Details_Milieu_Niv3)
+summary_df <- as.data.frame(summary(prodij$Details_Milieu_Niv3))
+colnames(summary_df) <- c("Numbers")
+datatable(summary_df, options = list(pageLength = 5))
+rm("summary_df")
+
+
+levels(prodij$Details_Milieu_Niv3)[levels(prodij$Details_Milieu_Niv3)=="111_Forêt de feuillus"]="OS_111"
+
+levels(prodij$Details_Milieu_Niv3)[levels(prodij$Details_Milieu_Niv3)=="210_Prairie agricole permanente"]="OS_210"
+
+levels(prodij$Details_Milieu_Niv3)[levels(prodij$Details_Milieu_Niv3)=="214_Culture annuelle"]="OS_214"
+
+levels(prodij$Details_Milieu_Niv3)[levels(prodij$Details_Milieu_Niv3)=="218_Vignes et autres Cultures pérennes"]="OS_218"
+
+
+
+
+df_l <- data.frame(
+  Niveau_Original = c("111_Forêt de feuillus", 
+                      "210_Prairie agricole permanente", 
+                      "214_Culture annuelle", 
+                      "218_Vignes et autres Cultures pérennes"),
+  Abréviations = c("OS_111", "OS_210", "OS_214", "OS_218"))
+
+kable(df_l)
+
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(prodij)`** observations.
+
+# Earthworms data
+
+## Total abundance
+
+```{r fig AB_tot,fig.align='center',fig.height=10}
+
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+AB_tot_aberant = prodij[,c("Programme", "Annee", "ID_Site","Categorie_Milieu_Niv1","SousCategorie_Milieu_Niv2","Details_Milieu_Niv3","Protocole","AB_tot", "Richesse")]
+# summary(prodij$AB_tot) 
+df_cleaned = prodij
+
+df_cleaned$AB_tot = as.numeric(df_cleaned$AB_tot)
+explo_num(nom_col = 'AB_tot', titre = 'AB_tot (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'AB_tot', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'AB_tot', direction = 'mini')
+cat("Sppression des valeurs aberrantes")
+explo_num(nom_col = 'AB_tot', titre = 'AB_tot (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$AB_tot) 
+prodij = df_cleaned
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(prodij)`** observations.
+
+<!-- ## Zoom sur les valeurs aberant de l'abondance -->
+
+```{r,fig.align='center', echo=TRUE, eval=FALSE}
+# summary(AB_tot_aberant)
+ AB_tot_aberant_2 = AB_tot_aberant
+AB_tot_aberant_2 = AB_tot_aberant_2[AB_tot_aberant_2$AB_tot > max(prodij$AB_tot),]
+
+
+
+kable(unique(AB_tot_aberant_2[,c("Programme","Annee","Details_Milieu_Niv3")]))
+
+df = AB_tot_aberant_2
+df$observation = 1:nrow(df)
+df$Richesse_100 = df$Richesse*100
+g_AB_tot_aberant = ggplot(df, aes(x = observation)) + 
+  geom_point(aes(y = AB_tot, color = "Abundance")) +
+  geom_line(aes(y = AB_tot, color = "Abundance")) + 
+  geom_point(aes(y = Richesse_100, color="Richness*100")) +
+  geom_line(aes(y = Richesse_100, color="Richness*100")) + 
+  # ggtitle(title)
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(title = "  ",x="Observation", y="Values", color = "Legend:") +
+  scale_color_manual(values = c("Abundance"='red', "Richness*100"='green'))
+# ggsave("g_AB_tot_aberant.png", plot = g_AB_tot_aberant, dpi = 300)
+ggplotly(g_AB_tot_aberant)
+ 
+```
+
+## Total biomass
+
+```{r fig BM_tot,fig.align='center',fig.height=10}
+
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# summary(prodij$BM_tot) 
+df_cleaned = prodij
+
+df_cleaned$BM_tot = as.numeric(df_cleaned$BM_tot)
+explo_num(nom_col = 'BM_tot', titre = 'BM_tot (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'BM_tot', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'BM_tot', direction = 'mini')
+cat("Sppression des valeurs aberrantes")
+explo_num(nom_col = 'BM_tot', titre = 'BM_tot (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$BM_tot) 
+prodij = df_cleaned
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(prodij)`** observations.
+
+## Total taxonomic richness
+
+```{r fig richness, fig.align='center',fig.height=10}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+df_cleaned = prodij
+
+df_cleaned$Richesse = as.numeric(df_cleaned$Richesse)
+explo_num(nom_col = 'Richesse', titre = 'Richesse (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'Richesse', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'Richesse', direction = 'mini')
+cat("Sppression des valeurs aberrantes")
+explo_num(nom_col = 'Richesse', titre = 'Richesse (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$Richesse) 
+prodij = df_cleaned
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(prodij)`** observations.
+
+# Exploration des variables explicatives potentielles
+
+## Liste des variables explicatives
+
+```{r}
+variables = names(prodij)[c(99,100,103,104:116, 118:119, 121:122)]
+
+na_percentage <- sapply(prodij[variables], function(x) {
+  round ( sum(is.na(x)) / length(x) * 100,2)
+})
+
+na_df <- data.frame(
+  Variables = variables,
+  NA_Percentage = paste0(na_percentage," %")
+)
+
+na_df_sorted <- na_df %>%
+  arrange(NA_Percentage)
+
+
+DT::datatable(na_df_sorted, options = list(pageLength = 5))
+```
+
+-   J'enleve **Texture_GEPPA** des variables explicatives car beaucoup de NA et j'ai deja la texture avec **sables, limons et argiles**.
+
+**Travail_du_sol:**
+
+```{r}
+summary(prodij$Travail_du_sol)
+```
+
+**Fertilisation:**
+
+```{r}
+summary(prodij$Fertilisation)
+```
+
+-   Je Supprime le **Travail_du_sol** et la **Fertilisation** des variables potentiels
+
+```{r}
+n_line = nrow(prodij)
+# prodij <- prodij %>% filter(!is.na(Travail_du_sol) & !is.na(Fertilisation))
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(prodij)`** observations.
+
+J'enleve le **CaCO3_tot** car j'ai deja le **pH** bien renseigné.
+
+Il reste donc :
+
+```{r}
+variables <- variables[!variables %in% c("Texture_GEPPA", "CaCO3_tot", "Fertilisation","Travail_du_sol")]
+variables
+```
+
+**Conclusion: 15 variables numeric et 3 variables catégorielles (OS, fertilisation et travail du sol)**
+
+## Matrice de correlation
+
+**Test de corrélation**
+
+```{r, fig.align='center',fig.dpi=300}
+variables_factor = c("Details_Milieu_Niv3")
+variables_num <- variables[!variables %in% variables_factor]
+correlation_matrix <- cor(prodij[,variables_num],use = "na.or.complete")
+corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 1,number.cex = 1)
+
+```
+
+Les valeurs inférieures à 0,6 ont été mises à 0 pour une meilleure visibilité.
+
+
+```{r , fig.align='center',fig.dpi=300}
+correlation_matrix <- cor(prodij[, variables_num], use = "na.or.complete")
+correlation_matrix[abs(correlation_matrix) <= 0.6] <- 0
+
+corrplot::corrplot(
+  correlation_matrix, 
+  method = "color", 
+  type = "lower", 
+  # order = "hclust", 
+  addCoef.col = "black", 
+  diag = FALSE, 
+  cl.cex = 1, 
+  number.cex = 1
+)
+
+```
+
+J'enleve *Sables* et *Limons* car très corrélée aux autre variables et:
+
+-   $Sables = SablesF + SablesG$
+-   $Limons = LimonsF + LimonsG$
+
+```{r , fig.align='center',fig.dpi=300}
+variables_num <- variables_num[!variables_num %in% c("Sables","Limons")]
+correlation_matrix <- cor(prodij[, variables_num], use = "na.or.complete")
+correlation_matrix[abs(correlation_matrix) <= 0.6] <- 0
+
+corrplot::corrplot(
+  correlation_matrix, 
+  method = "color", 
+  type = "lower", 
+  # order = "hclust", 
+  addCoef.col = "black", 
+  diag = FALSE, 
+  cl.cex = 1, 
+  number.cex = 1
+)
+
+```
+
+J'enleve **MO** car trés corrélé à **C_tot, C_org et N_tot**.
+
+```{r, fig.align='center',fig.dpi=300}
+variables_num <- variables_num[!variables_num %in% c("MO")]
+correlation_matrix <- cor(prodij[, variables_num], use = "na.or.complete")
+correlation_matrix[abs(correlation_matrix) <= 0.6] <- 0
+
+corrplot::corrplot(
+  correlation_matrix, 
+  method = "color", 
+  type = "lower", 
+  # order = "hclust", 
+  addCoef.col = "black", 
+  diag = FALSE, 
+  cl.cex = 1, 
+  number.cex = 1
+)
+
+```
+
+J'enleve **C_tot** et **N_tot** car très corrélé et :
+
+-   $C_tot = C_Orga + X$ (avec x \~ C_min)
+
+```{r , fig.align='center',fig.dpi=300}
+variables_num <- variables_num[!variables_num %in% c("C_tot", "N_tot")]
+correlation_matrix <- cor(prodij[, variables_num], use = "na.or.complete")
+# correlation_matrix[abs(correlation_matrix) <= 0.6] <- 0
+
+corrplot::corrplot(
+  correlation_matrix, 
+  method = "color", 
+  type = "lower", 
+  # order = "hclust", 
+  addCoef.col = "black", 
+  diag = FALSE, 
+  cl.cex = 1, 
+  number.cex = 1
+)
+
+```
+
+retour sur [Predictors]
+
+**Conclusion: Il reste donc 10 variables explicatives numeric.**
+
+## VIF
+
+```{r, fig.align='center',fig.dpi=300}
+# usdm::vif(prodij[,variables_num])
+# usdm::vifcor(prodij[,variables_num], th = 0.7, keep = NULL, method = 'pearson')
+usdm::vifstep(prodij[,variables_num], th = 5, keep = NULL, method = 'pearson')
+```
+
+**SableG** et **SableF** sont multicolinéaire: on enleve donc un des deux:
+
+-   SableG
+
+```{r, fig.align='center',fig.dpi=300}
+# usdm::vif(prodij[,variables_num])
+# usdm::vifcor(prodij[,variables_num], th = 0.7, keep = NULL, method = 'pearson')
+variables_num <- variables_num[!variables_num %in% c("SableG")]
+usdm::vifstep(prodij[,variables_num], th = 5, keep = NULL, method = 'pearson')
+```
+
+**Conclusion: Il reste donc 9 variables explicatives numerique + 1 variables factorielles**
+
+<!-- Zoom sur les variables factorielles -->
+
+```{r}
+# df = table (prodij[, variables_factor])
+# df
+```
+
+## Verifications des valeurs abérants
+
+```{r creation du code, echo=TRUE}
+# Parcourir chaque variable dans la liste
+# for (var in variables_num) {
+#   # Générer le code pour chaque variable
+#   cat(paste0(
+#     "## ", var, "\n\n",
+#     "```{r fig_", var, ",fig.align='center',fig.height=10}\n",
+#     "df_suivi = prodij\n",
+#     "n_line = nrow(df_suivi)\n\n",
+#     "# summary(prodij$", var, ")\n",
+#     "df_cleaned = prodij\n\n",
+#     "df_cleaned$", var, " = as.numeric(df_cleaned$", var, ")\n",
+#     "explo_num(nom_col = '", var, "', titre = '", var, " (before cleaning)', df = df_cleaned)\n",
+#     "df_cleaned <- test_grub(df_cleaned, '", var, "', direction = 'maxi')\n",
+#     "df_cleaned <- test_grub(df_cleaned, '", var, "', direction = 'mini')\n",
+#     "cat('Suppression des valeurs aberrantes')\n",
+#     "explo_num(nom_col = '", var, "', titre = '", var, " (after cleaning)', df = df_cleaned)\n",
+#     "# summary(df_cleaned$", var, ")\n",
+#     "# prodij = df_cleaned\n",
+#     "```\n\n",
+#     "The database therefore changes from **`r n_line`** to **`r nrow(df_cleaned)`** observations.\n\n\n"
+#   ))
+# }
+
+```
+
+### GPS_X
+
+```{r fig_GPS_X,fig.align='center',fig.height=10}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# summary(prodij$GPS_X)
+df_cleaned = prodij
+
+df_cleaned$GPS_X = as.numeric(df_cleaned$GPS_X)
+explo_num(nom_col = 'GPS_X', titre = 'GPS_X (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'GPS_X', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'GPS_X', direction = 'mini')
+cat('Suppression des valeurs aberrantes')
+explo_num(nom_col = 'GPS_X', titre = 'GPS_X (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$GPS_X)
+prodij = df_cleaned
+```
+
+The database therefore changes from **`r n_line`** to **`r nrow(df_cleaned)`** observations.
+
+### GPS_Y
+
+```{r fig_GPS_Y,fig.align='center',fig.height=10}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# summary(prodij$GPS_Y)
+df_cleaned = prodij
+
+df_cleaned$GPS_Y = as.numeric(df_cleaned$GPS_Y)
+explo_num(nom_col = 'GPS_Y', titre = 'GPS_Y (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'GPS_Y', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'GPS_Y', direction = 'mini')
+cat('Suppression des valeurs aberrantes')
+explo_num(nom_col = 'GPS_Y', titre = 'GPS_Y (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$GPS_Y)
+prodij = df_cleaned
+```
+
+The database therefore changes from **`r n_line`** to **`r nrow(df_cleaned)`** observations.
+
+### SableF
+
+```{r fig_SableF,fig.align='center',fig.height=10}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# summary(prodij$SableF)
+df_cleaned = prodij
+
+df_cleaned$SableF = as.numeric(df_cleaned$SableF)
+explo_num(nom_col = 'SableF', titre = 'SableF (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'SableF', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'SableF', direction = 'mini')
+cat('Suppression des valeurs aberrantes')
+explo_num(nom_col = 'SableF', titre = 'SableF (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$SableF)
+prodij = df_cleaned
+```
+
+The database therefore changes from **`r n_line`** to **`r nrow(df_cleaned)`** observations.
+
+### LimonF
+
+```{r fig_LimonF,fig.align='center',fig.height=10}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# summary(prodij$LimonF)
+df_cleaned = prodij
+
+df_cleaned$LimonF = as.numeric(df_cleaned$LimonF)
+explo_num(nom_col = 'LimonF', titre = 'LimonF (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'LimonF', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'LimonF', direction = 'mini')
+cat('Suppression des valeurs aberrantes')
+explo_num(nom_col = 'LimonF', titre = 'LimonF (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$LimonF)
+prodij = df_cleaned
+```
+
+The database therefore changes from **`r n_line`** to **`r nrow(df_cleaned)`** observations.
+
+### LimonG
+
+```{r fig_LimonG,fig.align='center',fig.height=10}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# summary(prodij$LimonG)
+df_cleaned = prodij
+
+df_cleaned$LimonG = as.numeric(df_cleaned$LimonG)
+explo_num(nom_col = 'LimonG', titre = 'LimonG (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'LimonG', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'LimonG', direction = 'mini')
+cat('Suppression des valeurs aberrantes')
+explo_num(nom_col = 'LimonG', titre = 'LimonG (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$LimonG)
+prodij = df_cleaned
+```
+
+The database therefore changes from **`r n_line`** to **`r nrow(df_cleaned)`** observations.
+
+### Argile
+
+```{r fig_Argile,fig.align='center',fig.height=10}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# summary(prodij$Argile)
+df_cleaned = prodij
+
+df_cleaned$Argile = as.numeric(df_cleaned$Argile)
+explo_num(nom_col = 'Argile', titre = 'Argile (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'Argile', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'Argile', direction = 'mini')
+cat('Suppression des valeurs aberrantes')
+explo_num(nom_col = 'Argile', titre = 'Argile (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$Argile)
+prodij = df_cleaned
+```
+
+The database therefore changes from **`r n_line`** to **`r nrow(df_cleaned)`** observations.
+
+### C_org
+
+```{r fig_C_org,fig.align='center',fig.height=10}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# summary(prodij$C_org)
+df_cleaned = prodij
+
+df_cleaned$C_org = as.numeric(df_cleaned$C_org)
+explo_num(nom_col = 'C_org', titre = 'C_org (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'C_org', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'C_org', direction = 'mini')
+cat('Suppression des valeurs aberrantes')
+explo_num(nom_col = 'C_org', titre = 'C_org (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$C_org)
+prodij = df_cleaned
+```
+
+The database therefore changes from **`r n_line`** to **`r nrow(df_cleaned)`** observations.
+
+### C.N
+
+```{r fig_C.N,fig.align='center',fig.height=10}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# summary(prodij$C.N)
+df_cleaned = prodij
+
+df_cleaned$C.N = as.numeric(df_cleaned$C.N)
+explo_num(nom_col = 'C.N', titre = 'C.N (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'C.N', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'C.N', direction = 'mini')
+cat('Suppression des valeurs aberrantes')
+explo_num(nom_col = 'C.N', titre = 'C.N (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$C.N)
+prodij = df_cleaned
+```
+
+The database therefore changes from **`r n_line`** to **`r nrow(df_cleaned)`** observations.
+
+### pH_eau
+
+```{r fig_pH_eau,fig.align='center',fig.height=10}
+df_suivi = prodij
+n_line = nrow(df_suivi)
+
+# summary(prodij$pH_eau)
+df_cleaned = prodij
+
+df_cleaned$pH_eau = as.numeric(df_cleaned$pH_eau)
+explo_num(nom_col = 'pH_eau', titre = 'pH_eau (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'pH_eau', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'pH_eau', direction = 'mini')
+cat('Suppression des valeurs aberrantes')
+explo_num(nom_col = 'pH_eau', titre = 'pH_eau (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$pH_eau)
+prodij = df_cleaned
+```
+
+The database therefore changes from **`r n_line`** to **`r nrow(df_cleaned)`** observations.
+
+# Relations entre les vers de terre et les variables explicatives
+
+```{r}
+nuage_point <- function(df, var_rep, predicteur, titre_x, titre_y) {
+  # Convertir les variables en numÃ©riques
+  df[[predicteur]] <- as.numeric(df[[predicteur]])
+  df[[var_rep]] <- as.numeric(df[[var_rep]])
+  
+  df= df[,c(predicteur,var_rep)]
+  df = drop_na(df)
+  # corrÃ©lation entre les deux variables
+  correlation <- round(cor(df[[predicteur]], df[[var_rep]]), 3)
+  
+  #  le graphique
+  g <- ggplot(df, aes(x = !!rlang::sym(predicteur), y = !!rlang::sym(var_rep))) +
+    geom_point() + # Ajout des points
+    geom_smooth(method = "lm", se = TRUE, color = "red") + 
+    labs(
+      # title = paste("Relationship between",var_rep, "and", predicteur),
+         subtitle = paste0(" r = ", correlation),
+         x = titre_x, 
+         y = titre_y) +
+    theme_classic()   
+  
+  return(g)
+}
+
+
+box_plot <- function(df, var_rep, predicteur, titre_x, titre_y) {
+  g <- ggplot(df, aes(x = !!rlang::sym(predicteur), y = !!rlang::sym(var_rep))) +
+    geom_boxplot() + # Ajout des boxplots
+    labs(
+      # title = paste("Boxplot of", var_rep, "by", predicteur),
+         x = titre_x, 
+         y = titre_y) +
+    theme_classic()   
+  
+  print(g)
+}
+```
+
+## Abundance
+
+```{r}
+# Creation d'un df des correlation entre var_rep et les variables explicatives (variables_num)
+var_rep= "AB_tot"
+
+correlations <- sapply(variables_num, function(var) {
+  cor(prodij[[var_rep]], prodij[[var]], use = "complete.obs")
+})
+
+correlation_df <- data.frame(
+  Variables = variables_num,
+  Correlations = round (correlations,4)
+)
+rownames(correlation_df) = NULL
+datatable(correlation_df, options = list(pageLength = 5))
+```
+
+```{r plot_AB_tot , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'AB_tot'
+titre <- paste('AB_tot & Details_Milieu_Niv3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = prodij, var_rep = var_rep, predicteur = 'Details_Milieu_Niv3', titre_x = 'Details_Milieu_Niv3', titre_y = var_rep)
+
+# titre <- paste('AB_tot & Fertilisation')
+# cat(paste0("- ",titre,"\n"))
+# box_plot(df = prodij, var_rep = var_rep, predicteur = 'Fertilisation', titre_x = 'Fertilisation', titre_y = var_rep)
+# 
+# titre <- paste('AB_tot & Travail_du_sol')
+# cat(paste0("- ",titre,"\n"))
+# box_plot(df = prodij, var_rep = var_rep, predicteur = 'Travail_du_sol', titre_x = 'Travail_du_sol', titre_y = var_rep)
+
+for (i in 1:length(variables_num)) {
+  cat(paste('- ', var_rep, '&', variables_num[i]))
+  g <- nuage_point(df = prodij,
+                    var_rep = var_rep,
+                    predicteur = variables_num[i],
+                    titre_x = variables_num[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+
+## Biomass
+
+```{r}
+# Creation d'un df des correlation entre var_rep et les variables explicatives (variables_num)
+var_rep= "BM_tot"
+
+correlations <- sapply(variables_num, function(var) {
+  cor(prodij[[var_rep]], prodij[[var]], use = "complete.obs")
+})
+
+correlation_df <- data.frame(
+  Variables = variables_num,
+  Correlations = round (correlations,4)
+)
+rownames(correlation_df) = NULL
+datatable(correlation_df, options = list(pageLength = 5))
+```
+
+```{r plot_BM_tot , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'BM_tot'
+titre <- paste('BM_tot & Details_Milieu_Niv3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = prodij, var_rep = var_rep, predicteur = 'Details_Milieu_Niv3', titre_x = 'Details_Milieu_Niv3', titre_y = var_rep)
+
+# titre <- paste('AB_tot & Fertilisation')
+# cat(paste0("- ",titre,"\n"))
+# box_plot(df = prodij, var_rep = var_rep, predicteur = 'Fertilisation', titre_x = 'Fertilisation', titre_y = var_rep)
+# 
+# titre <- paste('AB_tot & Travail_du_sol')
+# cat(paste0("- ",titre,"\n"))
+# box_plot(df = prodij, var_rep = var_rep, predicteur = 'Travail_du_sol', titre_x = 'Travail_du_sol', titre_y = var_rep)
+
+for (i in 1:length(variables_num)) {
+  cat(paste('- ', var_rep, '&', variables_num[i]))
+  g <- nuage_point(df = prodij,
+                    var_rep = var_rep,
+                    predicteur = variables_num[i],
+                    titre_x = variables_num[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+
+## Richness
+
+```{r}
+# Creation d'un df des correlation entre var_rep et les variables explicatives (variables_num)
+var_rep= "Richesse"
+
+correlations <- sapply(variables_num, function(var) {
+  cor(prodij[[var_rep]], prodij[[var]], use = "complete.obs")
+})
+
+correlation_df <- data.frame(
+  Variables = variables_num,
+  Correlations = round (correlations,4)
+)
+rownames(correlation_df) = NULL
+datatable(correlation_df, options = list(pageLength = 5))
+```
+
+```{r plot_Richesse , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
+var_rep <- 'Richesse'
+titre <- paste('Richesse & Details_Milieu_Niv3')
+cat(paste0("- ",titre,"\n"))
+
+box_plot(df = prodij, var_rep = var_rep, predicteur = 'Details_Milieu_Niv3', titre_x = 'Details_Milieu_Niv3', titre_y = var_rep)
+
+# titre <- paste('AB_tot & Fertilisation')
+# cat(paste0("- ",titre,"\n"))
+# box_plot(df = prodij, var_rep = var_rep, predicteur = 'Fertilisation', titre_x = 'Fertilisation', titre_y = var_rep)
+# 
+# titre <- paste('AB_tot & Travail_du_sol')
+# cat(paste0("- ",titre,"\n"))
+# box_plot(df = prodij, var_rep = var_rep, predicteur = 'Travail_du_sol', titre_x = 'Travail_du_sol', titre_y = var_rep)
+
+for (i in 1:length(variables_num)) {
+  cat(paste('- ', var_rep, '&', variables_num[i]))
+  g <- nuage_point(df = prodij,
+                    var_rep = var_rep,
+                    predicteur = variables_num[i],
+                    titre_x = variables_num[i],
+                    titre_y = var_rep)
+  print(g)
+}
+```
+
+
+
+# Exploratory analysis
+
+```{r}
+prodij <- prodij %>%
+  dplyr::rename(
+    OS =Details_Milieu_Niv3 ,
+     Long = GPS_X,
+     Lat = GPS_Y,
+    Ferti_ = Fertilisation,
+    w_sol_ = Travail_du_sol
+  )
+  
+write.csv2(x =prodij,file = "datas/proDij/prodij_clean.csv", row.names = FALSE)
+```
+
+**Data set reduction**
+
+```{r ana explo,echo=TRUE,fig.height=8,fig.show='animate',fig.align='center'}
+id_col=c("Programme","Annee","ID_Site","Protocole")
+
+predictor_non_r = c("Long", "Lat" ,"SableF" , "LimonF" ,"LimonG" ,"Argile" ,"C_org" ,"C.N", "pH_eau","OS","Ferti_","w_sol_")
+
+predictor_deep = c(predictor_non_r,c("Sables","SableG","Limons","MO","C_tot","N_tot"))
+vdt_col=c("AB_tot", "BM_tot", "Richesse")
+
+prodij_explo = prodij[, c(id_col, vdt_col,predictor_deep)]
+
+
+
+cl_original <- levels(prodij_explo$OS)
+
+```
+
+## Total abundance distributions
+
+```{r abundance dist,fig.align='center',fig.height=4,fig.width=4}
+df <- data.frame(y =prodij_explo$AB_tot)
+# Test de Shapiro-Wilk
+AB_tot_test_nor = shapiro.test(df$y)
+AB_tot_p.value =round(AB_tot_test_nor$p.value,3)
+ if(AB_tot_p.value ==0){
+   AB_tot_p.value = "; p.value > 0.001"
+ } else {
+   AB_tot_p.value = paste0("; p.value = ",AB_tot_p.value)   
+ }
+AB_tot_sub = paste0("Shapiro-Wilk; W = ",round(AB_tot_test_nor$statistic,2),AB_tot_p.value)
+
+```
+
+::: columns
+::: {.column width="50%"}
+<p><img src="lamda_boxcox.png"/></p>
+
+<br/>
+
+```{r}
+# Histogramme
+ggplot(df, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Abundance", subtitle =AB_tot_sub,  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+-   Transformation sqrt
+
+```{r ,fig.dpi=300,fig.align='center',fig.height=4,fig.width=4}
+df_2 <- data.frame(y =sqrt(prodij_explo$AB_tot))
+# Test de Shapiro-Wilk
+AB_tot_test_nor = shapiro.test(df_2$y)
+AB_tot_p.value =round(AB_tot_test_nor$p.value,3)
+ if(AB_tot_p.value ==0){
+   AB_tot_p.value = "; p.value > 0.001"
+ } else {
+   AB_tot_p.value = paste0("; p.value = ",AB_tot_p.value)   
+ }
+AB_tot_sub = paste0("Shapiro-Wilk; W = ",round(AB_tot_test_nor$statistic,2),AB_tot_p.value)
+
+```
+
+```{r}
+# Histogramme
+ggplot(df_2, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Abundance", subtitle =AB_tot_sub,  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+# https://r-coder.com/box-cox-transformation-r/?utm_content=cmp-true
+# prodij_explo$AB_tot[prodij_explo$AB_tot < 0]
+x = as.numeric ( prodij_explo$AB_tot )+1
+
+
+b <- MASS::boxcox(lm(x ~ 1),plotit = FALSE) # ou bestNormalize
+
+# Exact lambda
+lambda1 <- b$x[which.max(b$y)]
+
+MASS::boxcox(lm(x ~ 1),plotit = TRUE)
+
+
+```
+
+```         
+lamda = `r lambda1`
+```
+
+<br/>
+
+```{r}
+# QQ-plot
+qqnorm(df$y)
+qqline(df$y)
+```
+
+<br/> <br/>
+
+```{r}
+
+# QQ-plot
+qqnorm(df_2$y)
+qqline(df_2$y)
+```
+:::
+:::
+
+## Total biomass distributions
+
+```{r biomass dist,fig.align='center',fig.height=4,fig.width=4}
+df <- data.frame(y =prodij_explo$BM_tot)
+# Test de Shapiro-Wilk
+BM_tot_test_nor = shapiro.test(df$y)
+BM_tot_p.value =round(BM_tot_test_nor$p.value,3)
+ if(BM_tot_p.value ==0){
+   BM_tot_p.value = "; p.value > 0.001"
+ } else {
+   BM_tot_p.value = paste0("; p.value = ",BM_tot_p.value)   
+ }
+BM_tot_sub = paste0("Shapiro-Wilk; W = ",round(BM_tot_test_nor$statistic,2),BM_tot_p.value)
+
+```
+
+::: columns
+::: {.column width="50%"}
+<p><img src="lamda_boxcox.png"/></p>
+
+<br/>
+
+```{r}
+# Histogramme
+ggplot(df, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="biomass", subtitle =BM_tot_sub,  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+-   Transformation sqrt
+
+```{r ,fig.dpi=300,fig.align='center',fig.height=4,fig.width=4}
+df_2 <- data.frame(y =sqrt(prodij_explo$BM_tot))
+# Test de Shapiro-Wilk
+BM_tot_test_nor = shapiro.test(df_2$y)
+BM_tot_p.value =round(BM_tot_test_nor$p.value,3)
+ if(BM_tot_p.value ==0){
+   BM_tot_p.value = "; p.value > 0.001"
+ } else {
+   BM_tot_p.value = paste0("; p.value = ",BM_tot_p.value)   
+ }
+BM_tot_sub = paste0("Shapiro-Wilk; W = ",round(BM_tot_test_nor$statistic,2),BM_tot_p.value)
+
+```
+
+```{r}
+# Histogramme
+ggplot(df_2, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="biomass", subtitle =BM_tot_sub,  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+# https://r-coder.com/box-cox-transformation-r/?utm_content=cmp-true
+# prodij_explo$BM_tot[prodij_explo$BM_tot < 0]
+x = as.numeric ( prodij_explo$BM_tot )+1
+
+
+b <- MASS::boxcox(lm(x ~ 1),plotit = FALSE)
+
+# Exact lambda
+lambda <- b$x[which.max(b$y)]
+
+lambda = round(lambda,3)
+MASS::boxcox(lm(x ~ 1),plotit = TRUE)
+
+
+```
+
+```         
+lamda = `r lambda`
+```
+
+<br/>
+
+```{r}
+# QQ-plot
+qqnorm(df$y)
+qqline(df$y)
+```
+
+<br/> <br/>
+
+```{r}
+
+# QQ-plot
+qqnorm(df_2$y)
+qqline(df_2$y)
+```
+:::
+:::
+
+## Total taxonomic richness distributions
+
+```{r richness dist,fig.align='center',fig.height=4,fig.width=4}
+df <- data.frame(y =prodij_explo$Richesse)
+# Test de Shapiro-Wilk
+Richesse_test_nor = shapiro.test(df$y)
+Richesse_p.value =round(Richesse_test_nor$p.value,3)
+ if(Richesse_p.value ==0){
+   Richesse_p.value = "; p.value > 0.001"
+ } else {
+   Richesse_p.value = paste0("; p.value = ",Richesse_p.value)   
+ }
+Richesse_sub = paste0("Shapiro-Wilk; W = ",round(Richesse_test_nor$statistic,2),Richesse_p.value)
+
+```
+
+::: columns
+::: {.column width="50%"}
+<p><img src="lamda_boxcox.png"/></p>
+
+<br/>
+
+```{r}
+# Histogramme
+ggplot(df, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="richness", subtitle =Richesse_sub,  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+-   Transformation sqrt
+
+```{r ,fig.dpi=300,fig.align='center',fig.height=4,fig.width=4}
+df_2 <- data.frame(y =sqrt(prodij_explo$Richesse))
+# Test de Shapiro-Wilk
+Richesse_test_nor = shapiro.test(df_2$y)
+Richesse_p.value =round(Richesse_test_nor$p.value,3)
+ if(Richesse_p.value ==0){
+   Richesse_p.value = "; p.value > 0.001"
+ } else {
+   Richesse_p.value = paste0("; p.value = ",Richesse_p.value)   
+ }
+Richesse_sub = paste0("Shapiro-Wilk; W = ",round(Richesse_test_nor$statistic,2),Richesse_p.value)
+
+```
+
+```{r}
+# Histogramme
+ggplot(df_2, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="richness", subtitle =Richesse_sub,  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+# https://r-coder.com/box-cox-transformation-r/?utm_content=cmp-true
+# prodij_explo$Richesse[prodij_explo$Richesse < 0]
+x = as.numeric ( prodij_explo$Richesse )+1
+
+
+b <- MASS::boxcox(lm(x ~ 1),plotit = FALSE)
+
+# Exact lambda
+lambda1 <- b$x[which.max(b$y)]
+
+MASS::boxcox(lm(x ~ 1),plotit = TRUE)
+
+
+```
+
+```         
+lamda = `r lambda1`
+```
+
+<br/>
+
+```{r}
+# QQ-plot
+qqnorm(df$y)
+qqline(df$y)
+```
+
+<br/> <br/>
+
+```{r}
+
+# QQ-plot
+qqnorm(df_2$y)
+qqline(df_2$y)
+```
+:::
+:::
+
+## Standarization
+
+-   Transformation sqrt de l'abondance et de la biomasse
+
+-   Transformation centrée reduite des prédicteurs
+
+```{r}
+prodij_explo_non_t = prodij_explo
+# prodij_explo$AB_tot = sqrt(prodij_explo$AB_tot)
+# prodij_explo$BM_tot = sqrt(prodij_explo$BM_tot)
+# prodij_explo$Richesse = sqrt(prodij_explo$Richesse)
+
+variables_factor = c("OS","Ferti_","w_sol_")
+vars_scale = predictor_deep[!predictor_deep %in% variables_factor]
+# prodij_explo[,vars_scale] = scale(prodij_explo[,vars_scale])
+
+
+data_deep = prodij_explo 
+
+
+```
+
+# Modeling
+
+## Predictors
+
+<br/> <br/> **Toutes les variables explicatives: =\> RG, GBM et ANN**
+
+<br/>
+
+```{r}
+predictor_non_r = c("Long", "Lat" ,"SableF" , "LimonF" ,"LimonG" ,"Argile" ,"C_org" ,"C.N", "pH_eau","OS")
+
+
+predictor_deep = c(predictor_non_r,c("Sables","SableG","Limons","MO","C_tot","N_tot"))
+
+vdt_col=c("AB_tot", "BM_tot", "Richesse")
+
+predictor_deep
+# datatable(data.frame(Variables = predictor_deep))
+```
+
+<br/> **Aucune corrélation: =\> GLM et GAM** (\<0.7) <br/>
+
+```{r}
+# datatable(data.frame(Variables = predictor_non_r))
+predictor_non_r
+```
+
+Voir [Matrice de correlation]
+
+## Processus de sélection des variables
+
+<br/>
+
+***Initialisation***
+
+<br/>
+
+***Boucle de création et d'évaluation des modèles***
+
+Pour chaque itération `i` allant jusqu'à `length(variables) - 1` :
+
+1.  **Création du modèle**
+
+    -   Nous ajustons un modèle en utilisant toutes les variables prédicteurs disponibles.
+
+2.  **Calcul de l'importance des variables**
+
+    -   Nous utilisons l'algorithme d'importance des caractéristiques de permutation basé sur Fisher, Rudin et Dominici (2018) :
+        -   Entrée: modèle $\hat{F}$, variables $X$, cible $y$, mesure d'erreur $L(y, \hat{F}(X))$
+        -   Estimation de l'erreur du modèle d'origine $L_{original}$.
+        -   Pour chaque variables $j$ :
+            1.  Permutation $j$ dans $X$ pour obtenir $X_{perm}$, rompant ainsi l'association entre $j$ et $y$.
+            2.  Estimation de l'erreur $L_{perm}$ avec $X_{perm}$.
+            3.  Calcule de l'importance $FI_j = L_{perm} / L_{original}$.
+        -   Trie des variables par FI décroissant.
+
+3.  **Détermination de la variable la moins importante**
+
+4.  **Prédictions sur les données de test**
+
+5.  **Calcul des métriques de performance**
+
+    -   `RMSE`, `R² ajusté` pour l'entraînement, `R²` pour le test, et `MAE`.
+
+6.  **Mise à jour des jeux de données train et test**
+
+    -   Suppression de la variable la moins importante dans `train` & `test`.
+
+**Enregistrement des résultats**
+
+## Data preparation
+
+```{r modeling AB_tot, echo=TRUE}
+# AB_tot --------------------------------------------------------------------------
+df_mod_AB_tot = data_deep[,c("AB_tot",predictor_deep)]
+# dummy_vars <- model.matrix(~ OS - 1, data = df_mod_AB_tot)
+# df_mod_AB_tot <- cbind(df_mod_AB_tot, dummy_vars)
+# df_mod_AB_tot <- df_mod_AB_tot[, -which(names(df_mod_AB_tot) == "OS")]
+
+df_mod_AB_tot = drop_na(df_mod_AB_tot)
+df_mod_AB_tot = droplevels(df_mod_AB_tot)
+
+
+# Partition
+# set.seed(123)
+# ind <- sample(2, nrow(df_mod_AB_tot), replace = T, prob = c(.8, .2))
+# AB_tot_train <- df_mod_AB_tot[ind==1,]
+# AB_tot_test <- df_mod_AB_tot[ind==2,]
+
+set.seed(42)
+split <- rsample::initial_split(df_mod_AB_tot, prop = 0.8, strata = "AB_tot")
+AB_tot_train <- rsample::training(split)
+AB_tot_test <- rsample::testing(split)
+
+write.csv2(x =AB_tot_train,file = "datas/proDij/AB_tot_train.csv", row.names = FALSE)
+write.csv2(x =AB_tot_test,file = "datas/proDij/AB_tot_test.csv", row.names = FALSE)
+# 
+# AB_tot_train = read.csv2("datas/proDij/AB_tot_train.csv")
+# AB_tot_test = read.csv2("datas/proDij/AB_tot_test.csv")
+# df_mod_AB_tot = rbind(AB_tot_train,AB_tot_test)
+
+AB_tot_train = as.data.frame(AB_tot_train)
+AB_tot_test = as.data.frame(AB_tot_test)
+
+df <- data.frame(y =AB_tot_train[,"AB_tot"])
+abundance_dist_train = ggplot(df, aes(x=y)) +
+  geom_histogram(fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Abundance: Train",  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+# ggsave("Results/proDij/abundance_dist_train.png", plot = abundance_dist_train, dpi = 300,width = 3,height = 2)
+
+
+
+df <- data.frame(y =AB_tot_test[,"AB_tot"])
+abundance_dist_test = ggplot(df, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Abundance: Test",  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+# ggsave("Results/proDij/abundance_dist_test.png", plot = abundance_dist_test, dpi = 300,width = 3,height = 2)
+
+# Distrvitbution de var rep dans train et de test: est ce homogene ?
+abundance_dist_train_and_test = ggarrange(abundance_dist_train, abundance_dist_test,
+                          labels = c('(a)', '(b)'),
+                          common.legend = TRUE,
+                          legend = 'right'
+)
+
+
+ggsave("Results/proDij/abundance_dist_train_and_test.png", plot = abundance_dist_train_and_test, dpi = 300,height = 2,width = 4)
+
+# Test de Kolmogorov-Smirnov: # Do x and y come from the same distribution?
+# ks.test(AB_tot_train$AB_tot, AB_tot_test$AB_tot)
+
+```
+
+```{r modeling BM_tot}
+# BM_tot --------------------------------------------------------------------------
+df_mod_BM_tot = data_deep[,c("BM_tot",predictor_deep)]
+# dummy_vars <- model.matrix(~ OS - 1, data = df_mod_BM_tot)
+# df_mod_BM_tot <- cbind(df_mod_BM_tot, dummy_vars)
+# df_mod_BM_tot <- df_mod_BM_tot[, -which(names(df_mod_BM_tot) == "OS")]
+
+df_mod_BM_tot = drop_na(df_mod_BM_tot)
+df_mod_BM_tot = droplevels(df_mod_BM_tot)
+
+# Partition
+# set.seed(123)
+# ind <- sample(2, nrow(df_mod_BM_tot), replace = T, prob = c(.8, .2))
+# BM_tot_train <- df_mod_BM_tot[ind==1,]
+# BM_tot_test <- df_mod_BM_tot[ind==2,]
+
+set.seed(42)
+split <- rsample::initial_split(df_mod_BM_tot, prop = 0.8, strata = "BM_tot")
+BM_tot_train <- rsample::training(split)
+BM_tot_test <- rsample::testing(split)
+
+
+write.csv2(x =BM_tot_train,file = "datas/proDij/BM_tot_train.csv", row.names = FALSE)
+write.csv2(x =BM_tot_test,file = "datas/proDij/BM_tot_test.csv", row.names = FALSE)
+# 
+# 
+# BM_tot_train = read.csv2("datas/proDij/BM_tot_train.csv")
+# BM_tot_test = read.csv2("datas/proDij/BM_tot_test.csv")
+# df_mod_BM_tot = rbind(BM_tot_train,BM_tot_test)
+
+
+BM_tot_train = as.data.frame(BM_tot_train)
+BM_tot_test = as.data.frame(BM_tot_test)
+
+
+
+# # Distribution de var rep
+df <- data.frame(y =BM_tot_train[,"BM_tot"])
+biomass_dist_train = ggplot(df, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Biomass: Train",  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+# ggsave("Results/proDij/biomass_dist_train.png", plot = biomass_dist_train, dpi = 300,width = 3,height = 2)
+
+df <- data.frame(y =BM_tot_test[,"BM_tot"])
+biomass_dist_test = ggplot(df, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Biomass: Test",  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+# ggsave("Results/proDij/biomass_dist_test.png", plot = biomass_dist_test, dpi = 300,width = 3,height = 2)
+
+
+# Distrvitbution de var rep dans train et de test: est ce homogene ?
+biomass_dist_train_and_test = ggarrange(biomass_dist_train, biomass_dist_test,
+                                          labels = c('(a)', '(b)'),
+                                          common.legend = TRUE,
+                                          legend = 'right')
+
+ggsave("Results/proDij/biomass_dist_train_and_test.png", plot = biomass_dist_train_and_test, dpi = 300 ,height = 2,width = 4)
+
+# Test de Kolmogorov-Smirnov: # Do x and y come from the same distribution?
+# ks.test(BM_tot_train$BM_tot, BM_tot_test$BM_tot)
+```
+
+```{r modeling Richesse}
+# Richesse --------------------------------------------------------------------------
+df_mod_Richesse = data_deep[,c("Richesse",predictor_deep)]
+# dummy_vars <- model.matrix(~ OS - 1, data = df_mod_Richesse)
+# df_mod_Richesse <- cbind(df_mod_Richesse, dummy_vars)
+# df_mod_Richesse <- df_mod_Richesse[, -which(names(df_mod_Richesse) == "OS")]
+
+df_mod_Richesse = drop_na(df_mod_Richesse)
+df_mod_Richesse = droplevels(df_mod_Richesse)
+
+
+# Partition
+# set.seed(123)
+# ind <- sample(2, nrow(df_mod_Richesse), replace = T, prob = c(.8, .2))
+# Richesse_train <- df_mod_Richesse[ind==1,]
+# Richesse_test <- df_mod_Richesse[ind==2,]
+
+
+set.seed(42)
+split <- rsample::initial_split(df_mod_Richesse, prop = 0.8, strata = "Richesse")
+Richesse_train <- rsample::training(split)
+Richesse_test <- rsample::testing(split)
+
+write.csv2(x =Richesse_train,file = "datas/proDij/Richesse_train.csv", row.names = FALSE)
+write.csv2(x =Richesse_test,file = "datas/proDij/Richesse_test.csv", row.names = FALSE)
+# 
+# Richesse_train = read.csv2("datas/proDij/Richesse_train.csv")
+# Richesse_test = read.csv2("datas/proDij/Richesse_test.csv")
+# df_mod_Richesse = rbind(Richesse_train,Richesse_test)
+
+
+Richesse_train = as.data.frame(Richesse_train)
+Richesse_test = as.data.frame(Richesse_test)
+
+
+
+# Distribution de var rep
+df <- data.frame(y =Richesse_train[,"Richesse"])
+richness_dist_train = ggplot(df, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Richness: Train",  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+# ggsave("Results/proDij/richness_dist_train.png", plot = richness_dist_train, dpi = 300 ,width = 3,height = 2)
+
+df <- data.frame(y =Richesse_test[,"Richesse"])
+richness_dist_test = ggplot(df, aes(x=y)) +
+  geom_histogram( fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Richness: Test",  x="Values", y = "Counts") +
+  theme(plot.title = element_text(hjust = 0.5))
+# ggsave("Results/proDij/richness_dist_test.png", plot = richness_dist_test, dpi = 300 ,width = 3,height = 2)
+
+# Distrvitbution de var rep dans train et de test: est ce homogene ?
+richness_dist_train_and_test = ggarrange(richness_dist_train, richness_dist_test,
+                                          labels = c('(a)', '(b)'),
+                                          common.legend = TRUE,
+                                          legend = 'right')
+
+ggsave("Results/proDij/richness_dist_train_and_test.png", plot = richness_dist_train_and_test, dpi = 300 ,height = 2,width = 4)
+
+
+# ks.test(Richesse_train$Richesse, Richesse_test$Richesse)
+```
+
+::: columns
+::: {.column width="50%"}
+**Abundance**
+
+-   Data partition (`r dim(df_mod_AB_tot)`):
+
+    -   train data (80 %) = `r dim(AB_tot_train)`
+
+    -   test data (20 %) = `r dim(AB_tot_test)`
+
+**Biomasse**
+
+-   Data partition (`r dim(df_mod_BM_tot)`):
+
+    -   train data (80 %) = `r dim(BM_tot_train)`
+
+    -   test data (20 %) = `r dim(BM_tot_test)`
+
+**Richness**
+
+-   Data partition (`r dim(df_mod_Richesse)`):
+
+    -   train data (80 %) = `r dim(Richesse_train)`
+
+    -   test data (20 %) = `r dim(Richesse_test)`
+:::
+
+::: {.column width="50%"}
+<p><img src="Results/proDij/abundance_dist_train_and_test.png"/></p>
+
+<p><img src="Results/proDij/biomass_dist_train_and_test.png"/></p>
+
+<p><img src="Results/proDij/richness_dist_train_and_test.png"/></p>
+:::
+:::
+
+## GLM
+
+```{r function GLM, echo=TRUE}
+GLM <- function(var_rep, df_app, df_valid,family = 'gaussian'){
+  
+  
+  var_predicteurs = names(df_app[,-1])
+ 
+  df_app = df_app[,c(var_rep,var_predicteurs)]
+  df_valid = df_valid[,c(var_rep,var_predicteurs)]
+  
+  formula <- substitute(var_rep ~ ., list(var_rep = as.name(var_rep)))
+  
+  
+  # entrainement du modele sur le jeu d'entrainement
+  modelglm<-glm(formula,family = family ,data = df_app)
+  
+  # Prediction sur le jeu de validation
+  pred.GLM<-predict(modelglm,newdata=as.data.frame(df_valid[,var_predicteurs]))
+  
+  # Calcul du RMSE pour évaluer la qualite du modele
+  rmse <- round (sqrt(mean((df_valid[,var_rep] - pred.GLM)^2,na.rm=TRUE)),2)
+  
+  
+ # Calcul du R² ajusté pour train
+  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(modelglm, newdata=df_app))
+  n_train <- nrow(df_app)
+  p_train <- ncol(df_app) - 1
+  r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
+  
+  # Calcul du R² 
+  # R_adj_test <-calcule_R2(df_valid[,var_rep],pred.GLM)
+  # n_test <- nrow(df_valid)
+  # p_test <- ncol(df_valid) - 1
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  # r_adj_test = R_adj_test
+  res <- rms::lrm(df_valid[,var_rep]  ~ pred.GLM, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
+  
+  MAE <- mean(abs(pred.GLM - df_valid[,var_rep]),na.rm=TRUE)
+  
+  # Round results
+  rmse <- round(rmse, 2)
+  r_adj_train <- round(r_adj_train, 2)
+  r_adj_test <- round(r_adj_test, 2)
+  MAE <- round(MAE, 2)
+  
+  # output
+  results_df <- data.frame(Algorithms = "GLM",
+                         Response_variables = var_rep,
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = rmse,
+                         MAE = MAE)
+    
+  
+  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = modelglm,predit = pred.GLM, df = results_df)
+  return(results)
+}
+
+```
+
+-   Gaussian distribution
+
+## GAM
+
+```{r function GAM, echo=TRUE}
+GAM <- function(var_rep, df_app, df_valid, family = 'gaussian',method = "REML", interaction = FALSE){
+  
+  var_predicteurs = names(df_app[,-1])
+  
+  
+  if (var_rep == "AB_tot"){ 
+
+  modelgam<-gam(AB_tot ~  s(Long) + s(Lat) + s(SableF) + s(LimonF) + s(LimonG) + s(Argile) + s(C_org) + s(C.N) + s(pH_eau) + OS1_Naturel + OS2_Agricole + OS3_Artificialisé,
+        family=family,method = method,data = df_app)
+  }
+  
+  
+  
+  
+  if (var_rep == "BM_tot"){ 
+
+  modelgam<-gam(BM_tot ~ s(Long) + s(Lat) + s(SableF) + s(LimonF) + s(LimonG) + s(Argile) + s(C_org) + s(C.N) + s(pH_eau) + OS1_Naturel + OS2_Agricole + OS3_Artificialisé,
+        family=family,method = method,data = df_app)
+  
+    
+  }
+  
+  
+  
+  if(var_rep == "Richesse"){ 
+    
+  modelgam<-gam(Richesse ~ s(Long) + s(Lat) + s(SableF) + s(LimonF) + s(LimonG) + s(Argile) + s(C_org) + s(C.N) + s(pH_eau) + OS1_Naturel + OS2_Agricole + OS3_Artificialisé,
+        family=family,method = method,data = df_app)
+   
+  }
+  
+  
+  # Prediction sur le jeu de validation
+  pred.GAM <- predict(modelgam,newdata=as.data.frame(df_valid[,var_predicteurs]))
+  
+  # Calcul du RMSE pour évaluer la qualite du modele
+  rmse <- sqrt(mean((df_valid[,var_rep] - pred.GAM)^2,na.rm=TRUE))
+
+  
+# Calcul du R² ajusté pour train
+  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(modelgam, newdata=df_app))
+  n_train <- nrow(df_app)
+  p_train <- ncol(df_app) - 1
+  r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
+  
+  # Calcul du R² ajusté pour test
+  # R_adj_test <-calcule_R2(df_valid[,var_rep],pred.GAM)
+  # n_test <- nrow(df_valid)
+  # p_test <- ncol(df_valid) - 1
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  # R_adj_test = r_adj_test
+  res <- rms::lrm(df_valid[,var_rep]  ~ pred.GAM, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
+  
+
+  # Calcule le MAE
+  MAE <- mean(abs(pred.GAM - df_valid[,var_rep]))
+  
+  # Round results
+  rmse <- round(rmse, 2)
+  r_adj_train <- round(r_adj_train, 2)
+  r_adj_test <- round(r_adj_test, 2)
+  MAE <- round(MAE, 2)
+  
+  
+  # output
+  results_df <- data.frame(Algorithms = "GAM",
+                         Response_variables = var_rep,
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = rmse,
+                         MAE = MAE)
+  
+  
+  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = modelgam, predit = pred.GAM, df = results_df)
+  
+  return(results)
+}
+
+```
+
+-   Family = gaussian
+
+-   Link function = identity
+
+-   Method = REML
+
+-   Tuning
+
+## RF
+
+-   Default model
+
+```{r}
+# Grille de hyperparametisation
+RF_df_grid <- expand.grid(ntree = c(100,300,500,700,900,1000,1300,1500,1700,2000),
+                          mtry = c(1:9),
+                          nodesize = c(5, 10 , 20,  30,  50,  70,  100))
+```
+
+-   RF model tuning by grid
+
+-   ntree = $100,300,500,700,900,1000,1300,1500,1700,2000$
+
+-   mtry = $1, 2, 3, 4, 5, 6, 7, 8, 9$
+
+-   maxnodes = $5, 10 , 20, 30, 50, 70, 100$
+
+**Total number of models =** $ntree * mtry * maxnode = `r nrow(RF_df_grid)`$
+
+-   Validation of models on test data
+
+```{r function RF, echo=TRUE,fig.align='center'}
+ForetAlea <- function(var_rep, df_app, df_valid, mtry, ntree, maxnodes) {
+  
+  set.seed(1863)
+  col_posi <- which(names(df_app) == var_rep)
+  ForeVDT <- randomForest::randomForest(df_app[-col_posi], df_app[[col_posi]], mtry = mtry, ntree = ntree, maxnodes = maxnodes)
+  
+  # Prediction on the validation dataset
+  col_posi <- which(names(df_valid) == var_rep)
+  pred.RF <- predict(ForeVDT, newdata = df_valid[, -col_posi])
+  
+  # Calculate RMSE to evaluate model quality
+  rmse <- sqrt(mean((df_valid[, col_posi] - pred.RF)^2))
+  
+  
+  # Calcul du R² ajusté pour train
+  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(ForeVDT, newdata=df_app))
+  n_train <- nrow(df_app)
+  p_train <- ncol(df_app) - 1
+  r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
+  
+  # Calcul du R² ajusté pour test
+  R_adj_test <-calcule_R2(df_valid[,col_posi],pred.RF)
+  # n_test <- nrow(df_valid)
+  # p_test <- ncol(df_valid) - 1
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+   # R_adj_test = r_adj_test
+  res <- rms::lrm(df_valid[,var_rep]  ~ pred.RF, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
+  
+  # Calculate MAE
+  MAE <- mean(abs(pred.RF - df_valid[, col_posi]))
+  
+  # Round results
+  rmse <- round(rmse, 2)
+  r_adj_train <- round(r_adj_train, 2)
+  r_adj_test <- round(r_adj_test, 2)
+  MAE <- round(MAE, 2)
+  
+    # output
+  results_df <- data.frame(Algorithms = "RF",
+                         Response_variables = var_rep,
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = rmse,
+                         MAE = MAE)
+  
+  
+  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = ForeVDT, predit = pred.RF, df = results_df)
+  
+  return(results)
+}
+```
+
+## GBM
+
+```{r}
+# Grille de hyperparametisation
+GBM_df_grid <- expand.grid(n.trees = c(500, 1000,1500,1700,2000,3000),
+                           shrinkage = c(0.01, 0.02, 0.05, 0.001, 0.002, 0.005),
+                           interaction.depth = c(3,  5,  6,  8),
+                           n.minobsinnode = c(2 , 5,  10,  30,  50,  70))
+```
+
+-   Default model
+
+-   GBM model tuning by grid
+
+-   n.trees = $500, 1000,1500,1700,2000,3000$
+
+-   shrinkage = $0.01, 0.02, 0.05, 0.001, 0.002, 0.005$
+
+-   interaction.depth = $3, 5, 6, 8$
+
+-   n.minobsinnode = $2, 5, 10, 30, 50, 70$
+
+**Total number of models =** $n.trees * shrinkage * interaction.depth * n.minobsinnode = `r nrow(GBM_df_grid)`$
+
+-   Validation of models on test data
+
+```{r function GBM, echo=TRUE}
+GBM <- function(var_rep, df_app, df_valid,distribution = 'gaussian',n.trees ,shrinkage,interaction.depth,n.minobsinnode){
+  set.seed(1863)
+
+  formula <- substitute(var_rep ~ ., list(var_rep = as.name(var_rep)))
+
+  Gradboost<-gbm(formula, data = df_app,
+    distribution = distribution, 
+    n.trees = n.trees,
+    shrinkage = shrinkage,
+    interaction.depth = interaction.depth,
+    n.minobsinnode = n.minobsinnode) 
+  
+  # Prediction sur le jeu de validation :
+   col_posi <- which(names(df_valid) == var_rep)
+  prev.GBM<-predict(Gradboost,newdata=as.data.frame(df_valid[,-col_posi]))
+ 
+  # Calcul du RMSE pour évaluer la qualité du modele
+  rmse <- sqrt(mean((df_valid[,var_rep] - prev.GBM)^2))
+
+
+# Calcul du R² ajusté pour train
+  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(Gradboost, newdata=df_app))
+  n_train <- nrow(df_app)
+  p_train <- ncol(df_app) - 1
+  r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
+  
+  # Calcul du R² ajusté pour test
+  # R_adj_test <-calcule_R2(df_valid[,col_posi],prev.GBM)
+  # n_test <- nrow(df_valid)
+  # p_test <- ncol(df_valid) - 1
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+   # R_adj_test = r_adj_test
+  res <- rms::lrm(df_valid[,var_rep]  ~ prev.GBM, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
+  
+
+  # calcule MAE
+  MAE <- mean(abs(prev.GBM - df_valid[,col_posi])) 
+  
+    
+    # Round results
+  rmse <- round(rmse, 2)
+  r_adj_train <- round(r_adj_train, 2)
+  r_adj_test <- round(r_adj_test, 2)
+  MAE <- round(MAE, 2)
+  
+  
+      # output
+  results_df <- data.frame(Algorithms = "GBM",
+                         Response_variables = var_rep,
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = rmse,
+                         MAE = MAE)
+  
+  
+  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = Gradboost, predit = prev.GBM, df = results_df)
+  
+  
+  return(results)
+}
+```
+
+## ANN
+
+-   Default model
+
+```{r,include=TRUE, eval = FALSE}
+# # for(i in names(df_mod_AB_tot)){ cat(i,"+")}
+# 
+n <- neuralnet(AB_tot~ Long +Lat +SableF +LimonF +LimonG +Argile +C_org +C.N +pH_eau +OS1_Naturel +OS2_Agricole +OS3_Artificialisé,
+               data = AB_tot_train,
+               # hidden = c(1),
+               linear.output = F,
+               lifesign = 'full',
+               rep=1)
+
+plot(n,
+     col.hidden = 'black',
+     col.hidden.synapse = 'black',
+     show.weights = F,
+     information = F,
+     fill = 'lightblue')
+# 
+# 
+# 
+# 
+# ANN_1 <- keras_model_sequential()
+# ANN_1 %>% 
+#   layer_dense(units = 1, activation = 'relu', input_shape = c(15)) %>%
+#   layer_dense(units = 1)
+# 
+# # Compile
+# ANN_1 %>% keras::compile(loss = 'mse',
+#                   optimizer = 'rmsprop',
+#                   metrics = 'mae')
+# summary(ANN_1)
+# 
+# Fit ANN_1
+# myANN_1 <- ANN_1 %>%
+#   fit(training,
+#       trainingtarget,
+#       epochs = 100,
+#       #batch_size = 1,
+#       validation_split = 0.2)
+# plot_ANN1 = plot(myANN_1)
+
+# ggsave("models/plot_ANN_default_model.png", plot = plot_ANN1, dpi = 300)
+
+```
+
+<!-- <p> -->
+
+<!--   <img src="models/ANN_default_model.png"> -->
+
+<!-- </p> -->
+
+<!-- <p> -->
+
+<!--   <img src="models/plot_ANN_default_model.png"> -->
+
+<!-- </p> -->
+
+-   Tunning
+
+runs \<- tuning_run("Experiment.R", flags = list(dense_units1 = c(32, 64), dense_units2 = c(16, 32), dense_units3 = c(8, 16), dense_units4 = c(4, 8), dropout1 = c(0.4, 0.5), dropout2 = c(0.3, 0.4), dropout3 = c(0.2, 0.3), dropout4 = c(0.1, 0.2), batch_size = c(32, 64)))
+
+-   hidden = c(32,32,16,8)
+
+```{r , eval = FALSE}
+n <- neuralnet(AB_tot~ Long +Lat +SableF +LimonF +LimonG +Argile +C_org +C.N +pH_eau +OS1_Naturel +OS2_Agricole +OS3_Artificialisé,
+               data = AB_tot_train,
+               hidden = c(32,32,16,8),
+               linear.output = F,
+               lifesign = 'full',
+               rep=1)
+
+plot(n,
+     col.hidden = 'black',
+     col.hidden.synapse = 'black',
+     show.weights = F,
+     information = F,
+     fill = 'lightblue')
+# 
+# # Pour AB_tot  ------------------------------------------------------------------
+# var_rep="AB_tot"
+# AB_tot_ANN_tuning = read.csv2("results_tuning/ProDij/AB_tot_ANN_tuning.csv")
+# 
+# # Best hyperparameter values
+# AB_tot_ANN_tuning = as.data.frame(AB_tot_ANN_tuning)
+# AB_tot_ANN_tuning = AB_tot_ANN_tuning %>% arrange(metric_val_mae)
+# # head(AB_tot_ANN_tuning[,2:16])
+# 
+# best_param = AB_tot_ANN_tuning[1,]
+# 
+# 
+# dense_units1 = as.numeric(best_param$flag_dense_units1)
+# dense_units2 = as.numeric(best_param$flag_dense_units2)
+# dense_units3 = as.numeric(best_param$flag_dense_units3)
+# dense_units4 = as.numeric(best_param$flag_dense_units4)
+# 
+# dropout1 =as.numeric(best_param$flag_dropout1)
+# dropout2 =as.numeric(best_param$flag_dropout2)
+# dropout3 =as.numeric(best_param$flag_dropout3)
+# dropout4 =as.numeric(best_param$flag_dropout4)
+# 
+# batch_size =as.numeric(best_param$flag_batch_size)
+# 
+# 
+# # AB_tot TUNE MODEL
+# ANN_tune_AB_tot <- keras_model_sequential()
+# ANN_tune_AB_tot %>% 
+#   layer_dense(units = dense_units1, activation = 'relu', input_shape = c(15)) %>%
+#   layer_dropout(rate = dropout1)  %>%
+#   layer_dense(units = dense_units2, activation = 'relu') %>%
+#   layer_dropout(rate = dropout2)  %>%
+#   layer_dense(units = dense_units3, activation = 'relu') %>%
+#   layer_dropout(rate = dropout3)  %>%
+#   layer_dense(units = dense_units4, activation = 'relu') %>%
+#   layer_dropout(rate = dropout4)  %>%
+#   layer_dense(units = 1)
+# 
+# 
+# # Compile
+# ANN_tune_AB_tot %>% keras::compile(loss = 'mse',
+#                   optimizer = 'rmsprop',
+#                   metrics = 'mae')
+# 
+# summary(ANN_tune_AB_tot)
+# #  callback EarlyStopping
+# mon_callback <- callback_early_stopping(
+#   monitor = "val_mae",  # Surveille la perte sur l'ensemble de validation
+#   patience = 10,         # Nombre d'époques sans amélioration avant l'arrêt
+#   restore_best_weights = TRUE  # Restaure les poids du meilleur modèle
+# )
+# 
+# 
+# # Fit ANN_tune_AB_tot
+# myANN_tune_AB_tot <- ANN_tune_AB_tot %>%
+#   fit(training,
+#       trainingtarget,
+#       epochs = 100,
+#       batch_size = batch_size,
+#       validation_split = 0.2,
+#       #callbacks = list(mon_callback)
+#       )
+
+
+```
+
+<!-- <p> -->
+
+<!--   <img src="models/ANN_tuning_model.png"> -->
+
+<!-- </p> -->
+
+<!-- <p> -->
+
+<!--   <img src="Results/fig_ANN_tune_BM_tot.png"> -->
+
+<!-- </p> -->
+
+## Compilation
+
+-   ANN AB_tot
+
+```{r ANN AB_tot , eval=FALSE}
+# Pour AB_tot  ------------------------------------------------------------------
+var_rep="AB_tot"
+# AB_tot_ANN_tuning = read.csv2("results_tuning/ProDij/AB_tot_ANN_tuning.csv")
+AB_tot_ANN_tuning = read.csv2("results_tuning/AB_tot_ANN_tuning.csv")
+
+# Best hyperparameter values
+AB_tot_ANN_tuning = as.data.frame(AB_tot_ANN_tuning)
+AB_tot_ANN_tuning = AB_tot_ANN_tuning %>% arrange(metric_val_mae)
+# head(AB_tot_ANN_tuning[,2:16])
+
+best_param = AB_tot_ANN_tuning[1,]
+
+
+dense_units1 = as.numeric(best_param$flag_dense_units1)
+dense_units2 = as.numeric(best_param$flag_dense_units2)
+dense_units3 = as.numeric(best_param$flag_dense_units3)
+dense_units4 = as.numeric(best_param$flag_dense_units4)
+
+dropout1 =as.numeric(best_param$flag_dropout1)
+dropout2 =as.numeric(best_param$flag_dropout2)
+dropout3 =as.numeric(best_param$flag_dropout3)
+dropout4 =as.numeric(best_param$flag_dropout4)
+
+batch_size =as.numeric(best_param$flag_batch_size)
+
+
+# data
+training = AB_tot_train
+test = AB_tot_test
+
+training %<>% mutate_if(is.factor, as.numeric)
+ind_var_rep <- which(names(training) == var_rep)
+trainingtarget <- training[, ind_var_rep]
+training <- training[, -ind_var_rep]
+training <- as.matrix(training)
+dimnames(training) <- NULL
+
+ind_var_rep <- which(names(test) == var_rep)
+testtarget <- test[, ind_var_rep]
+test <- test[, -ind_var_rep]
+test %<>% mutate_if(is.factor, as.numeric)
+test <- as.matrix(test)
+dimnames(test) <- NULL
+
+
+# AB_tot TUNE MODEL
+ANN_tune_AB_tot <- keras_model_sequential()
+ANN_tune_AB_tot %>% 
+  layer_dense(units = 8, activation = 'relu', input_shape = c(ncol(AB_tot_train)-1)) %>%
+  layer_dropout(rate = dropout1)  %>%
+  layer_dense(units = dense_units2, activation = 'relu') %>%
+  layer_dropout(rate = dropout2)  %>%
+  layer_dense(units = dense_units3, activation = 'relu') %>%
+  layer_dropout(rate = dropout3)  %>%
+  layer_dense(units = dense_units4, activation = 'relu') %>%
+  layer_dropout(rate = dropout4)  %>%
+  layer_dense(units = 1)
+
+
+# Compile
+ANN_tune_AB_tot %>% keras::compile(loss = 'mse',
+                  optimizer = 'rmsprop',
+                  metrics = 'mae')
+
+#  callback EarlyStopping
+mon_callback <- callback_early_stopping(
+  monitor = "val_mae",  # Surveille la perte sur l'ensemble de validation
+  patience = 10,         # Nombre d'époques sans amélioration avant l'arrêt
+  restore_best_weights = TRUE  # Restaure les poids du meilleur modèle
+)
+
+
+# Fit ANN_tune_AB_tot
+myANN_tune_AB_tot <- ANN_tune_AB_tot %>%
+  fit(training,
+      trainingtarget,
+      epochs = 100,
+      batch_size = batch_size,
+      validation_split = 0.2,
+      #callbacks = list(mon_callback)
+      )
+
+
+# fig_ANN_tune_AB_tot = plot(myANN_tune_AB_tot)
+# ggsave("Results/proDij/fig_ANN_tune_AB_tot.png", plot = fig_ANN_tune_AB_tot, dpi = 300)
+
+# Evaluate
+# ANN_tune_AB_tot %>% evaluate(test, testtarget)
+ANN_tune_AB_tot_pred = ANN_tune_AB_tot %>% predict(test)
+ANN_tune_AB_tot_mse = mean((testtarget-ANN_tune_AB_tot_pred) ) # loss -> mse
+ANN_tune_AB_tot_mae = mean(abs(ANN_tune_AB_tot_pred - testtarget),na.rm=TRUE) # MAE 
+ANN_tune_AB_tot_rmse = sqrt(mean((testtarget - ANN_tune_AB_tot_pred)^2 ,na.rm=TRUE)) # rmse
+ANN_tune_AB_tot_cor = cor(testtarget,ANN_tune_AB_tot_pred)  # R²
+
+
+
+# Calcul du R² ajusté pour train
+pred = ANN_tune_AB_tot %>% predict(training)
+  R_adj_train <- calcule_R2(trainingtarget,  pred)
+  n_train <- nrow(training)
+  p_train <- ncol(training)
+  r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
+  
+  # Calcul du R² ajusté pour test
+  # R_adj_test <-calcule_R2(testtarget,ANN_tune_AB_tot_pred)
+  # n_test <- nrow(test)
+  # p_test <- ncol(test)
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  # R_adj_test = r_adj_test
+  res <- rms::lrm(testtarget  ~ ANN_tune_AB_tot_pred, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
+  
+  
+
+ANN_tune_AB_tot_results = data.frame(model = "ANN_tune_AB_tot",
+                                     mse = round(ANN_tune_AB_tot_mse,2),                                                        mae = round(ANN_tune_AB_tot_mae,2),
+                                     rmse = round(ANN_tune_AB_tot_rmse,2), 
+                                     R_adj_train= round(r_adj_train,2),
+                                     R_adj_test= round(r_adj_test,2))
+
+      # output
+ANN_tune_AB_tot_results_df <- data.frame(Algorithms = "ANN",
+                         Response_variables = "AB_tot",
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = ANN_tune_AB_tot_rmse,
+                         MAE = ANN_tune_AB_tot_mae)
+  
+# ANN_tune_AB_tot_results
+
+```
+
+-   ANN BM_tot
+
+```{r ANN BM_tot , eval=FALSE}
+# Pour BM_tot  ------------------------------------------------------------------
+var_rep="BM_tot"
+# BM_tot_ANN_tuning = read.csv2("results_tuning/ProDij/BM_tot_ANN_tuning.csv")
+BM_tot_ANN_tuning = read.csv2("results_tuning/BM_tot_ANN_tuning.csv")
+
+# Best hyperparameter values
+BM_tot_ANN_tuning = as.data.frame(BM_tot_ANN_tuning)
+BM_tot_ANN_tuning = BM_tot_ANN_tuning %>% arrange(metric_val_mae)
+# head(BM_tot_ANN_tuning[,2:16])
+
+best_param = BM_tot_ANN_tuning[1,]
+
+dense_units1 = as.numeric(best_param$flag_dense_units1)
+dense_units2 = as.numeric(best_param$flag_dense_units2)
+dense_units3 = as.numeric(best_param$flag_dense_units3)
+dense_units4 = as.numeric(best_param$flag_dense_units4)
+
+dropout1 =as.numeric(best_param$flag_dropout1)
+dropout2 =as.numeric(best_param$flag_dropout2)
+dropout3 =as.numeric(best_param$flag_dropout3)
+dropout4 =as.numeric(best_param$flag_dropout4)
+
+batch_size =as.numeric(best_param$flag_batch_size)
+
+
+# data
+training = BM_tot_train
+test = BM_tot_test
+
+training %<>% mutate_if(is.factor, as.numeric)
+ind_var_rep <- which(names(training) == var_rep)
+trainingtarget <- training[, ind_var_rep]
+training <- training[, -ind_var_rep]
+training <- as.matrix(training)
+dimnames(training) <- NULL
+
+ind_var_rep <- which(names(test) == var_rep)
+testtarget <- test[, ind_var_rep]
+test <- test[, -ind_var_rep]
+test %<>% mutate_if(is.factor, as.numeric)
+test <- as.matrix(test)
+dimnames(test) <- NULL
+
+
+# BM_tot TUNE MODEL
+ANN_tune_BM_tot <- keras_model_sequential()
+ANN_tune_BM_tot %>% 
+  layer_dense(units = dense_units1, activation = 'relu', input_shape = c(ncol(BM_tot_train)-1)) %>%
+  layer_dropout(rate = dropout1)  %>%
+  layer_dense(units = dense_units2, activation = 'relu') %>%
+  layer_dropout(rate = dropout2)  %>%
+  layer_dense(units = dense_units3, activation = 'relu') %>%
+  layer_dropout(rate = dropout3)  %>%
+  layer_dense(units = dense_units4, activation = 'relu') %>%
+  layer_dropout(rate = dropout4)  %>%
+  layer_dense(units = 1)
+
+
+# Compile
+ANN_tune_BM_tot %>% keras::compile(loss = 'mse',
+                  optimizer = 'rmsprop',
+                  metrics = 'mae')
+
+#  callback EarlyStopping
+mon_callback <- callback_early_stopping(
+  monitor = "val_mae",  # Surveille la perte sur l'ensemble de validation
+  patience = 10,         # Nombre d'époques sans amélioration avant l'arrêt
+  restore_best_weights = TRUE  # Restaure les poids du meilleur modèle
+)
+
+
+# Fit ANN_tune_BM_tot
+myANN_tune_BM_tot <- ANN_tune_BM_tot %>%
+  fit(training,
+      trainingtarget,
+      epochs = 100,
+      batch_size = batch_size,
+      validation_split = 0.2,
+      #callbacks = list(mon_callback)
+      )
+
+# fig_ANN_tune_BM_tot = plot(myANN_tune_BM_tot)
+# ggsave("Results/proDij/fig_ANN_tune_BM_tot.png", plot = fig_ANN_tune_BM_tot, dpi = 300)
+
+
+# Evaluate
+# ANN_tune_BM_tot %>% evaluate(test, testtarget)
+ANN_tune_BM_tot_pred = ANN_tune_BM_tot %>% predict(test)
+ANN_tune_BM_tot_mse = mean((testtarget-ANN_tune_BM_tot_pred) ) # loss -> mse
+ANN_tune_BM_tot_mae = mean(abs(ANN_tune_BM_tot_pred - testtarget),na.rm=TRUE) # MAE 
+ANN_tune_BM_tot_rmse = sqrt(mean((testtarget - ANN_tune_BM_tot_pred)^2 ,na.rm=TRUE)) # rmse
+ANN_tune_BM_tot_cor = cor(testtarget,ANN_tune_BM_tot_pred)  # R²
+
+
+
+# Calcul du R² ajusté pour train
+  R_adj_train <- calcule_R2(trainingtarget,  ANN_tune_BM_tot %>% predict(training))
+  n_train <- nrow(training)
+  p_train <- ncol(training)
+  r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
+  
+  # Calcul du R² ajusté pour test
+  # R_adj_test <-calcule_R2(testtarget,ANN_tune_BM_tot_pred)
+  # n_test <- nrow(test)
+  # p_test <- ncol(test)
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  # R_adj_test = r_adj_test
+  res <- rms::lrm(testtarget  ~ ANN_tune_BM_tot_pred, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
+  
+  
+  
+
+ANN_tune_BM_tot_results = data.frame(model = "ANN_tune_BM_tot",
+                                     mse = round(ANN_tune_BM_tot_mse,2),                                                        mae = round(ANN_tune_BM_tot_mae,2),
+                                     rmse = round(ANN_tune_BM_tot_rmse,2), 
+                                     R_adj_train= round(r_adj_train,2),
+                                     R_adj_test= round(r_adj_test,2))
+# ANN_tune_BM_tot_results
+
+
+      # output
+ANN_tune_BM_tot_results_df <- data.frame(Algorithms = "ANN",
+                         Response_variables = "BM_tot",
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = ANN_tune_BM_tot_rmse,
+                         MAE = ANN_tune_BM_tot_mae)
+
+
+```
+
+-   ANN Richesse
+
+```{r ANN Richesse , eval=FALSE}
+# Pour Richesse  ------------------------------------------------------------------
+var_rep="Richesse"
+# Richesse_ANN_tuning = read.csv2("results_tuning/ProDij/Richesse_tot_ANN_tuning.csv")
+Richesse_ANN_tuning = read.csv2("results_tuning/Richesse_tot_ANN_tuning.csv")
+
+# Best hyperparameter values
+Richesse_ANN_tuning = as.data.frame(Richesse_ANN_tuning)
+Richesse_ANN_tuning = Richesse_ANN_tuning %>% arrange(metric_val_mae)
+# head(Richesse_ANN_tuning[,2:16])
+
+best_param = Richesse_ANN_tuning[1,]
+
+dense_units1 = as.numeric(best_param$flag_dense_units1)
+dense_units2 = as.numeric(best_param$flag_dense_units2)
+dense_units3 = as.numeric(best_param$flag_dense_units3)
+dense_units4 = as.numeric(best_param$flag_dense_units4)
+
+dropout1 =as.numeric(best_param$flag_dropout1)
+dropout2 =as.numeric(best_param$flag_dropout2)
+dropout3 =as.numeric(best_param$flag_dropout3)
+dropout4 =as.numeric(best_param$flag_dropout4)
+
+batch_size =as.numeric(best_param$flag_batch_size)
+
+
+# data
+training = Richesse_train
+test = Richesse_test
+
+training %<>% mutate_if(is.factor, as.numeric)
+ind_var_rep <- which(names(training) == var_rep)
+trainingtarget <- training[, ind_var_rep]
+training <- training[, -ind_var_rep]
+training <- as.matrix(training)
+dimnames(training) <- NULL
+
+ind_var_rep <- which(names(test) == var_rep)
+testtarget <- test[, ind_var_rep]
+test <- test[, -ind_var_rep]
+test %<>% mutate_if(is.factor, as.numeric)
+test <- as.matrix(test)
+dimnames(test) <- NULL
+
+
+# Richesse TUNE MODEL
+ANN_tune_Richesse <- keras_model_sequential()
+ANN_tune_Richesse %>% 
+  layer_dense(units = dense_units1, activation = 'relu', input_shape = c(ncol(Richesse_train)-1)) %>%
+  layer_dropout(rate = dropout1+0.2)  %>%
+  layer_dense(units = dense_units2, activation = 'relu') %>%
+  layer_dropout(rate = dropout2+0.2)  %>%
+  layer_dense(units = dense_units3, activation = 'relu') %>%
+  layer_dropout(rate = dropout3+0.2)  %>%
+  layer_dense(units = dense_units4, activation = 'relu') %>%
+  layer_dropout(rate = dropout4+0.2)  %>%
+  layer_dense(units = 1)
+
+
+# Compile
+ANN_tune_Richesse %>% keras::compile(loss = 'mse',
+                  optimizer = 'rmsprop',
+                  metrics = 'mae')
+
+#  callback EarlyStopping
+mon_callback <- callback_early_stopping(
+  monitor = "val_mae",  # Surveille la perte sur l'ensemble de validation
+  patience = 10,         # Nombre d'époques sans amélioration avant l'arrêt
+  restore_best_weights = TRUE  # Restaure les poids du meilleur modèle
+)
+
+
+# Fit ANN_tune_Richesse
+myANN_tune_Richesse <- ANN_tune_Richesse %>%
+  fit(training,
+      trainingtarget,
+      epochs = 100,
+      batch_size = batch_size,
+      validation_split = 0.2,
+      #callbacks = list(mon_callback)
+      )
+
+
+# fig_ANN_tune_Richesse = plot(myANN_tune_Richesse)
+# ggsave("Results/proDij/fig_ANN_tune_Richesse.png", plot = fig_ANN_tune_Richesse, dpi = 300)
+
+# Evaluate
+# ANN_tune_Richesse %>% evaluate(test, testtarget)
+ANN_tune_Richesse_pred = ANN_tune_Richesse %>% predict(test)
+ANN_tune_Richesse_mse = mean((testtarget-ANN_tune_Richesse_pred) ) # loss -> mse
+ANN_tune_Richesse_mae = mean(abs(ANN_tune_Richesse_pred - testtarget),na.rm=TRUE) # MAE 
+ANN_tune_Richesse_rmse = sqrt(mean((testtarget - ANN_tune_Richesse_pred)^2 ,na.rm=TRUE)) # rmse
+ANN_tune_Richesse_cor = cor(testtarget,ANN_tune_Richesse_pred)  # R²
+
+
+
+# Calcul du R² ajusté pour train
+  R_adj_train <- calcule_R2(trainingtarget,  ANN_tune_Richesse %>% predict(training))
+  n_train <- nrow(training)
+  p_train <- ncol(training)
+  r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
+  
+  # Calcul du R² ajusté pour test
+  # R_adj_test <-calcule_R2(testtarget,ANN_tune_Richesse_pred)
+  # n_test <- nrow(test)
+  # p_test <- ncol(test)
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  # R_adj_test = r_adj_test
+  res <- rms::lrm(testtarget  ~ ANN_tune_Richesse_pred, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
+  
+  
+  
+
+ANN_tune_Richesse_results = data.frame(model = "ANN_tune_Richesse",
+                                     mse = round(ANN_tune_Richesse_mse,2),                                            mae = round(ANN_tune_Richesse_mae,2),
+                                     rmse = round(ANN_tune_Richesse_rmse,2), 
+                                     R_adj_train= round(r_adj_train,2),
+                                     R_adj_test= round(r_adj_test,2))
+# ANN_tune_Richesse_results
+
+
+# output
+ANN_tune_Richesse_results_df <- data.frame(Algorithms = "ANN",
+                         Response_variables = "Richesse",
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = ANN_tune_Richesse_rmse,
+                         MAE = ANN_tune_Richesse_mae)
+
+```
+
+```{r}
+# coul = c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
+# coul2 = c("#E69F00", "#1F77B4", "#009E73", "#F0E442", "#9467BD")
+# coul3=c("#1F77B4", "#7F7F7F", "#2CA02C", "#D62728", "#9467BD")
+couleurs = c("#2CA02C","#E69F00", "#1F77B4","#7F7F7F", "#D62728","#9467BD")
+```
+
+# ProDij results: total abundance
+
+## Abundance: GLM
+
+```{r reslt_glm_AB_tot, fig.align='center'}
+AB_tot_select_glm = read.xlsx("variables_selections/ProDij/AB_tot_select_glm.xlsx")
+
+# Set the order of models
+AB_tot_select_glm$models = as.factor(AB_tot_select_glm$models)
+AB_tot_select_glm$models <- factor(AB_tot_select_glm$models, levels  = paste0("mod_", 1:nrow(AB_tot_select_glm)))
+df = AB_tot_select_glm
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+AB_tot_best_model_glm <- AB_tot_select_glm %>%
+  filter(RMSE == min(RMSE))
+
+AB_tot_best_model_glm = AB_tot_select_glm[AB_tot_select_glm$models =="mod_7",]
+# cat ("The best model based on RMSE is: ")
+# print(AB_tot_best_model_glm)
+
+
+
+
+
+
+# Prepare data for facet plotting
+AB_tot_select_glm_long <- AB_tot_select_glm %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# AB_tot_select_glm_long$models <- fct_relevel(AB_tot_select_glm_long$models, c(levels(AB_tot_select_glm$models) ))
+
+# Plot all metrics with shared x-axis
+AB_tot_select_glm_long$Response_variables = rep("Abundance (sqrt; ind./m²)")
+g = ggplot(AB_tot_select_glm_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "GLM: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 7)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_AB_tot_glm.png", plot = g, dpi = 300,height = 5.5,width = 9)
+
+# for (i in predictor_non_r){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_AB_tot_glm.png"/>
+
+</p>
+
+**Le meilleur modèle des GLM est :**
+
+$mod_7 = glm(AB_tot ~ Argile + LimonF + SableF + OS, df = data)$
+
+## Abundance: GAM
+
+```{r reslt_gam_AB_tot, fig.align='center'}
+AB_tot_select_gam = read.xlsx("variables_selections/ProDij/AB_tot_select_gam.xlsx")
+AB_tot_select_gam$models = paste0("mod_", 1:nrow(AB_tot_select_gam))
+
+# Set the order of models
+AB_tot_select_gam$models = as.factor(AB_tot_select_gam$models)
+AB_tot_select_gam$models <- factor(AB_tot_select_gam$models, levels  = paste0("mod_", 1:nrow(AB_tot_select_gam)))
+
+df = AB_tot_select_gam
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+
+# Find the best model based on RMSE
+AB_tot_best_model_gam <- AB_tot_select_gam %>%
+  filter(RMSE == min(RMSE))
+
+AB_tot_best_model_gam = AB_tot_select_gam[AB_tot_select_gam$models =="mod_5",]
+# cat ("The best model based on RMSE is: ")
+# print(AB_tot_best_model_gam)
+
+
+# Prepare data for facet plotting
+AB_tot_select_gam_long <- AB_tot_select_gam %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# AB_tot_select_gam_long$models <- fct_relevel(AB_tot_select_gam_long$models, c(levels(AB_tot_select_gam$models) ))
+
+# Plot all metrics with shared x-axis
+AB_tot_select_gam_long$Response_variables = rep("Abundance (sqrt; ind./m²)")
+g = ggplot(AB_tot_select_gam_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "gam: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 7)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_AB_tot_gam.png", plot = g, dpi = 300,height = 5.5,width = 9)
+
+# for (i in predictor_non_r){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_AB_tot_gam.png"/>
+
+</p>
+
+**Le meilleur modèle des gam est:**
+
+$mod_5 = gam(AB_tot ~ Long + Lat + OS + SableF + Argile + LimonF, df = data)$
+
+## Abundance: RF
+
+```{r reslt_rf_AB_tot, fig.align='center'}
+
+AB_tot_select_rf = read.xlsx("variables_selections/ProDij/AB_tot_select_rf.xlsx")
+
+# Set the order of models
+AB_tot_select_rf$models = as.factor(AB_tot_select_rf$models)
+AB_tot_select_rf$models <- factor(AB_tot_select_rf$models, levels  = paste0("mod_", 1:nrow(AB_tot_select_rf)))
+
+df = AB_tot_select_rf
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+AB_tot_best_model_rf <- AB_tot_select_rf %>%
+  filter(RMSE == min(RMSE))
+
+AB_tot_best_model_rf = AB_tot_select_rf[AB_tot_select_rf$models =="mod_6",]
+# cat ("The best model based on RMSE is: ")
+# print(AB_tot_best_model_rf)
+
+
+# Prepare data for facet plotting
+AB_tot_select_rf_long <- AB_tot_select_rf %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# AB_tot_select_rf_long$models <- fct_relevel(AB_tot_select_rf_long$models, c(levels(AB_tot_select_rf$models) ))
+
+# Plot all metrics with shared x-axis
+AB_tot_select_rf_long$Response_variables = rep("Abundance (sqrt; ind./m²)")
+g = ggplot(AB_tot_select_rf_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "RF: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 6)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_AB_tot_rf.png", plot = g, dpi = 300,height = 5.5,width = 13)
+
+# for (i in predictor_deep){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_AB_tot_rf.png"/>
+
+</p>
+
+**Le meilleur modèle des RF est:**
+
+$mod_6 = rf(AB_tot ~ LimonG + Sables + N_tot + Lat + OS + Argile + \\ C.N + SableF + pH_eau + LimonF + Long, df = data)$
+
+## Abundance: GBM
+
+```{r reslt_gbm_AB_tot, fig.align='center'}
+AB_tot_select_gbm = read.xlsx("variables_selections/ProDij/AB_tot_select_gbm.xlsx")
+
+# Set the order of models
+AB_tot_select_gbm$models = as.factor(AB_tot_select_gbm$models)
+AB_tot_select_gbm$models <- factor(AB_tot_select_gbm$models, levels  = paste0("mod_", 1:nrow(AB_tot_select_gbm)))
+
+df = AB_tot_select_gbm
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+AB_tot_best_model_gbm <- AB_tot_select_gbm %>%
+  filter(RMSE == min(RMSE))
+
+AB_tot_best_model_gbm = AB_tot_select_gbm[AB_tot_select_gbm$models =="mod_11",]
+# cat ("The best model based on RMSE is: ")
+# print(AB_tot_best_model_gbm)
+
+
+
+# Prepare data for facet plotting
+AB_tot_select_gbm_long <- AB_tot_select_gbm %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# AB_tot_select_gbm_long$models <- fct_relevel(AB_tot_select_gbm_long$models, c(levels(AB_tot_select_gbm$models) ))
+
+# Plot all metrics with shared x-axis
+AB_tot_select_gbm_long$Response_variables = rep("Abundance (sqrt; ind./m²)")
+g = ggplot(AB_tot_select_gbm_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "GBM: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 6)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_AB_tot_gbm.png", plot = g, dpi = 300,height = 5.5,width = 13)
+
+# for (i in predictor_deep){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_AB_tot_gbm.png"/>
+
+</p>
+
+**Le meilleur modèle des GBM est:**
+
+$mod_11 = gbm(AB_tot ~ Lat + N_tot + SableG + Long + OS + LimonF, df = data)$
+
+## Abundance: ANN
+
+```{r reslt_ann_AB_tot, fig.align='center'}
+
+AB_tot_select_ann = read.xlsx("variables_selections/ProDij/AB_tot_select_ann.xlsx")
+
+# Set the order of models
+AB_tot_select_ann$models = as.factor(AB_tot_select_ann$models)
+AB_tot_select_ann$models <- factor(AB_tot_select_ann$models, levels  = paste0("mod_", 1:nrow(AB_tot_select_ann)))
+
+df = AB_tot_select_ann
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+AB_tot_best_model_ann <- AB_tot_select_ann %>%
+  filter(RMSE == min(RMSE))
+
+AB_tot_best_model_ann = AB_tot_select_ann[AB_tot_select_ann$models =="mod_12",]
+# cat ("The best model based on RMSE is: ")
+# print(AB_tot_best_model_ann)
+
+
+
+# Prepare data for facet plotting
+AB_tot_select_ann_long <- AB_tot_select_ann %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# AB_tot_select_ann_long$models <- fct_relevel(AB_tot_select_ann_long$models, c(levels(AB_tot_select_ann$models) ))
+
+# Plot all metrics with shared x-axis
+AB_tot_select_ann_long$Response_variables = rep("Abundance (sqrt; ind./m²)")
+g = ggplot(AB_tot_select_ann_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "ANN: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 6)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_AB_tot_ann.png", plot = g, dpi = 300,height = 5.5,width = 13)
+
+# for (i in predictor_deep){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_AB_tot_ann.png"/>
+
+</p>
+
+**Le meilleur modèle des ANN est:**
+
+$mod_12 = ann(AB_tot ~ Long + C.N + Lat + pH_eau + OS, df = data)$
+
+## Best models for: Abundance
+
+```{r best_model_AB_tot}
+AB_tot_best_models = rbind(
+AB_tot_best_model_glm,
+AB_tot_best_model_gam,
+AB_tot_best_model_rf,
+AB_tot_best_model_gbm,
+AB_tot_best_model_ann
+)
+
+AB_tot_best_models_best = AB_tot_best_models[AB_tot_best_models$Algorithms =="RF", ]
+  
+df = AB_tot_best_models
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+
+df$Models = NULL
+df$Delete = NULL
+rownames(df) = NULL
+df <- df %>%
+  dplyr::rename(
+    Models =Algo)
+
+df$Models <- toupper(df$Models)
+df$Rep.var = rep("Abundance")
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+```
+
+<br/> **GLM**
+
+$mod = glm(AB_tot ~ Argile + LimonF + SableF + OS, df = data)$
+
+<br/> **GAM**
+
+$mod = gam(AB_tot ~ Long + Lat + OS + SableF + Argile + LimonF, df = data)$
+
+<br/> **RF**
+
+$mod = rf(AB_tot ~ LimonG + Sables + N_tot + Lat + OS + Argile + \\ C.N + SableF + pH_eau + LimonF + Long, df = data)$
+
+<br/> **GBM**
+
+$mod= gbm(AB_tot ~ Lat + N_tot + SableG + Long + OS + LimonF, df = data)$
+
+<br/> **ANN**
+
+$mod = ann(AB_tot ~ Long + C.N + Lat + pH_eau + OS, df = data)$
+
+<br/> <br/> **Conclusion: le meillleur modèle pour l'abondance est le RF**
+
+# ProDij results: total Biomass
+
+## Biomass: GLM
+
+```{r reslt_glm_BM_tot, fig.align='center'}
+BM_tot_select_glm = read.xlsx("variables_selections/ProDij/BM_tot_select_glm.xlsx")
+
+# Set the order of models
+BM_tot_select_glm$models = as.factor(BM_tot_select_glm$models)
+BM_tot_select_glm$models <- factor(BM_tot_select_glm$models, levels  = paste0("mod_", 1:nrow(BM_tot_select_glm)))
+df = BM_tot_select_glm
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+BM_tot_best_model_glm <- BM_tot_select_glm %>%
+  filter(RMSE == min(RMSE))
+
+BM_tot_best_model_glm = BM_tot_select_glm[BM_tot_select_glm$models == "mod_6", ]
+# cat ("The best model based on RMSE is: ")
+# print(BM_tot_best_model_glm)
+
+
+
+
+
+
+# Prepare data for facet plotting
+BM_tot_select_glm_long <- BM_tot_select_glm %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# BM_tot_select_glm_long$models <- fct_relevel(BM_tot_select_glm_long$models, c(levels(BM_tot_select_glm$models) ))
+
+# Plot all metrics with shared x-axis
+BM_tot_select_glm_long$Response_variables = rep("Biomass (sqrt; g/m²)")
+g = ggplot(BM_tot_select_glm_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "GLM: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 7)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_BM_tot_glm.png", plot = g, dpi = 300,height = 5.5,width = 9)
+
+# for (i in predictor_non_r){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_BM_tot_glm.png"/>
+
+</p>
+
+**Le meilleur modèle des GLM est :**
+
+$mod_6 = glm(BM_tot ~ LimonG + LimonF + SableF + C.N + OS, df = data)$
+
+## Biomass: GAM
+
+```{r reslt_gam_BM_tot, fig.align='center'}
+BM_tot_select_gam = read.xlsx("variables_selections/ProDij/BM_tot_select_gam.xlsx")
+BM_tot_select_gam$models = paste0("mod_", 1:nrow(BM_tot_select_gam))
+
+# Set the order of models
+BM_tot_select_gam$models = as.factor(BM_tot_select_gam$models)
+BM_tot_select_gam$models <- factor(BM_tot_select_gam$models, levels  = paste0("mod_", 1:nrow(BM_tot_select_gam)))
+
+df = BM_tot_select_gam
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+
+# Find the best model based on RMSE
+BM_tot_best_model_gam <- BM_tot_select_gam %>%
+  filter(RMSE == min(RMSE))
+
+BM_tot_best_model_gam = BM_tot_select_gam[BM_tot_select_gam$models =="mod_5",]
+# cat ("The best model based on RMSE is: ")
+# print(BM_tot_best_model_gam)
+
+
+# Prepare data for facet plotting
+BM_tot_select_gam_long <- BM_tot_select_gam %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# BM_tot_select_gam_long$models <- fct_relevel(BM_tot_select_gam_long$models, c(levels(BM_tot_select_gam$models) ))
+
+# Plot all metrics with shared x-axis
+BM_tot_select_gam_long$Response_variables = rep("Biomass (sqrt; g/m²)")
+g = ggplot(BM_tot_select_gam_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "gam: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 7)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_BM_tot_gam.png", plot = g, dpi = 300,height = 5.5,width = 9)
+
+# for (i in predictor_non_r){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_BM_tot_gam.png"/>
+
+</p>
+
+**Le meilleur modèle des gam est:**
+
+$mod_5 = gam(BM_tot ~ SableF + OS + LimonF + C.N + Lat + Long , df = data)$
+
+## Biomass: RF
+
+```{r reslt_rf_BM_tot, fig.align='center'}
+
+BM_tot_select_rf = read.xlsx("variables_selections/ProDij/BM_tot_select_rf.xlsx")
+
+# Set the order of models
+BM_tot_select_rf$models = as.factor(BM_tot_select_rf$models)
+BM_tot_select_rf$models <- factor(BM_tot_select_rf$models, levels  = paste0("mod_", 1:nrow(BM_tot_select_rf)))
+
+df = BM_tot_select_rf
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+BM_tot_best_model_rf <- BM_tot_select_rf %>%
+  filter(RMSE == min(RMSE))
+
+BM_tot_best_model_rf = BM_tot_select_rf[BM_tot_select_rf$models =="mod_14",]
+# cat ("The best model based on RMSE is: ")
+# print(BM_tot_best_model_rf)
+
+
+# Prepare data for facet plotting
+BM_tot_select_rf_long <- BM_tot_select_rf %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# BM_tot_select_rf_long$models <- fct_relevel(BM_tot_select_rf_long$models, c(levels(BM_tot_select_rf$models) ))
+
+# Plot all metrics with shared x-axis
+BM_tot_select_rf_long$Response_variables = rep("Biomass (sqrt; g/m²)")
+g = ggplot(BM_tot_select_rf_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "RF: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 6)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_BM_tot_rf.png", plot = g, dpi = 300,height = 5.5,width = 13)
+
+# for (i in predictor_deep){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_BM_tot_rf.png"/>
+
+</p>
+
+**Le meilleur modèle des RF est:**
+
+$mod_14 = rf(BM_tot ~ Argiles + LimonF + Long, df = data)$
+
+## Biomass: GBM
+
+```{r reslt_gbm_BM_tot, fig.align='center'}
+BM_tot_select_gbm = read.xlsx("variables_selections/ProDij/BM_tot_select_gbm.xlsx")
+
+# Set the order of models
+BM_tot_select_gbm$models = as.factor(BM_tot_select_gbm$models)
+BM_tot_select_gbm$models <- factor(BM_tot_select_gbm$models, levels  = paste0("mod_", 1:nrow(BM_tot_select_gbm)))
+
+df = BM_tot_select_gbm
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+BM_tot_best_model_gbm <- BM_tot_select_gbm %>%
+  filter(RMSE == min(RMSE))
+
+BM_tot_best_model_gbm = BM_tot_select_gbm[BM_tot_select_gbm$models =="mod_9",]
+# cat ("The best model based on RMSE is: ")
+# print(BM_tot_best_model_gbm)
+
+
+
+# Prepare data for facet plotting
+BM_tot_select_gbm_long <- BM_tot_select_gbm %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# BM_tot_select_gbm_long$models <- fct_relevel(BM_tot_select_gbm_long$models, c(levels(BM_tot_select_gbm$models) ))
+
+# Plot all metrics with shared x-axis
+BM_tot_select_gbm_long$Response_variables = rep("Biomass (sqrt; g/m²)")
+g = ggplot(BM_tot_select_gbm_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "GBM: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 6)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_BM_tot_gbm.png", plot = g, dpi = 300,height = 5.5,width = 13)
+
+# for (i in predictor_deep){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_BM_tot_gbm.png"/>
+
+</p>
+
+**Le meilleur modèle des GBM est:**
+
+$mod_9 = gbm(BM_tot ~ OS + Limons + SableF + N_tot + LimonsF + \\ Lat + C.N + Long, df = data)$
+
+## Biomass: ANN
+
+```{r reslt_ann_BM_tot, fig.align='center'}
+
+BM_tot_select_ann = read.xlsx("variables_selections/ProDij/BM_tot_select_ann.xlsx")
+
+# Set the order of models
+BM_tot_select_ann$models = as.factor(BM_tot_select_ann$models)
+BM_tot_select_ann$models <- factor(BM_tot_select_ann$models, levels  = paste0("mod_", 1:nrow(BM_tot_select_ann)))
+
+df = BM_tot_select_ann
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+BM_tot_best_model_ann <- BM_tot_select_ann %>%
+  filter(RMSE == min(RMSE))
+
+BM_tot_best_model_ann = BM_tot_select_ann [BM_tot_select_ann$models =="mod_6",]
+# cat ("The best model based on RMSE is: ")
+# print(BM_tot_best_model_ann)
+
+
+
+# Prepare data for facet plotting
+BM_tot_select_ann_long <- BM_tot_select_ann %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# BM_tot_select_ann_long$models <- fct_relevel(BM_tot_select_ann_long$models, c(levels(BM_tot_select_ann$models) ))
+
+# Plot all metrics with shared x-axis
+BM_tot_select_ann_long$Response_variables = rep("Biomass (sqrt; g/m²)")
+g = ggplot(BM_tot_select_ann_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "ANN: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 6)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_BM_tot_ann.png", plot = g, dpi = 300,height = 5.5,width = 13)
+
+# for (i in predictor_deep){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_BM_tot_ann.png"/>
+
+</p>
+
+**Le meilleur modèle des ANN est:**
+
+$mod_6 = ann(BM_tot ~ MO + C_tot + SableG + C_org + C.N + Lat + \\ pH_eau + N_tot + Long + SableF + os, df = data)$
+
+## Best models for: Biomass
+
+```{r best_model_BM_tot}
+BM_tot_best_models = rbind(
+BM_tot_best_model_glm,
+BM_tot_best_model_gam,
+BM_tot_best_model_rf,
+BM_tot_best_model_gbm,
+BM_tot_best_model_ann
+)
+
+BM_tot_best_models_best = BM_tot_best_models[BM_tot_best_models$Algorithms =="RF",]
+
+df = BM_tot_best_models
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+
+df$Models = NULL
+df$Delete = NULL
+rownames(df) = NULL
+df <- df %>%
+  dplyr::rename(
+    Models =Algo)
+
+df$Models <- toupper(df$Models)
+df$Rep.var = rep("Biomass")
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+```
+
+<br/> **GLM**
+
+$mod = glm(BM_tot ~ LimonG + LimonF + SableF + C.N + OS, df = data)$
+
+<br/> **GAM**
+
+$mod = gam(BM_tot ~ SableF + OS + LimonF + C.N + Lat + Long , df = data)$
+
+<br/> **RF**
+
+$mod = rf(BM_tot ~ Argiles + LimonF + Long, df = data)$
+
+<br/> **GBM**
+
+$mod= gbm(BM_tot ~ OS + Limons + SableF + N_tot + LimonsF + \\ Lat + C.N + Long, df = data)$
+
+<br/> **ANN**
+
+$mod = ann(BM_tot ~ MO + C_tot + SableG + C_org + C.N + Lat + \\ pH_eau + N_tot + Long + SableF + os, df = data)$
+
+<br/> <br/> **Conclusion: le meillleur modèle pour la biomasse est le RF**
+
+# ProDij results: total Richness
+
+## Richness: GLM
+
+```{r reslt_glm_Richesse, fig.align='center'}
+Richesse_select_glm = read.xlsx("variables_selections/ProDij/Richesse_select_glm.xlsx")
+
+# Set the order of models
+Richesse_select_glm$models = as.factor(Richesse_select_glm$models)
+Richesse_select_glm$models <- factor(Richesse_select_glm$models, levels  = paste0("mod_", 1:nrow(Richesse_select_glm)))
+df = Richesse_select_glm
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+Richesse_best_model_glm <- Richesse_select_glm %>%
+  filter(RMSE == min(RMSE))
+
+Richesse_best_model_glm = Richesse_select_glm[Richesse_select_glm$models =="mod_5",]
+# cat ("The best model based on RMSE is: ")
+# print(Richesse_best_model_glm)
+
+
+
+
+
+
+# Prepare data for facet plotting
+Richesse_select_glm_long <- Richesse_select_glm %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# Richesse_select_glm_long$models <- fct_relevel(Richesse_select_glm_long$models, c(levels(Richesse_select_glm$models) ))
+
+# Plot all metrics with shared x-axis
+Richesse_select_glm_long$Response_variables = rep("Richness (nb. sp. /plot)")
+g = ggplot(Richesse_select_glm_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "GLM: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 7)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_Richesse_glm.png", plot = g, dpi = 300,height = 5.5,width = 9)
+
+# for (i in predictor_non_r){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_Richesse_glm.png"/>
+
+</p>
+
+**Le meilleur modèle des GLM est :**
+
+$mod_5 = glm(Richesse ~ C.N + Lat + Argile + LimonF + SableF + OS, df = data)$
+
+## Richness: GAM
+
+```{r reslt_gam_Richesse, fig.align='center'}
+Richesse_select_gam = read.xlsx("variables_selections/ProDij/Richesse_select_gam.xlsx")
+Richesse_select_gam$models = paste0("mod_", 1:nrow(Richesse_select_gam))
+
+# Set the order of models
+Richesse_select_gam$models = as.factor(Richesse_select_gam$models)
+Richesse_select_gam$models <- factor(Richesse_select_gam$models, levels  = paste0("mod_", 1:nrow(Richesse_select_gam)))
+
+df = Richesse_select_gam
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+
+# Find the best model based on RMSE
+Richesse_best_model_gam <- Richesse_select_gam %>%
+  filter(RMSE == min(RMSE))
+
+Richesse_best_model_gam = Richesse_select_gam[Richesse_select_gam$models =="mod_1",]
+# cat ("The best model based on RMSE is: ")
+# print(Richesse_best_model_gam)
+
+
+# Prepare data for facet plotting
+Richesse_select_gam_long <- Richesse_select_gam %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# Richesse_select_gam_long$models <- fct_relevel(Richesse_select_gam_long$models, c(levels(Richesse_select_gam$models) ))
+
+# Plot all metrics with shared x-axis
+Richesse_select_gam_long$Response_variables = rep("Richness (nb. sp. /plot)")
+g = ggplot(Richesse_select_gam_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "gam: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 7)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_Richesse_gam.png", plot = g, dpi = 300,height = 5.5,width = 9)
+
+# for (i in predictor_non_r){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_Richesse_gam.png"/>
+
+</p>
+
+**Le meilleur modèle des gam est:**
+
+$mod_9 = gam(Richesse ~. , df = data)$
+
+## Richness: RF
+
+```{r reslt_rf_Richesse, fig.align='center'}
+
+Richesse_select_rf = read.xlsx("variables_selections/ProDij/Richesse_select_rf.xlsx")
+
+# Set the order of models
+Richesse_select_rf$models = as.factor(Richesse_select_rf$models)
+Richesse_select_rf$models <- factor(Richesse_select_rf$models, levels  = paste0("mod_", 1:nrow(Richesse_select_rf)))
+
+df = Richesse_select_rf
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+Richesse_best_model_rf <- Richesse_select_rf %>%
+  filter(RMSE == min(RMSE))
+
+Richesse_best_model_rf = Richesse_select_rf[Richesse_select_rf$models =="mod_2",]
+# cat ("The best model based on RMSE is: ")
+# print(Richesse_best_model_rf)
+
+
+# Prepare data for facet plotting
+Richesse_select_rf_long <- Richesse_select_rf %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# Richesse_select_rf_long$models <- fct_relevel(Richesse_select_rf_long$models, c(levels(Richesse_select_rf$models) ))
+
+# Plot all metrics with shared x-axis
+Richesse_select_rf_long$Response_variables = rep("Richness (nb. sp. /plot)")
+g = ggplot(Richesse_select_rf_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "RF: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 6)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_Richesse_rf.png", plot = g, dpi = 300,height = 5.5,width = 13)
+
+# for (i in predictor_deep){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_Richesse_rf.png"/>
+
+</p>
+
+**Le meilleur modèle des RF est:**
+
+$mod_2 = rf(Richesse ~ Long + Lat + SableF + LimonF + LimonG + \\ Argile + C_org + C.N + pH_eau + OS + SableG + \\ Limons + MO + C_tot + N_tot, df = data)$
+
+## Richness: GBM
+
+```{r reslt_gbm_Richesse, fig.align='center'}
+Richesse_select_gbm = read.xlsx("variables_selections/ProDij/Richesse_select_gbm.xlsx")
+
+# Set the order of models
+Richesse_select_gbm$models = as.factor(Richesse_select_gbm$models)
+Richesse_select_gbm$models <- factor(Richesse_select_gbm$models, levels  = paste0("mod_", 1:nrow(Richesse_select_gbm)))
+
+df = Richesse_select_gbm
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+Richesse_best_model_gbm <- Richesse_select_gbm %>%
+  filter(RMSE == min(RMSE))
+
+Richesse_best_model_gbm = Richesse_select_gbm[Richesse_select_gbm$models =="mod_9",]
+# cat ("The best model based on RMSE is: ")
+# print(Richesse_best_model_gbm)
+
+
+
+# Prepare data for facet plotting
+Richesse_select_gbm_long <- Richesse_select_gbm %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# Richesse_select_gbm_long$models <- fct_relevel(Richesse_select_gbm_long$models, c(levels(Richesse_select_gbm$models) ))
+
+# Plot all metrics with shared x-axis
+Richesse_select_gbm_long$Response_variables = rep("Richness (nb. sp. /plot)")
+g = ggplot(Richesse_select_gbm_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "GBM: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 6)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_Richesse_gbm.png", plot = g, dpi = 300,height = 5.5,width = 13)
+
+# for (i in predictor_deep){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_Richesse_gbm.png"/>
+
+</p>
+
+**Le meilleur modèle des GBM est:**
+
+$mod_9 = gbm(Richesse ~ pH_eau + Limons + SableG + N_tot + SableF + Lat + OS + Long, df = data)$
+
+## Richness: ANN
+
+```{r reslt_ann_Richesse, fig.align='center'}
+
+Richesse_select_ann = read.xlsx("variables_selections/ProDij/Richesse_select_ann.xlsx")
+
+# Set the order of models
+Richesse_select_ann$models = as.factor(Richesse_select_ann$models)
+Richesse_select_ann$models <- factor(Richesse_select_ann$models, levels  = paste0("mod_", 1:nrow(Richesse_select_ann)))
+
+df = Richesse_select_ann
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+df$Algo = NULL
+df$Rep.var = NULL
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+# Find the best model based on RMSE
+Richesse_best_model_ann <- Richesse_select_ann %>%
+  filter(RMSE == min(RMSE))
+
+Richesse_best_model_ann = Richesse_select_ann[Richesse_select_ann$models == "mod_12",]
+# Richesse_best_model_ann = Richesse_select_ann
+# cat ("The best model based on RMSE is: ")
+# print(Richesse_best_model_ann)
+
+
+
+# Prepare data for facet plotting
+Richesse_select_ann_long <- Richesse_select_ann %>%
+  pivot_longer(cols = c(R2_adjusted_train, R2_test, RMSE, MAE), 
+               names_to = "metric", 
+               values_to = "value")
+
+# Richesse_select_ann_long$models <- fct_relevel(Richesse_select_ann_long$models, c(levels(Richesse_select_ann$models) ))
+
+# Plot all metrics with shared x-axis
+Richesse_select_ann_long$Response_variables = rep("Richness (nb. sp. /plot)")
+g = ggplot(Richesse_select_ann_long, aes(x = models, y = value, fill = Response_variables), color = "black") +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~metric, scales = "free_y", labeller = labeller(
+    metric = c(
+      R2_adjusted_train = "R² adjusted (train)",
+      R2_test = "R² (test)",
+      RMSE = "RMSE",
+      MAE = "MAE"
+    )
+  )) +
+  theme_minimal() +
+  labs(title = "ANN: performance metrics of different models",
+       x = "Models",
+       y = "Values") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 6)) + 
+  scale_x_discrete(drop = FALSE) +
+  scale_fill_manual(values = "gray")
+
+
+ggsave("Results/proDij/s_Richesse_ann.png", plot = g, dpi = 300,height = 5.5,width = 13)
+
+# for (i in predictor_deep){cat (paste0(i,sep=" + "))}
+
+```
+
+<p align="center">
+
+<img src="Results/proDij/s_Richesse_ann.png"/>
+
+</p>
+
+**Le meilleur modèle des ANN est:**
+
+$mod_12 = ann(Richesse ~ Lat + pH_eau + Long + C.N + LimonF, df = data)$
+
+## Best models for: Richness
+
+```{r best_model_Richesse}
+Richesse_best_models = rbind(
+Richesse_best_model_glm,
+Richesse_best_model_gam,
+Richesse_best_model_rf,
+Richesse_best_model_gbm,
+Richesse_best_model_ann
+)
+
+Richesse_best_models_best = Richesse_best_models[Richesse_best_models$Algorithms=="RF",]
+df = Richesse_best_models
+  
+df <- df %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+
+df$Models = NULL
+df$Delete = NULL
+rownames(df) = NULL
+df <- df %>%
+  dplyr::rename(
+    Models =Algo)
+
+df$Models <- toupper(df$Models)
+df$Rep.var = rep("Richness")
+datatable(df, options = list(pageLength = 5))
+rm("df")
+
+```
+
+<br/> **GLM**
+
+$mod = glm(Richesse ~ C.N + Lat + Argile + LimonF + SableF + OS, df = data)$
+
+<br/> **GAM**
+
+$mod = gam(Richesse ~. , df = data)$
+
+<br/> **RF**
+
+$mod = rf(Richesse ~ Long + Lat + SableF + LimonF + LimonG + \\ Argile + C_org + C.N + pH_eau + OS + SableG + \\ Limons + MO + C_tot + N_tot, df = data)$
+
+<br/> **GBM**
+
+$mod= gbm(Richesse ~ pH_eau + Limons + SableG + N_tot + SableF + Lat + OS + Long, df = data)$
+
+<br/> **ANN**
+
+$mod = ann(Richesse ~ Lat + pH_eau + Long + C.N + LimonF, df = data)$
+
+<br/> <br/> **Conclusion: le meillleur modèle pour la richesse est le RF**
+
+# Best of the best models
+
+## Performances
+
+```{r}
+best_models = rbind(
+AB_tot_best_models_best,
+BM_tot_best_models_best,
+Richesse_best_models_best
+)
+
+
+df <- best_models %>%
+  dplyr::rename(
+    Algo =Algorithms ,
+     Rep.var = Response_variables,
+     R2_adj_train = R2_adjusted_train,
+    Delete = delet,
+    Models = models
+  )
+
+df$Models = NULL
+df$Delete = NULL
+rownames(df) = NULL
+df <- df %>%
+  dplyr::rename(
+    Models =Algo)
+
+df$Models <- toupper(df$Models)
+df$Rep.var = c("Abundance", "Biomass","Richness")
+# datatable(df, options = list(pageLength = 5))
+kable(df)
+stock_df = df
+rm("df")
+
+
+
+```
+
+## Models
+
+<br/> **Abundance**
+
+$mod = rf(AB_tot ~ LimonG + Sables + N_tot + Lat + OS + Argile + \\ C.N + SableF + pH_eau + LimonF + Long, df = data)$
+
+<br/> **Biomass**
+
+$mod = rf(BM_tot ~ Argiles + LimonF + Long, df = data)$
+
+<br/> **Richness**
+
+$mod = rf(Richesse ~ Long + Lat + SableF + LimonF + LimonG + \\ Argile + C_org + C.N + pH_eau + OS + SableG + \\ Limons + MO + C_tot + N_tot, df = data)$
+
+## Optimisation/réduction de l'overfitting des bests models
+
+<br/> **\_\_\_\_\_\_\_\_\_\_\_\_\_Avant\_\_\_\_\_\_\_\_\_\_\_\_\_**
+
+```{r}
+kable(stock_df)
+```
+
+<br/>
+
+**\_\_\_\_\_\_\_\_\_\_\_\_\_Après\_\_\_\_\_\_\_\_\_\_\_\_\_**
+
+```{r optimisation AB_tot}
+#
+AB_tot_RF_tuning = read.csv2("results_tuning/ProDij/AB_tot_RF_tuning.csv")
+
+
+AB_tot_RF_tuning = as.data.frame(AB_tot_RF_tuning)
+AB_tot_RF_tuning = AB_tot_RF_tuning %>% arrange(RMSE)
+# head(AB_tot_RF_tuning)
+
+AB_tot_best_param = AB_tot_RF_tuning[1,]
+
+# plot(seq(1:nrow(AB_tot_RF_tuning)), AB_tot_RF_tuning$r_squared)
+# Best hyperparameter values
+AB_tot_best_mtry = AB_tot_best_param$mtry
+AB_tot_best_ntree = AB_tot_best_param$ntree
+AB_tot_best_maxnodes = AB_tot_best_param$maxnode
+
+  
+best_vars_AB_tot = c("LimonG" , "Sables" , "N_tot" , "Lat" , "OS" , "Argile" , "C.N" , "SableF" , "pH_eau" , "LimonF" , "Long")
+
+RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
+                            df_app= AB_tot_train [, c("AB_tot", best_vars_AB_tot)], 
+                            df_valid = AB_tot_test [, c("AB_tot", best_vars_AB_tot)],
+                             mtry = 3,
+                             ntree= 500,
+                             maxnodes = 16)
+
+# summary(RF_result_AB_tot$predit)
+# summary(AB_tot_test$AB_tot)
+# RF_result_AB_tot$df
+
+new_stock_df = stock_df
+new_stock_df[new_stock_df$Rep.var == "Abundance",] = c("RF","Abundance",
+                                                       RF_result_AB_tot$R_adj_train,
+                                                        RF_result_AB_tot$R_adj_test,
+                                                       RF_result_AB_tot$RMSE,
+                                                       RF_result_AB_tot$MAE)
+# kable(new_stock_df)
+
+```
+
+```{r optimisation BM_tot}
+#
+BM_tot_RF_tuning = read.csv2("results_tuning/ProDij/BM_tot_RF_tuning.csv")
+
+
+BM_tot_RF_tuning = as.data.frame(BM_tot_RF_tuning)
+BM_tot_RF_tuning = BM_tot_RF_tuning %>% arrange(RMSE)
+# head(BM_tot_RF_tuning)
+
+BM_tot_best_param = BM_tot_RF_tuning[1,]
+
+# plot(seq(1:nrow(BM_tot_RF_tuning)), BM_tot_RF_tuning$r_squared)
+# Best hyperparameter values
+BM_tot_best_mtry = BM_tot_best_param$mtry
+BM_tot_best_ntree = BM_tot_best_param$ntree
+BM_tot_best_maxnodes = BM_tot_best_param$maxnode
+
+  
+best_vars_BM_tot = c("Argile" , "LimonF" ,"Long")
+
+RF_result_BM_tot = ForetAlea(var_rep ="BM_tot", 
+                            df_app= BM_tot_train [, c("BM_tot", best_vars_BM_tot)], 
+                            df_valid = BM_tot_test [, c("BM_tot", best_vars_BM_tot)],
+                             mtry = 5,
+                             ntree= 500,
+                             maxnodes = 12)
+
+# summary(RF_result_BM_tot$predit)
+# summary(BM_tot_test$BM_tot)
+# RF_result_BM_tot$df
+
+
+new_stock_df[new_stock_df$Rep.var == "Biomass",] = c("RF","Biomass",
+                                                       RF_result_BM_tot$R_adj_train,
+                                                        RF_result_BM_tot$R_adj_test,
+                                                       RF_result_BM_tot$RMSE,
+                                                       RF_result_BM_tot$MAE)
+# kable(new_stock_df)
+
+```
+
+```{r optimisation Richesse}
+
+#
+Richesse_RF_tuning = read.csv2("results_tuning/ProDij/Richesse_RF_tuning.csv")
+
+
+Richesse_RF_tuning = as.data.frame(Richesse_RF_tuning)
+Richesse_RF_tuning = Richesse_RF_tuning %>% arrange(RMSE)
+# head(Richesse_RF_tuning)
+
+Richesse_best_param = Richesse_RF_tuning[1,]
+
+# plot(seq(1:nrow(Richesse_RF_tuning)), Richesse_RF_tuning$r_squared)
+# Best hyperparameter values
+Richesse_best_mtry = Richesse_best_param$mtry
+Richesse_best_ntree = Richesse_best_param$ntree
+Richesse_best_maxnodes = Richesse_best_param$maxnode
+
+  
+best_vars_Richesse = c("Long" , "Lat" , "SableF" , "LimonF" , "LimonG","Argile" , "C_org" , "C.N" , "pH_eau" , "OS" , "SableG" , "Limons" , "MO" , "C_tot" , "N_tot")
+
+RF_result_Richesse = ForetAlea(var_rep ="Richesse", 
+                            df_app= Richesse_train [, c("Richesse", best_vars_Richesse)], 
+                            df_valid = Richesse_test [, c("Richesse", best_vars_Richesse)],
+                             mtry = 2,
+                             ntree= 500,
+                             maxnodes = 10)
+
+# summary(RF_result_Richesse$predit)
+# summary(Richesse_test$Richesse)
+# RF_result_Richesse$df
+
+
+new_stock_df[new_stock_df$Rep.var == "Richness",] = c("RF","Richness",
+                                                       RF_result_Richesse$R_adj_train,
+                                                        RF_result_Richesse$R_adj_test,
+                                                       RF_result_Richesse$RMSE,
+                                                       RF_result_Richesse$MAE)
+kable(new_stock_df)
+
+```
+
+# Importance des variables
+
+## Abundance
+
+```{r,fig.align='center'}
+#_______________
+
+AB_tot_df = prodij_explo[,c("AB_tot",best_vars_AB_tot)]
+
+AB_tot_df = drop_na(AB_tot_df)
+
+
+rf <- randomForest(AB_tot ~ ., data = AB_tot_df, ntree = 500)
+# rf <- glm(AB_tot ~ ., data = AB_tot_df, family = 'gaussian')
+
+# Utilisation du conteneur iml Predictor()
+X <- AB_tot_df[which(names(AB_tot_df) != "AB_tot")]
+predictor <- Predictor$new(rf, data = X, y = AB_tot_df$AB_tot)
+
+set.seed(0012)
+imp_AB_tot <- FeatureImp$new(predictor, loss = "rmse") # mean absolute error
+# imp_AB_tot <- FeatureImp$new(predictor, loss = "mse") # mean squared error
+plot(imp_AB_tot)
+
+```
+
+## Biomass
+
+```{r, fig.align='center',}
+#_______________
+
+BM_tot_df = prodij_explo[,c("BM_tot",best_vars_BM_tot)]
+
+BM_tot_df = drop_na(BM_tot_df)
+
+
+rf <- randomForest(BM_tot ~ ., data = BM_tot_df, ntree = 500)
+# rf <- glm(BM_tot ~ ., data = BM_tot_df, family = 'gaussian')
+
+# Utilisation du conteneur iml Predictor()
+X <- BM_tot_df[which(names(BM_tot_df) != "BM_tot")]
+predictor <- Predictor$new(rf, data = X, y = BM_tot_df$BM_tot)
+set.seed(2222)
+imp_BM_tot <- FeatureImp$new(predictor, loss = "rmse") # mean absolute error
+# imp_BM_tot <- FeatureImp$new(predictor, loss = "mse") # mean squared error
+plot(imp_BM_tot)
+
+```
+
+## Richness
+
+```{r, fig.align='center', warning=FALSE,message=FALSE}
+#_______________
+
+best_vars_Richesse = c("C_tot" , "Limons" , "SableF" , "N_tot" , "pH_eau" , "Long")
+
+Richesse_df = prodij_explo[,c("Richesse",best_vars_Richesse)]
+
+Richesse_df = drop_na(Richesse_df)
+
+
+rf <- gbm(Richesse ~ ., data = Richesse_df)
+# rf <- glm(Richesse ~ ., data = Richesse_df, family = 'gaussian')
+
+# Utilisation du conteneur iml Predictor()
+X <- Richesse_df[which(names(Richesse_df) != "Richesse")]
+predictor <- Predictor$new(rf, data = X, y = Richesse_df$Richesse)
+
+set.seed(48632)
+imp_Richesse <- FeatureImp$new(predictor, loss = "rmse") # mean absolute error
+# imp_Richesse <- FeatureImp$new(predictor, loss = "mse") # mean squared error
+plot(imp_Richesse)
+
+```
+
+
+
+````{=html}
+<!-- 
+## Prediction of total abundance
+
+```{r}
+subtitle <- sprintf("Abundance : %.2f ± %.2f ind/m²", mean(data_deep$AB_tot, na.rm = TRUE), sd(data_deep$AB_tot, na.rm = TRUE))
+```
+
+
+```{r predit AB_tot, fig.align='center', eval=FALSE}
+# Prediction avec GLM -----------------------------------------
+GLM_result_AB_tot = GLM(var_rep ="AB_tot", 
+                             df_app=AB_tot_train, 
+                             df_valid = AB_tot_test,
+                             family = 'gaussian')
+# GLM_result_AB_tot$RMSE
+# GLM_result_AB_tot$MAE
+# GLM_result_AB_tot$R_adj_train
+# GLM_result_AB_tot$R_adj_test
+# GLM_result_AB_tot$predit
+# GLM_result_AB_tot$model
+# GLM_result_AB_tot$df
+
+mod = GLM_result_AB_tot$model
+GLM_AB_tot_pred <- GLM_result_AB_tot$predit 
+
+GLM_df_AB_tot = data.frame(Observed=AB_tot_test[,1] ,Predicted = GLM_AB_tot_pred)
+
+cor_GLM_AB_tot <- cor(GLM_df_AB_tot$Observed, GLM_df_AB_tot$Predicted)
+
+  # graphique avec ggplot
+GLM_AB_tot <- ggplot(GLM_df_AB_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" GLM: R² adj (train) = ", round(GLM_result_AB_tot$R_adj_train,2),
+                           "; \n R² = ", round(GLM_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GLM_result_AB_tot$RMSE ,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic() 
+
+# Prediction avec GAM -----------------------------------------
+GAM_result_AB_tot = GAM(var_rep ="AB_tot", 
+                             df_app=AB_tot_train, 
+                             df_valid = AB_tot_test,
+                             family = 'gaussian',
+                             method = "REML")
+# GAM_result_AB_tot$RMSE
+# GAM_result_AB_tot$MAE
+# GAM_result_AB_tot$R_adj_train
+# GAM_result_AB_tot$R_adj_test
+# GAM_result_AB_tot$predit
+# GAM_result_AB_tot$model
+# GAM_result_AB_tot$df
+
+# mod_gam1_ab = GAM_result_AB_tot$model
+# cv <- gam.check(GAM_result_AB_tot$model)
+# print(cv)
+# plot(mod_gam1_ab, pages = 1, seWithMean = TRUE)
+# plot(mod_gam1_ab, residuals = TRUE, pch = 1)
+# plot(ggeffects::ggpredict(mod_gam1_ab), facets = TRUE)
+# gratia::draw(mod_gam1_ab, residuals = TRUE)
+# # Verification
+# par(mfrow = c(2, 2))
+# gam.check(mod_gam1_ab)
+# shapiro.test(mod_gam1_ab$res)
+# concurvity(mod_gam1_ab,full = TRUE)
+# concurvity(mod_gam1_ab,full = FALSE)
+
+
+
+
+
+GAM_AB_tot_pred <- GAM_result_AB_tot$predit 
+
+GAM_df_AB_tot = data.frame(Observed=AB_tot_test[,1] ,Predicted = GAM_AB_tot_pred)
+
+cor_GAM_AB_tot <- cor(GAM_df_AB_tot$Observed, GAM_df_AB_tot$Predicted)
+
+  # graphique avec ggplot
+GAM_AB_tot <- ggplot(GAM_df_AB_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" GAM: R² adj (train) = ", round(GAM_result_AB_tot$R_adj_train,2),
+                           "; \n R² = ", round(GAM_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GAM_result_AB_tot$RMSE ,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic() 
+
+# Prediction avec RF -----------------------------------------
+AB_tot_RF_tuning = read.csv2("results_tuning/ProDij/AB_tot_RF_tuning.csv")
+
+
+AB_tot_RF_tuning = as.data.frame(AB_tot_RF_tuning)
+AB_tot_RF_tuning = AB_tot_RF_tuning %>% arrange(RMSE)
+# head(AB_tot_RF_tuning)
+
+AB_tot_best_param = AB_tot_RF_tuning[1,]
+
+# plot(seq(1:nrow(AB_tot_RF_tuning)), AB_tot_RF_tuning$r_squared)
+# Best hyperparameter values
+AB_tot_best_mtry = AB_tot_best_param$mtry
+AB_tot_best_ntree = AB_tot_best_param$ntree
+AB_tot_best_maxnodes = AB_tot_best_param$maxnode
+
+
+RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
+                            df_app=AB_tot_train, 
+                            df_valid = AB_tot_test,
+                             mtry = 3,
+                             ntree= AB_tot_best_ntree,
+                             maxnodes = NULL)
+
+
+# RF_result_AB_tot$RMSE
+# RF_result_AB_tot$MAE
+# RF_result_AB_tot$R_adj_train
+# RF_result_AB_tot$R_adj_test
+# RF_result_AB_tot$predit
+# RF_result_AB_tot$model
+# RF_result_AB_tot$df
+
+# varImpPlot(RF_result_AB_tot$model)
+
+RF_AB_tot_pred <- RF_result_AB_tot$predit 
+
+RF_df_AB_tot = data.frame(Observed=AB_tot_test[,1] ,Predicted = RF_AB_tot_pred)
+
+# cor_RF_AB_tot <- cor(RF_df_AB_tot$Observed, RF_df_AB_tot$Predicted)
+# cor_RF_AB_tot 
+# res <- rms::lrm(RF_df_AB_tot$Observed  ~ RF_df_AB_tot$Predicted, x= TRUE, y = TRUE)
+# res = res$stats
+# round (res[["R2"]],2)
+
+
+  # graphique avec ggplot
+RF_AB_tot <- ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(
+        " RF: R² adj (train) = ", round(RF_result_AB_tot$R_adj_train,2),
+        # "Abundance (ind./m²)",
+                           "; \n R² = ", round(RF_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_AB_tot$RMSE ,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") + 
+      theme_classic() 
+best_algo_AB_tot = RF_AB_tot
+saveRDS(RF_result_AB_tot$model, "cartographie/best_mod/RF_mod_AB_tot.RDS")
+
+# Prediction avec GBM -----------------------------------------
+AB_tot_GBM_tuning = read.csv2("results_tuning/ProDij/AB_tot_GBM_tuning.csv")
+
+
+AB_tot_GBM_tuning = as.data.frame(AB_tot_GBM_tuning)
+AB_tot_GBM_tuning = AB_tot_GBM_tuning %>% arrange(RMSE)
+# head(AB_tot_GBM_tuning)
+AB_tot_best_param = AB_tot_GBM_tuning[1,]
+
+
+# Best hyperparameter values
+AB_tot_best_n.trees = AB_tot_best_param$n.trees
+AB_tot_best_shrinkage = AB_tot_best_param$shrinkage
+AB_tot_best_interaction.depth = AB_tot_best_param$interaction.depth
+AB_tot_best_n.minobsinnode = AB_tot_best_param$n.minobsinnode
+
+
+GBM_result_AB_tot =  GBM(var_rep ="AB_tot", 
+                         df_app=AB_tot_train, 
+                         df_valid = AB_tot_test,
+                         distribution = 'gaussian',
+                         n.trees = AB_tot_best_n.trees,
+                         shrinkage = AB_tot_best_shrinkage,
+                         interaction.depth = AB_tot_best_interaction.depth,
+                         n.minobsinnode = AB_tot_best_n.minobsinnode)
+
+# GBM_result_AB_tot$RMSE
+# GBM_result_AB_tot$MAE
+# GBM_result_AB_tot$R_adj_train
+# GBM_result_AB_tot$R_adj_test
+# GBM_result_AB_tot$predit
+# GBM_result_AB_tot$model
+# GBM_result_AB_tot$df
+
+
+# summary(GBM_result_AB_tot$model)
+# best.iter <- gbm.perf(GBM_result_AB_tot$model, method = "cv")
+# summary(GBM_result_AB_tot$model, n.trees = best.iter)
+
+
+
+
+GBM_AB_tot_pred = GBM_result_AB_tot$predit 
+
+GBM_df_AB_tot = data.frame(Observed=AB_tot_test[,1] ,Predicted = GBM_AB_tot_pred)
+
+cor_GBM_AB_tot<- cor(GBM_df_AB_tot$Observed, GBM_df_AB_tot$Predicted)
+
+# graphique avec ggplot
+GBM_AB_tot <- ggplot(GBM_df_AB_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" GBM: R² adj (train) = ", round(GBM_result_AB_tot$R_adj_train,2),
+                           "; \n R² = ", round(GBM_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GBM_result_AB_tot$RMSE ,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic() 
+
+
+
+
+
+# Prediction avec ANN -----------------------------------------
+# ANN_tune_AB_tot_results$mse
+# ANN_tune_AB_tot_results$mae
+# ANN_tune_AB_tot_results$rmse
+# ANN_tune_AB_tot_results$r_adj_train
+# ANN_tune_AB_tot_results$r_adj_test
+
+
+ANN_AB_tot_pred = ANN_tune_AB_tot_pred 
+
+ANN_df_AB_tot = data.frame(Observed=AB_tot_test[,1] ,Predicted = ANN_AB_tot_pred)
+
+cor_ANN_AB_tot <- cor(ANN_df_AB_tot$Observed, ANN_df_AB_tot$Predicted)
+
+  # graphique avec ggplot
+ANN_AB_tot <- ggplot(ANN_df_AB_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") +
+labs(subtitle =paste0(" ANN: R² adj (train) = ", round(ANN_tune_AB_tot_results$R_adj_train,2),
+                           "; \n R² = ", round(ANN_tune_AB_tot_results$R_adj_test,2),
+                           "; RMSE = ",  round(ANN_tune_AB_tot_results$rmse ,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic()
+
+# best algo --------------------------------------
+graphe_AB_tot = ggarrange(GLM_AB_tot, GAM_AB_tot, RF_AB_tot, GBM_AB_tot, ANN_AB_tot,
+  labels = c('(a)', '(b)','(c)', '(d)','(e)'),widths = 10,
+  common.legend = TRUE,
+  legend = 'right'
+)
+ggsave("Results/proDij/graphe_AB_tot.png", plot = graphe_AB_tot, dpi = 300,height = 6,width = 7)
+
+# graphe_AB_tot
+
+
+# df_tot = RF_df_AB_tot
+# df_tot$observation = seq(1,nrow(df_tot))
+# 
+# 
+# 
+# # Calcul des quartiles
+# q1 <- quantile(df_tot$Observed, 0.25)
+# median <- quantile(df_tot$Observed, 0.50)
+# q3 <- quantile(df_tot$Observed, 0.75)
+# max_value <- max(df_tot$Observed)
+# 
+# # Création des DataFrames en fonction des quartiles
+# df1 <- df_tot[df_tot$Observed <= q1,]
+# df2 <- df_tot[df_tot$Observed > q1 & df_tot$Observed <= median,]
+# df3 <- df_tot[df_tot$Observed > median & df_tot$Observed <= q3,]
+# df4 <- df_tot[df_tot$Observed > q3,]
+# 
+# 
+# 
+# 
+# AB_tot_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "RF: Abundance predicted and Observed values \n for different quartiles")
+# 
+# AB_tot_p2 = plot_comp(df = df2,ylabel = "" ,title_class = "Q1 to median",legende = FALSE,xlabel = "")
+# AB_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legende = FALSE,xlabel = "")
+# AB_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
+# 
+# 
+# RF_AB_tot_fig = ggarrange(AB_tot_p1, AB_tot_p2, AB_tot_p3, AB_tot_p4,
+#   # labels = c('(a)', '(b)','(c)', '(d)'),
+#   ncol = 1,vjust = 0.5,
+#   common.legend = TRUE,
+#   legend = 'right'
+# )
+# 
+# ggsave("Results/proDij/RF_AB_tot_fig.png", plot = RF_AB_tot_fig, dpi = 300,height = 8)
+# 
+# 
+# df_tot$diff = abs(df_tot$Observed - df_tot$Predicted)
+# df_best = df_tot[df_tot$diff<=15,]
+# 
+# plot_comp(df = df_best,ylabel = "Abundance" ,title_class = "     Best prediction",legende = TRUE,plotly = TRUE)
+
+
+
+```
+
+
+<p align="center">
+  <img src="Results/proDij/graphe_AB_tot.png">
+</p>
+
+
+**The best algorithm for total abundance is: RF **
+
+
+<p align="center">
+  <img src="Results/proDij/RF_AB_tot_fig.png">
+</p>
+
+
+
+## Prediction of total biomass
+
+```{r}
+subtitle <- sprintf("Biomass : %.2f ± %.2f g/m²", mean(data_deep$BM_tot, na.rm = TRUE), sd(data_deep$BM_tot, na.rm = TRUE))
+```
+
+
+```{r predit BM_tot , fig.align='center' , eval=FALSE}
+# Prediction avec GLM -----------------------------------------
+GLM_result_BM_tot = GLM(var_rep ="BM_tot", 
+                             df_app=BM_tot_train, 
+                             df_valid = BM_tot_test,
+                             family = 'gaussian')
+# GLM_result_BM_tot$RMSE
+# GLM_result_BM_tot$MAE
+# GLM_result_BM_tot$R_adj_train
+# GLM_result_BM_tot$R_adj_test
+# GLM_result_BM_tot$predit
+# GLM_result_BM_tot$model
+
+
+
+GLM_BM_tot_pred <- GLM_result_BM_tot$predit 
+
+GLM_df_BM_tot = data.frame(Observed=BM_tot_test[,1] ,Predicted = GLM_BM_tot_pred)
+
+cor_GLM_BM_tot <- cor(GLM_df_BM_tot$Observed, GLM_df_BM_tot$Predicted)
+
+  # graphique avec ggplot
+GLM_BM_tot <- ggplot(GLM_df_BM_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" GLM: R² adj (train) = ", round(GLM_result_BM_tot$R_adj_train,2),
+                           "; \n R² = ", round(GLM_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GLM_result_BM_tot$RMSE ,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic() 
+
+# Prediction avec GAM -----------------------------------------
+GAM_result_BM_tot = GAM(var_rep ="BM_tot", 
+                             df_app=BM_tot_train, 
+                             df_valid = BM_tot_test,
+                             family = 'gaussian',
+                             method = "REML")
+# GAM_result_BM_tot$RMSE
+# GAM_result_BM_tot$MAE
+# GAM_result_BM_tot$R_adj_train
+# GAM_result_BM_tot$R_adj_test
+# GAM_result_BM_tot$predit
+# GAM_result_BM_tot$model
+
+# mod_gam1_ab = GAM_result_BM_tot$model
+# cv <- gam.check(GAM_result_BM_tot$model)
+# print(cv)
+# plot(mod_gam1_ab, pages = 1, seWithMean = TRUE)
+# plot(mod_gam1_ab, residuals = TRUE, pch = 1)
+# plot(ggeffects::ggpredict(mod_gam1_ab), facets = TRUE)
+# gratia::draw(mod_gam1_ab, residuals = TRUE)
+# # Verification
+# par(mfrow = c(2, 2))
+# gam.check(mod_gam1_ab)
+# shapiro.test(mod_gam1_ab$res)
+# concurvity(mod_gam1_ab,full = TRUE)
+# concurvity(mod_gam1_ab,full = FALSE)
+
+
+
+
+
+GAM_BM_tot_pred <- GAM_result_BM_tot$predit 
+
+GAM_df_BM_tot = data.frame(Observed=BM_tot_test[,1] ,Predicted = GAM_BM_tot_pred)
+
+cor_GAM_BM_tot <- cor(GAM_df_BM_tot$Observed, GAM_df_BM_tot$Predicted)
+
+  # graphique avec ggplot
+GAM_BM_tot <- ggplot(GAM_df_BM_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" GAM: R² adj (train) = ", round(GAM_result_BM_tot$R_adj_train,2),
+                           "; \n R² = ", round(GAM_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GAM_result_BM_tot$RMSE ,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic() 
+
+# Prediction avec RF -----------------------------------------
+BM_tot_RF_tuning = read.csv2("results_tuning/ProDij/BM_tot_RF_tuning.csv")
+
+
+BM_tot_RF_tuning = as.data.frame(BM_tot_RF_tuning)
+BM_tot_RF_tuning = BM_tot_RF_tuning %>% arrange(RMSE)
+# head(BM_tot_RF_tuning)
+
+BM_tot_best_param = BM_tot_RF_tuning[1,]
+
+# plot(seq(1:nrow(BM_tot_RF_tuning)), BM_tot_RF_tuning$r_squared)
+# Best hyperparameter values
+BM_tot_best_mtry = BM_tot_best_param$mtry
+BM_tot_best_ntree = BM_tot_best_param$ntree
+BM_tot_best_maxnodes = BM_tot_best_param$maxnode
+
+
+RF_result_BM_tot = ForetAlea(var_rep ="BM_tot", 
+                             df_app=BM_tot_train, 
+                             df_valid = BM_tot_test,
+                             mtry = 3,
+                             ntree= BM_tot_best_ntree,
+                             maxnodes = NULL)
+
+# RF_result_BM_tot$RMSE
+# RF_result_BM_tot$MAE
+# RF_result_BM_tot$R_adj_train
+# RF_result_BM_tot$R_adj_test
+# RF_result_BM_tot$predit
+# RF_result_BM_tot$model
+
+
+RF_BM_tot_pred <- RF_result_BM_tot$predit 
+
+RF_df_BM_tot = data.frame(Observed=BM_tot_test[,1] ,Predicted = RF_BM_tot_pred)
+
+cor_RF_BM_tot <- cor(RF_df_BM_tot$Observed, RF_df_BM_tot$Predicted)
+
+  # graphique avec ggplot
+RF_BM_tot <- ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(
+        " RF: R² adj (train) = ", round(RF_result_BM_tot$R_adj_train,2),
+         # "Biomass (g/m²)",
+                           "; \n R² = ", round(RF_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_BM_tot$RMSE ,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") + 
+      theme_classic() 
+best_algo_BM_tot = RF_BM_tot
+saveRDS(RF_result_BM_tot$model, "cartographie/best_mod/RF_mod_BM_tot.RDS")
+
+
+# Prediction avec GBM -----------------------------------------
+BM_tot_GBM_tuning = read.csv2("results_tuning/ProDij/BM_tot_GBM_tuning.csv")
+
+
+BM_tot_GBM_tuning = as.data.frame(BM_tot_GBM_tuning)
+BM_tot_GBM_tuning = BM_tot_GBM_tuning %>% arrange(RMSE)
+# head(BM_tot_GBM_tuning)
+BM_tot_best_param = BM_tot_GBM_tuning[1,]
+
+
+# Best hyperparameter values
+BM_tot_best_n.trees = BM_tot_best_param$n.trees
+BM_tot_best_shrinkage = BM_tot_best_param$shrinkage
+BM_tot_best_interaction.depth = BM_tot_best_param$interaction.depth
+BM_tot_best_n.minobsinnode = BM_tot_best_param$n.minobsinnode
+
+
+GBM_result_BM_tot =  GBM(var_rep ="BM_tot", 
+                         df_app=BM_tot_train, 
+                         df_valid = BM_tot_test,
+                         distribution = 'gaussian',
+                         n.trees = BM_tot_best_n.trees,
+                         shrinkage = BM_tot_best_shrinkage,
+                         interaction.depth = BM_tot_best_interaction.depth,
+                         n.minobsinnode = BM_tot_best_n.minobsinnode)
+
+# GBM_result_BM_tot$RMSE
+# GBM_result_BM_tot$MAE
+# GBM_result_BM_tot$R_adj_train
+# GBM_result_BM_tot$R_adj_test
+# GBM_result_BM_tot$predit
+# GBM_result_BM_tot$model
+
+
+# summary(GBM_result_BM_tot$model)
+# best.iter <- gbm.perf(GBM_result_BM_tot$model, method = "cv")
+# summary(GBM_result_BM_tot$model, n.trees = best.iter)
+
+
+
+
+GBM_BM_tot_pred = GBM_result_BM_tot$predit 
+
+GBM_df_BM_tot = data.frame(Observed=BM_tot_test[,1] ,Predicted = GBM_BM_tot_pred)
+
+cor_GBM_BM_tot<- cor(GBM_df_BM_tot$Observed, GBM_df_BM_tot$Predicted)
+
+# graphique avec ggplot
+GBM_BM_tot <- ggplot(GBM_df_BM_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" GBM: R² adj (train) = ", round(GBM_result_BM_tot$R_adj_train,2),
+                           "; \n R² = ", round(GBM_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GBM_result_BM_tot$RMSE ,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic() 
+
+
+
+
+
+# Prediction avec ANN -----------------------------------------
+# ANN_tune_BM_tot_results$mse
+# ANN_tune_BM_tot_results$mae
+# ANN_tune_BM_tot_results$rmse
+# ANN_tune_BM_tot_results$r_adj_train
+# ANN_tune_BM_tot_results$r_adj_test
+
+
+ANN_BM_tot_pred = ANN_tune_BM_tot_pred 
+
+ANN_df_BM_tot = data.frame(Observed=BM_tot_test[,1] ,Predicted = ANN_BM_tot_pred)
+
+cor_ANN_BM_tot <- cor(ANN_df_BM_tot$Observed, ANN_df_BM_tot$Predicted)
+
+  # graphique avec ggplot
+ANN_BM_tot <- ggplot(ANN_df_BM_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") +
+labs(subtitle =paste0(" ANN: R² adj (train) = ", round(ANN_tune_BM_tot_results$R_adj_train,2),
+                           "; \n R² = ", round(ANN_tune_BM_tot_results$R_adj_test,2),
+                           "; RMSE = ",  round(ANN_tune_BM_tot_results$rmse ,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic()
+
+# best algo --------------------------------------
+graphe_BM_tot = ggarrange(GLM_BM_tot, GAM_BM_tot, RF_BM_tot, GBM_BM_tot, ANN_BM_tot,
+  labels = c('(a)', '(b)','(c)', '(d)','(e)'),widths = 10,
+  common.legend = TRUE,
+  legend = 'right'
+)
+ggsave("Results/proDij/graphe_BM_tot.png", plot = graphe_BM_tot, dpi = 300, height = 6,width = 7)
+
+
+
+
+# df_tot = RF_df_BM_tot
+# df_tot$observation = seq(1,nrow(df_tot))
+# 
+# # Calcul des quartiles
+# q1 <- quantile(df_tot$Observed, 0.25)
+# median <- quantile(df_tot$Observed, 0.50)
+# q3 <- quantile(df_tot$Observed, 0.75)
+# max_value <- max(df_tot$Observed)
+# 
+# # Création des DataFrames en fonction des quartiles
+# df1 <- df_tot[df_tot$Observed <= q1,]
+# df2 <- df_tot[df_tot$Observed > q1 & df_tot$Observed <= median,]
+# df3 <- df_tot[df_tot$Observed > median & df_tot$Observed <= q3,]
+# df4 <- df_tot[df_tot$Observed > q3,]
+# 
+# 
+# 
+# 
+# BM_tot_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "RF: Biomass predicted and Observed values \n for different quartiles")
+# 
+# BM_tot_p2 = plot_comp(df = df2,ylabel = "" ,title_class = "Q1 to median",legende = FALSE,xlabel = "")
+# BM_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legende = FALSE,xlabel = "")
+# BM_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
+# 
+# 
+# RF_BM_tot_fig = ggarrange(BM_tot_p1, BM_tot_p2, BM_tot_p3, BM_tot_p4,
+#   # labels = c('(a)', '(b)','(c)', '(d)'),
+#   ncol = 1,vjust = 0.5,
+#   common.legend = TRUE,
+#   legend = 'right'
+# )
+# 
+# 
+# ggsave("Results/proDij/RF_BM_tot_fig.png", plot = RF_BM_tot_fig, dpi = 300,height = 8)
+
+
+
+# df_tot$diff = abs(df_tot$Observed - df_tot$Predicted)
+# df_best = df_tot[df_tot$diff<=15,]
+# 
+# plot_comp(df = df_best,ylabel = "Biomass" ,title_class = "     Best prediction",legende = TRUE,plotly = TRUE)
+```
+
+
+<p align="center">
+  <img src="Results/proDij/graphe_BM_tot.png">
+</p>
+
+
+**The best algorithm for total Biomass is: RF**
+
+<p align="center">
+  <img src="Results/proDij/RF_BM_tot_fig.png">
+</p>
+
+
+## Prediction of total taxonomic richness
+
+```{r}
+subtitle <- sprintf("Richness : %.2f ± %.2f", round(mean(data_deep$Richesse, na.rm = TRUE)), round(sd(data_deep$Richesse, na.rm = TRUE)))
+```
+
+
+```{r predit Richesse , fig.align='center' , eval=FALSE}
+# Prediction avec GLM -----------------------------------------
+GLM_result_Richesse = GLM(var_rep ="Richesse", 
+                             df_app=Richesse_train, 
+                             df_valid = Richesse_test,
+                             family = 'gaussian')
+# GLM_result_Richesse$RMSE
+# GLM_result_Richesse$MAE
+# GLM_result_Richesse$R_adj_train
+# GLM_result_Richesse$R_adj_test
+# GLM_result_Richesse$predit
+# GLM_result_Richesse$model
+
+
+
+GLM_Richesse_pred <- GLM_result_Richesse$predit
+
+GLM_df_Richesse = data.frame(Observed=Richesse_test[,1],Predicted = GLM_Richesse_pred)
+
+cor_GLM_Richesse <- cor(GLM_df_Richesse$Observed, GLM_df_Richesse$Predicted)
+
+  # graphique avec ggplot
+GLM_Richesse <- ggplot(GLM_df_Richesse, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" GLM: R² adj (train) = ", round(GLM_result_Richesse$R_adj_train,2),
+                           "; \n R² = ", round(GLM_result_Richesse$R_adj_test,2),
+                           "; RMSE = ",  round(GLM_result_Richesse$RMSE,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic() 
+
+# Prediction avec GAM -----------------------------------------
+GAM_result_Richesse = GAM(var_rep ="Richesse", 
+                             df_app=Richesse_train, 
+                             df_valid = Richesse_test,
+                             family = 'gaussian',
+                             method = "REML")
+# GAM_result_Richesse$RMSE
+# GAM_result_Richesse$MAE
+# GAM_result_Richesse$R_adj_train
+# GAM_result_Richesse$R_adj_test
+# GAM_result_Richesse$predit
+# GAM_result_Richesse$model
+
+# mod_gam1_ab = GAM_result_Richesse$model
+# cv <- gam.check(GAM_result_Richesse$model)
+# print(cv)
+# plot(mod_gam1_ab, pages = 1, seWithMean = TRUE)
+# plot(mod_gam1_ab, residuals = TRUE, pch = 1)
+# plot(ggeffects::ggpredict(mod_gam1_ab), facets = TRUE)
+# gratia::draw(mod_gam1_ab, residuals = TRUE)
+# # Verification
+# par(mfrow = c(2, 2))
+# gam.check(mod_gam1_ab)
+# shapiro.test(mod_gam1_ab$res)
+# concurvity(mod_gam1_ab,full = TRUE)
+# concurvity(mod_gam1_ab,full = FALSE)
+
+
+
+
+
+GAM_Richesse_pred <- GAM_result_Richesse$predit
+
+GAM_df_Richesse = data.frame(Observed=Richesse_test[,1],Predicted = GAM_Richesse_pred)
+
+cor_GAM_Richesse <- cor(GAM_df_Richesse$Observed, GAM_df_Richesse$Predicted)
+
+  # graphique avec ggplot
+GAM_Richesse <- ggplot(GAM_df_Richesse, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" GAM: R² adj (train) = ", round(GAM_result_Richesse$R_adj_train,2),
+                           "; \n R² = ", round(GAM_result_Richesse$R_adj_test,2),
+                           "; RMSE = ",  round(GAM_result_Richesse$RMSE,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic() 
+
+# Prediction avec RF -----------------------------------------
+Richesse_RF_tuning = read.csv2("results_tuning/ProDij/Richesse_RF_tuning.csv")
+
+
+Richesse_RF_tuning = as.data.frame(Richesse_RF_tuning)
+Richesse_RF_tuning = Richesse_RF_tuning %>% arrange(RMSE)
+# head(Richesse_RF_tuning)
+
+Richesse_best_param = Richesse_RF_tuning[1,]
+
+# plot(seq(1:nrow(Richesse_RF_tuning)), Richesse_RF_tuning$r_squared)
+# Best hyperparameter values
+Richesse_best_mtry = Richesse_best_param$mtry
+Richesse_best_ntree = Richesse_best_param$ntree
+Richesse_best_maxnodes = Richesse_best_param$maxnode
+
+
+RF_result_Richesse = ForetAlea(var_rep ="Richesse", 
+                             df_app=Richesse_train, 
+                             df_valid = Richesse_test,
+                             mtry = 3,
+                             ntree= Richesse_best_ntree,
+                             maxnodes = NULL)
+
+# RF_result_Richesse$RMSE
+# RF_result_Richesse$MAE
+# RF_result_Richesse$R_adj_train
+# RF_result_Richesse$R_adj_test
+# RF_result_Richesse$predit
+# RF_result_Richesse$model
+# RF_result_Richesse$df
+
+
+RF_Richesse_pred <- RF_result_Richesse$predit
+
+RF_df_Richesse = data.frame(Observed=Richesse_test[,1],Predicted = RF_Richesse_pred)
+
+cor_RF_Richesse <- cor(RF_df_Richesse$Observed, RF_df_Richesse$Predicted)
+
+  # graphique avec ggplot
+RF_Richesse <- ggplot(RF_df_Richesse, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(
+        " RF: R² adj (train) = ", round(RF_result_Richesse$R_adj_train,2),
+        # "Richness (nr. of spp.)",
+                           " \n R² = ", round(RF_result_Richesse$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_Richesse$RMSE,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") + 
+      theme_classic() 
+best_algo_Richesse = RF_Richesse
+saveRDS(RF_result_Richesse$model, "cartographie/best_mod/RF_mod_Richesse.RDS")
+
+
+# Prediction avec GBM -----------------------------------------
+Richesse_GBM_tuning = read.csv2("results_tuning/ProDij/Richesse_GBM_tuning.csv")
+
+
+Richesse_GBM_tuning = as.data.frame(Richesse_GBM_tuning)
+Richesse_GBM_tuning = Richesse_GBM_tuning %>% arrange(RMSE)
+# head(Richesse_GBM_tuning)
+Richesse_best_param = Richesse_GBM_tuning[1,]
+
+
+# Best hyperparameter values
+Richesse_best_n.trees = Richesse_best_param$n.trees
+Richesse_best_shrinkage = Richesse_best_param$shrinkage
+Richesse_best_interaction.depth = Richesse_best_param$interaction.depth
+Richesse_best_n.minobsinnode = Richesse_best_param$n.minobsinnode
+
+
+GBM_result_Richesse =  GBM(var_rep ="Richesse", 
+                         df_app=Richesse_train, 
+                         df_valid = Richesse_test,
+                         distribution = 'gaussian',
+                         n.trees = Richesse_best_n.trees,
+                         shrinkage = Richesse_best_shrinkage,
+                         interaction.depth = Richesse_best_interaction.depth,
+                         n.minobsinnode = Richesse_best_n.minobsinnode)
+
+# GBM_result_Richesse$RMSE
+# GBM_result_Richesse$MAE
+# GBM_result_Richesse$R_adj_train
+# GBM_result_Richesse$R_adj_test
+# GBM_result_Richesse$predit
+# GBM_result_Richesse$model
+# GBM_result_Richesse$df
+
+# summary(GBM_result_Richesse$model)
+# best.iter <- gbm.perf(GBM_result_Richesse$model, method = "cv")
+# summary(GBM_result_Richesse$model, n.trees = best.iter)
+
+
+
+
+GBM_Richesse_pred = GBM_result_Richesse$predit
+
+GBM_df_Richesse = data.frame(Observed=Richesse_test[,1],Predicted = GBM_Richesse_pred)
+
+cor_GBM_Richesse<- cor(GBM_df_Richesse$Observed, GBM_df_Richesse$Predicted)
+
+# graphique avec ggplot
+GBM_Richesse <- ggplot(GBM_df_Richesse, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(" GBM: R² adj (train) = ", round(GBM_result_Richesse$R_adj_train,2),
+                           "; \n R² = ", round(GBM_result_Richesse$R_adj_test,2),
+                           "; RMSE = ",  round(GBM_result_Richesse$RMSE,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic() 
+
+
+
+
+
+# Prediction avec ANN -----------------------------------------
+# ANN_tune_Richesse_results$mse
+# ANN_tune_Richesse_results$mae
+# ANN_tune_Richesse_results$rmse
+# ANN_tune_Richesse_results$r_adj_train
+# ANN_tune_Richesse_results$r_adj_test
+
+
+ANN_Richesse_pred = ANN_tune_Richesse_pred
+
+ANN_df_Richesse = data.frame(Observed=Richesse_test[,1],Predicted = ANN_Richesse_pred)
+
+cor_ANN_Richesse <- cor(ANN_df_Richesse$Observed, ANN_df_Richesse$Predicted)
+
+  # graphique avec ggplot
+ANN_Richesse <- ggplot(ANN_df_Richesse, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") +
+labs(subtitle =paste0(" ANN: R² adj (train) = ", round(ANN_tune_Richesse_results$R_adj_train,2),
+                           "; \n R² = ", round(ANN_tune_Richesse_results$R_adj_test,2),
+                           "; RMSE = ",  round(ANN_tune_Richesse_results$rmse,2)),
+                            x = "Observed values", 
+                            y = "Predicted values") +
+      theme_classic()
+
+# best algo --------------------------------------
+graphe_Richesse = ggarrange(GLM_Richesse, GAM_Richesse, RF_Richesse, GBM_Richesse, ANN_Richesse,
+  labels = c('(a)', '(b)','(c)', '(d)','(e)'),widths = 10,
+  common.legend = TRUE,
+  legend = 'right'
+)
+ggsave("Results/proDij/graphe_Richesse.png", plot = graphe_Richesse, dpi = 300, height = 6,width = 7)
+
+
+
+# 
+# df_tot = RF_df_Richesse
+# df_tot$observation = seq(1,nrow(df_tot))
+# 
+# df_tot$Predicted = round(df_tot$Predicted)
+# # Calcul des quartiles
+# q1 <- quantile(df_tot$Observed, 0.25)
+# median <- quantile(df_tot$Observed, 0.50)
+# q3 <- quantile(df_tot$Observed, 0.75)
+# max_value <- max(df_tot$Observed)
+# 
+# # Création des DataFrames en fonction des quartiles
+# df1 <- df_tot[df_tot$Observed <= q1,]
+# df2 <- df_tot[df_tot$Observed > q1 & df_tot$Observed <= median,]
+# df3 <- df_tot[df_tot$Observed > median & df_tot$Observed <= q3,]
+# df4 <- df_tot[df_tot$Observed > q3,]
+# 
+# 
+# 
+# 
+# Richesse_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "RF: Richness predicted and Observed values \n for different quartiles")
+# 
+# Richesse_p2 = plot_comp(df = df2,ylabel = "" ,title_class = "Q1 to median",legende = FALSE,xlabel = "")
+# Richesse_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legende = FALSE,xlabel = "")
+# Richesse_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
+# 
+# 
+# GBM_Richesse_fig = ggarrange(Richesse_p1, Richesse_p2, Richesse_p3, Richesse_p4,
+#   # labels = c('(a)', '(b)','(c)', '(d)'),
+#   ncol = 1,vjust = 0.5,
+#   common.legend = TRUE,
+#   legend = 'right'
+# )
+# 
+# ggsave("Results/proDij/RF_Richesse_fig.png", plot = GBM_Richesse_fig, dpi = 300,height = 8)
+
+
+# df_tot$diff = abs(df_tot$Observed - df_tot$Predicted)
+# df_best = df_tot[df_tot$diff<=0.5,]
+# 
+# 
+# plot_comp(df = df_best,ylabel = "Richness" ,title_class = "     Best prediction",legende = TRUE,plotly = FALSE)
+```
+
+
+<p align="center">
+  <img src="Results/proDij/graphe_Richesse.png">
+</p>
+
+
+**The best algorithm for total Richness is: RF **
+
+<p align="center">
+  <img src="Results/proDij/RF_Richesse_fig.png">
+</p>
+
+
+
+
+
+
+
+-->
+````
+
+<!-- ## Best algorithm (RF) -->
+
+<!-- **-   Summary: ** *Results Case 1 -> repeated data* -->
+
+<br/>
+
+```{r saving best algo1,fig.align='center' , eval=FALSE}
+best_algo_RF_1 = ggpubr::ggarrange(best_algo_AB_tot, best_algo_BM_tot, best_algo_Richesse,
+                          labels = c('(a)', '(b)','(c)'),ncol = 3,
+                          common.legend = TRUE,
+                          legend = 'right'
+)
+ggsave("Results/proDij/best_algo_RF_1.png", plot = best_algo_RF_1, dpi = 300,height = 3,width = 7)
+
+
+
+g1 <- ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(
+        "Abundance (ind./m²)",
+                           "\nR² = ", round(RF_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_AB_tot$RMSE ,2)),
+                            x = " ",
+                            y = " "
+        ) + 
+      theme_classic() 
+
+g2 <- ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(
+         "Biomass (g/m²)",
+                           "\nR² = ", round(RF_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_BM_tot$RMSE ,2)),
+                            x = " ",
+                            y = " "
+         ) + 
+      theme_classic() 
+
+g3 <- ggplot(RF_df_Richesse, aes(x = Observed, y = Predicted)) +
+      geom_point() + # Ajout des points
+      geom_smooth(method = "lm", se = TRUE, color = "red") + 
+      labs(subtitle =paste0(
+        "Richness (nr. of spp.)",
+                           "\nR² = ", round(RF_result_Richesse$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_Richesse$RMSE,2)),
+                            x = " ",
+                            y = " "
+        ) + 
+      theme_classic() 
+
+figure <- ggpubr::ggarrange(g1, g2, g3,
+                                    labels = c('(a)', '(b)', '(c)'), ncol = 3,
+                                    common.legend = TRUE, legend = 'right')
+
+
+figure = annotate_figure(figure,
+
+                bottom = text_grob("Observed values", color = "black",
+                                   vjust = 0, face = "bold", size = 10),
+                left = text_grob("Predicted values", color = "black", rot = 90),)
+
+# figure
+ggsave("Results/proDij/best_algo_RF_rapport.png", plot = figure, dpi = 300,height = 3,width = 7)
+
+
+```
+
+<!-- <p align="center"> -->
+
+<!--   <img src="Results/proDij/best_algo_RF_1.png"> -->
+
+<!-- </p> -->
+
+<!-- ## Table prodij results -->
+
+```{r prodij output, , eval=FALSE}
+AB_tot_results = rbind(GLM_result_AB_tot$df,
+                        GAM_result_AB_tot$df,
+                        RF_result_AB_tot$df,
+                        GBM_result_AB_tot$df,
+                        ANN_tune_AB_tot_results_df
+                         )
+AB_tot_results$RMSE = round(AB_tot_results$RMSE ,2)
+
+BM_tot_results = rbind(GLM_result_BM_tot$df,
+                        GAM_result_BM_tot$df,
+                        RF_result_BM_tot$df,
+                        GBM_result_BM_tot$df,
+                        ANN_tune_BM_tot_results_df
+                         )
+BM_tot_results$RMSE = round(BM_tot_results$RMSE ,2)
+
+Richesse_results = rbind(GLM_result_Richesse$df,
+                        GAM_result_Richesse$df,
+                        RF_result_Richesse$df,
+                        GBM_result_Richesse$df,
+                        ANN_tune_Richesse_results_df
+                         )
+
+all_result = rbind(AB_tot_results,BM_tot_results,Richesse_results)
+prodij_results = data.frame(Datas = rep("ProDij", 15))
+prodij_results = cbind(prodij_results, all_result)
+prodij_results <- prodij_results %>%
+  dplyr::mutate_if(is.numeric, ~ round(., 2))
+
+
+write.csv(x =prodij_results,file = "Results/proDij/prodij_results.csv", row.names = FALSE)
+
+df = read.csv("Results/proDij/prodij_results.csv")
+df$R2_adjusted_train = NULL
+df$MAE=NULL
+# df$RMSE = round(df$RMSE ,2)
+colnames(df) = c("Datas","Algorithms","Response_variables",
+                               "R²","RMSE")
+df %>% datatable(options = list(pageLength = 5))
+```
+
+````{=html}
+<!-- 
+# Importance and effects of variables
+
+## Abundance
+
+```{r abundance response, fig.align='center',eval=FALSE}
+#_______________
+
+AB_tot_df = prodij_explo_non_t[,c("AB_tot",predictor_deep)]
+
+AB_tot_df = drop_na(AB_tot_df)
+
+rf <- randomForest(AB_tot ~ ., data = AB_tot_df, ntree = 500)
+# rf <- glm(AB_tot ~ ., data = AB_tot_df, family = 'gaussian')
+
+# Utilisation du conteneur iml Predictor()
+X <- AB_tot_df[which(names(AB_tot_df) != "AB_tot")]
+predictor <- Predictor$new(rf, data = X, y = AB_tot_df$AB_tot)
+
+
+
+
+cat("Importance of predictors")
+# Importance des fonctionnalités
+# On calcule l'importance de chaque caractéristique pour les prédictions avec FeatureImp. La mesure de l'importance des fonctionnalités fonctionne en mélangeant chaque fonctionnalité et en mesurant l'ampleur de la baisse des performances. Pour cette tâche de régression, nous choisissons de mesurer la perte de performance avec l'erreur absolue moyenne (« mae »), un autre choix serait l'erreur quadratique moyenne (« mse »).
+
+# https://christophm.github.io/interpretable-ml-book/feature-importance.html
+
+imp_AB_tot <- FeatureImp$new(predictor, loss = "rmse") # mean absolute error
+# imp_AB_tot <- FeatureImp$new(predictor, loss = "mse") # mean squared error  
+imp_AB_tot_plot = plot(imp_AB_tot)
+plot(imp_AB_tot)
+
+
+
+
+
+df_imp = imp_AB_tot$results
+df_impor_AB_tot <- as.data.frame(df_imp)
+for (i in names(df_impor_AB_tot)[-1]){
+df_impor_AB_tot[[i]] <- df_impor_AB_tot[[i]] / sum(df_impor_AB_tot[[i]])*100 
+}
+df_impor_AB_tot <- df_impor_AB_tot[order(df_impor_AB_tot$feature,decreasing = FALSE), ]
+
+df_impor_AB_tot$Resp_variable = rep("Abundance")
+# barplot(df_impor_AB_tot$importance, names.arg = df_impor_AB_tot$abr_var, 
+#         ylab = "Importance (%)", las = 2)
+
+
+
+
+
+cat("Predictor effects")
+# Effets de fonctionnalités
+# Les effets locaux accumulés décrivent comment les predicteurs influencent en moyenne la prédiction d'un modèle d'apprentissage automatique: ALE montre comment la prédiction change localement, lorsque les predicteurs varie. Les marques sur l'axe des x indiquent la distribution des predicteurs, montrant la pertinence d'une région pour l'interprétation (peu ou pas de points signifie que nous ne devons pas surinterpréter cette région).
+
+# ale <- FeatureEffect$new(predictor, feature = "GPS_X") # uniquement lstat
+# ale$plot()
+# ale$set.feature("rm")
+# ale$plot()
+effs <- FeatureEffects$new(predictor) # toutes les variables
+plot(effs)
+
+
+
+
+
+
+cat("Predictor interactions")
+# Mesurer les interactions
+# Nous pouvons également mesurer la force avec laquelle les fonctionnalités interagissent les unes avec les autres. La mesure d'interaction concerne la part de la variance de F(X) s’explique par l’interaction. La mesure est comprise entre 0 (pas d'interaction) et 1 (= 100 % de variance deF(X) en raison des interactions). Pour chaque fonctionnalité, nous mesurons dans quelle mesure elles interagissent avec toute autre fonctionnalité.
+
+
+interact <- Interaction$new(predictor)
+plot(interact)
+cat("Predictor interactions: Land use")
+interact <- Interaction$new(predictor, feature = "OS")
+plot(interact)
+
+```
+
+
+## Biomass
+
+```{r Biomass response, fig.align='center', eval=FALSE}
+#_______________
+BM_tot_df = prodij_explo_non_t[,c("BM_tot",predictor_deep)]
+
+BM_tot_df = drop_na(BM_tot_df)
+
+rf <- randomForest(BM_tot ~ ., data = BM_tot_df, ntree = 500)
+
+# Utilisation du conteneur iml Predictor()
+X <- BM_tot_df[which(names(BM_tot_df) != "BM_tot")]
+predictor <- Predictor$new(rf, data = X, y = BM_tot_df$BM_tot)
+
+
+cat("Importance of predictors")
+# Importance des fonctionnalités
+# On calcule l'importance de chaque caractéristique pour les prédictions avec FeatureImp. La mesure de l'importance des fonctionnalités fonctionne en mélangeant chaque fonctionnalité et en mesurant l'ampleur de la baisse des performances. Pour cette tâche de régression, nous choisissons de mesurer la perte de performance avec l'erreur absolue moyenne (« mae »), un autre choix serait l'erreur quadratique moyenne (« mse »).
+
+
+imp_BM_tot <- FeatureImp$new(predictor, loss = "rmse") # mean absolute error
+# imp_BM_tot <- FeatureImp$new(predictor, loss = "mse") # mean squared error  
+imp_BM_tot_plot = plot(imp_BM_tot)
+plot(imp_BM_tot)
+
+# imp_BM_tot$results
+# importance_rf <- as.data.frame(importance(rf))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# row.names(importance_rf)=NULL
+# importance_rf$percent <- importance_rf$IncNodePurity / sum(importance_rf$IncNodePurity)*100
+# barplot(importance_rf$percent, main = "Importance of variables for total Biomass", names.arg = importance_rf$nom, ylab = "Importance (%)", las = 2)
+df_imp = imp_BM_tot$results
+df_impor_BM_tot <- as.data.frame(df_imp)
+for (i in names(df_impor_BM_tot)[-1]){
+df_impor_BM_tot[[i]] <- df_impor_BM_tot[[i]] / sum(df_impor_BM_tot[[i]])*100 
+}
+df_impor_BM_tot <- df_impor_BM_tot[order(df_impor_BM_tot$feature,decreasing = FALSE), ]
+
+df_impor_BM_tot$Resp_variable = rep("Biomass")
+# barplot(df_impor_BM_tot$importance, names.arg = df_impor_BM_tot$abr_var, 
+#         ylab = "Importance (%)", las = 2)
+
+
+
+
+cat("Predictor effects")
+# Effets de fonctionnalités
+# Les effets locaux accumulés décrivent comment les predicteurs influencent en moyenne la prédiction d'un modèle d'apprentissage automatique: ALE montre comment la prédiction change localement, lorsque les predicteurs varie. Les marques sur l'axe des x indiquent la distribution des predicteurs, montrant la pertinence d'une région pour l'interprétation (peu ou pas de points signifie que nous ne devons pas surinterpréter cette région).
+
+# ale <- FeatureEffect$new(predictor, feature = "GPS_X") # uniquement lstat
+# ale$plot()
+# ale$set.feature("rm")
+# ale$plot()
+effs <- FeatureEffects$new(predictor) # toutes les variables
+plot(effs)
+
+
+
+
+
+
+cat("Predictor interactions")
+# Mesurer les interactions
+# Nous pouvons également mesurer la force avec laquelle les fonctionnalités interagissent les unes avec les autres. La mesure d'interaction concerne la part de la variance de F(X) s’explique par l’interaction. La mesure est comprise entre 0 (pas d'interaction) et 1 (= 100 % de variance deF(X) en raison des interactions). Pour chaque fonctionnalité, nous mesurons dans quelle mesure elles interagissent avec toute autre fonctionnalité.
+
+
+interact <- Interaction$new(predictor)
+plot(interact)
+cat("Predictor interactions: Land use")
+interact <- Interaction$new(predictor, feature = "OS")
+plot(interact)
+
+```
+
+## Richness
+
+```{r Richness response, fig.align='center' , eval=FALSE}
+#_______________
+Richesse_df = prodij_explo_non_t[,c("Richesse",predictor_deep)]
+Richesse_df = drop_na(Richesse_df)
+
+
+rf <- randomForest(Richesse ~ ., data = Richesse_df, ntree = 500)
+
+# Utilisation du conteneur iml Predictor()
+X <- Richesse_df[which(names(Richesse_df) != "Richesse")]
+predictor <- Predictor$new(rf, data = X, y = Richesse_df$Richesse)
+
+
+cat("Importance of predictors")
+# Importance des fonctionnalités
+# On calcule l'importance de chaque caractéristique pour les prédictions avec FeatureImp. La mesure de l'importance des fonctionnalités fonctionne en mélangeant chaque fonctionnalité et en mesurant l'ampleur de la baisse des performances. Pour cette tâche de régression, nous choisissons de mesurer la perte de performance avec l'erreur absolue moyenne (« mae »), un autre choix serait l'erreur quadratique moyenne (« mse »).
+
+imp_Richesse <- FeatureImp$new(predictor, loss = "rmse") # mean absolute error
+# imp_Richesse <- FeatureImp$new(predictor, loss = "mse") # mean squared error  
+imp_Richesse_plot = plot(imp_Richesse)
+plot(imp_Richesse) 
+
+
+# imp_Richesse$results
+# importance_rf <- as.data.frame(importance(rf))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# row.names(importance_rf)=NULL
+# importance_rf$percent <- importance_rf$IncNodePurity / sum(importance_rf$IncNodePurity)*100
+# barplot(importance_rf$percent, main = "Importance of variables for total Richness", names.arg = importance_rf$nom, ylab = "Importance (%)", las = 2)
+df_imp = imp_Richesse$results
+df_impor_Richesse <- as.data.frame(df_imp)
+for (i in names(df_impor_Richesse)[-1]){
+df_impor_Richesse[[i]] <- df_impor_Richesse[[i]] / sum(df_impor_Richesse[[i]])*100 
+}
+df_impor_Richesse <- df_impor_Richesse[order(df_impor_Richesse$feature,decreasing = FALSE), ]
+
+df_impor_Richesse$Resp_variable = rep("Richness")
+# barplot(df_impor_Richesse$importance, names.arg = df_impor_Richesse$abr_var, 
+#         ylab = "Importance (%)", las = 2)
+
+
+
+
+cat("Predictor effects")
+# Effets de fonctionnalités
+# Les effets locaux accumulés décrivent comment les predicteurs influencent en moyenne la prédiction d'un modèle d'apprentissage automatique: ALE montre comment la prédiction change localement, lorsque les predicteurs varie. Les marques sur l'axe des x indiquent la distribution des predicteurs, montrant la pertinence d'une région pour l'interprétation (peu ou pas de points signifie que nous ne devons pas surinterpréter cette région).
+
+# ale <- FeatureEffect$new(predictor, feature = "GPS_X") # uniquement lstat
+# ale$plot()
+# ale$set.feature("rm")
+# ale$plot()
+effs <- FeatureEffects$new(predictor) # toutes les variables
+plot(effs)
+
+
+
+
+
+
+cat("Predictor interactions")
+# Mesurer les interactions
+# Nous pouvons également mesurer la force avec laquelle les fonctionnalités interagissent les unes avec les autres. La mesure d'interaction concerne la part de la variance de F(X) s’explique par l’interaction. La mesure est comprise entre 0 (pas d'interaction) et 1 (= 100 % de variance deF(X) en raison des interactions). Pour chaque fonctionnalité, nous mesurons dans quelle mesure elles interagissent avec toute autre fonctionnalité.
+
+
+interact <- Interaction$new(predictor)
+plot(interact)
+cat("Predictor interactions: Land use")
+interact <- Interaction$new(predictor, feature = "OS")
+plot(interact)
+
+```
+
+
+## Importance of variables
+
+```{r, fig.align='center' , eval=FALSE}
+# df_combined <- bind_rows(
+#   df_impor_AB_tot %>% mutate(resp_variable = "Abondance"),
+#   df_impor_BM_tot %>% mutate(resp_variable = "Biomasse"),
+#   df_impor_Richesse %>% mutate(resp_variable = "Richesse")
+# )
+# nom_ordonne = c("Prec","Isot","CLC","CaCO3","Clay","N","P","Silt","Long","Lat")
+# df_combined$nom <- factor(df_combined$nom, levels = nom_ordonne)
+# df_combined <- df_combined[order(df_combined$nom), ]
+
+
+
+# g_impo = ggplot(df_combined, aes(x = nom , y = percent, fill = resp_variable)) +
+#   geom_bar(stat = "identity", color = "black", width = 0.7) +
+#   # scale_fill_viridis(discrete = TRUE) +
+#   scale_fill_manual(values = c("Abondance" = "black",
+#                                "Biomasse" = "gray",
+#                                "Richesse" = "brown")) +
+#   labs(title = "",
+#        x = "Predictor Variables",
+#        y = "Importance (%)") +
+#   theme_classic(base_size = 12) +
+#   theme(axis.text = element_text(size = 10),
+#         axis.title.y = element_text(
+#           vjust = 5, size = 12, face = "bold"),
+#         axis.title.x = element_text(vjust = -1, size = 12, face = "bold"),
+#         axis.ticks.length = unit(0.2, "cm"),
+#         legend.text = element_text(size = 10),
+#         legend.title = element_blank(),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         plot.title = element_text(size = 14, face = "bold"),
+#         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"),
+#         legend.position = "top"
+#       ) +
+#     coord_flip()
+# g_impo
+# 
+# ggsave("Results/proDij/importance_var.png", plot = g_impo, dpi = 300,height = 4,width = 6)
+# 
+# df_combined %>%
+#   group_by(nom) %>%
+#   summarise(percent = sum(percent))
+
+
+# imp_AB_tot_plot
+# imp_BM_tot_plot
+# imp_Richesse_plot
+
+combined_df <- rbind(imp_AB_tot$results, imp_BM_tot$results, imp_Richesse$results)
+combined_df$variable <- rep(c("Abundance", "Biomass", "Richness"), each = nrow(imp_AB_tot$results))
+
+
+g_impo = ggplot(combined_df, aes(x = importance, y = reorder(feature, importance), color = variable)) +
+  geom_point(size =2) +
+  geom_errorbar(aes(xmin = importance.05, xmax = importance.95), width = 0.1, size=0.8) +
+  labs(x = "Features importance (loss : rmse)", y = "") +
+  # theme() +
+  scale_color_manual(values = c("steelblue", "coral2", "black")) +
+  # theme_classic(base_size = 12) +
+  theme(axis.text = element_text(size = 10),
+        axis.title.y = element_text(
+          vjust = 5, size = 12, face = "bold"),
+        axis.title.x = element_text(vjust = -1, size = 12, face = "bold"),
+        axis.ticks.length = unit(0.2, "cm"),
+        legend.text = element_text(size = 10),
+        legend.title = element_blank(),
+        # panel.grid.major = element_blank(),
+        # panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, face = "bold"),
+        plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"),
+        legend.position = "top"
+      )
+
+# g_impo
+
+ggsave("Results/proDij/importance_var.png", plot = g_impo, dpi = 300
+       ,height = 4,width = 6.5
+       )
+
+```
+
+<p align="center">
+  <img src="Results/proDij/importance_var.png">
+</p>
+
+-->
+````
+
+## Divers
+
+**Date de prochain rencontre pour la publication =\> mail (29 juillet 2024)**
+
+**Stratégie de séléction des variables**
+
+```{r}
+
+col1 = c("Long", "Lat" ,"SableF" , "LimonF" ,"LimonG" ,"Argile" ,"C_org" ,"C.N", "pH_eau")
+
+col2 = c(col1,c("Sables","SableG","Limons","MO","C_tot","N_tot"))
+vdt_col=c("AB_tot","Richesse")
+col_explo = c(vdt_col,col2)
+
+
+factor_cols <- c("OS", "Ferti_", "w_sol_")
+
+# Extraire les colonnes numériques à explorer
+df_explo <- prodij[, col_explo]
+
+
+# Calcul des statistiques descriptives pour les colonnes numériques
+mean_values <- sapply(df_explo, mean, na.rm = TRUE)
+stderr_values <- sapply(df_explo, function(x) sd(x, na.rm = TRUE) / sqrt(length(x[!is.na(x)])))
+sd_values <- sapply(df_explo, sd, na.rm = TRUE)
+var_values <- sapply(df_explo, var, na.rm = TRUE)
+
+# Créer un dataframe de résumé pour les colonnes numériques
+summary_df <- data.frame(
+  Variables = col_explo,
+  Mean = round (mean_values,2),
+  Erreur_std = round (stderr_values,2),
+  Ecart_yp = round(sd_values,2)
+  # variance = round(var_values,2)
+)
+
+# Fonction pour calculer les fréquences des colonnes factorielles
+factor_summary <- function(col) {
+  tbl <- table(prodij[[col]])
+  data.frame(
+    variable = col,
+    level = names(tbl),
+    frequency = as.vector(tbl),
+    stringsAsFactors = FALSE
+  )
+}
+
+# Calculer les fréquences pour les colonnes factorielles
+factor_summaries <- lapply(factor_cols, factor_summary)
+
+# Combiner toutes les statistiques descriptives dans un seul dataframe
+summary_factor_df <- do.call(rbind, factor_summaries)
+
+# Afficher les dataframes de résumé
+row.names(summary_df) = NULL
+print(summary_df)
+# print(summary_factor_df)
+
+# Convertir le dataframe en texte tabulaire
+summary_text <- capture.output(print(summary_df, row.names = FALSE))
+
+# Copier le texte tabulaire dans le presse-papiers
+writeClipboard(summary_text)
+
+
+```

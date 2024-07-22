@@ -1,0 +1,148 @@
+---
+title: 'Check des Coordonnées GPS de la BDD V2.0'
+author: "Abdourahmane Diallo"
+date: '`r Sys.Date()`'
+output:
+  html_document:
+    code_download: yes
+    toc: yes
+    toc_float: yes
+    code_fold: hide
+    warning: no
+    message: no
+    theme: united
+    number_sections: yes
+    sec_number_suffix: '.   '
+    cache: true
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
+                      fig.align='center',fig.height=4)
+# rm(list=ls(all=TRUE))  # Reset the working environment
+library(openxlsx)
+library(readxl)
+library(knitr)
+library(tidyverse)
+library(leaflet) # pour la carto
+```
+
+
+# Exploration
+
+Pour le moment, j'ai appliquer acunes filtres (ni Protocole, ni OS,...)
+
+## Database import
+
+**BBD V1.9** (=> landworm_V1.9)
+
+-   Import of database **LandWorm_dataset_site_V1.9.xlsx** version **V1.9** (february 22, 2024)
+
+```{r,echo=TRUE}
+chemin_fichier_excel = "C:/Users/diall/Downloads/datas/LandWorm_dataset_site_V1.9.xlsx"
+landworm_V1.9 <- read.xlsx(chemin_fichier_excel, sheet = "Sheet1")
+
+landworm_V1.9 <- landworm_V1.9 %>% mutate(gps_x = as.numeric(gps_x),gps_y = as.numeric(gps_y))
+```
+
+-   The database contains **`r nrow(landworm_V1.9)`** rows and **`r ncol(landworm_V1.9)`** columns
+
+
+\n
+**BBD V2** (=> landworm)
+
+-   Import of database **LandWorm_dataset_site_01_07_2024.xlsx** (01/07/2024)
+
+```{r}
+chemin_fichier_excel = "C:/Users/diall/Downloads/datas/LandWorm_dataset_site_01_07_2024.xlsx"
+landworm <- read.xlsx(chemin_fichier_excel, sheet = "Sheet1")
+
+```
+
+-   The database contains **`r nrow(landworm)`** rows and **`r ncol(landworm)`** columns
+
+
+## Variations
+
+**BBD V1.9** (=> landworm_V1.9)
+```{r}
+summary(landworm_V1.9[,c("gps_x", "gps_y")])
+```
+Dans **BDD V1.9**, GPS_X varie de $-5.050$ à $9.521$
+
+**BBD V2** (=> landworm)
+```{r}
+summary(landworm[,c("gps_x", "gps_y")])
+```
+Dans **BDD V2**, GPS_X varie de $0.0001$ à $9.521$
+
+
+## Visualisations
+
+**Pour GPS_Y**
+```{r}
+## Pour gps_y
+plot(landworm_V1.9$gps_y, main = 'GPS_Y de V1.9 (en noir) vs GPS_Y de V2 (en bleu)')
+points(landworm$gps_y, col = "blue")
+```
+**On observe une bonne superposition des GPS_X dans les deux BDD**
+
+
+**Pour GPS_X**
+```{r}
+## Pour gps_x
+plot(landworm_V1.9$gps_x, main = 'GPS_X de V1.9 (en noir) vs GPS_X de V2 (en bleu)')
+points(landworm$gps_x, col = "blue")
+lines(c(0,8000), c(0,0), col = 'red', lwd = 3)
+```
+
+**On peut observer qu'en dessous de la ligne horizontale rouge, il y a que des points noir (c'est à dire uniquement des points venant de la BDD V1.9).**
+
+
+
+## Carte des observations
+
+
+
+**BBD V1.9** (=> landworm_V1.9)
+
+```{r}
+df_coord <- landworm_V1.9[, c("gps_x", "gps_y")] %>% mutate(gps_x = as.numeric(gps_x),gps_y = as.numeric(gps_y))
+
+df_coord$num_ligne <- seq(nrow(df_coord))
+carte <- leaflet(df_coord) %>%
+  addTiles() %>%
+  addCircleMarkers(lng = ~gps_x, lat = ~gps_y, radius = 0.8, fillOpacity = 0.8, fillColor = "blue")
+carte
+```
+
+
+**BBD V2** (=> landworm)
+
+```{r}
+df_coord <- landworm[, c("gps_x", "gps_y")] %>% mutate(gps_x = as.numeric(gps_x),gps_y = as.numeric(gps_y))
+
+df_coord$num_ligne <- seq(nrow(df_coord))
+carte <- leaflet(df_coord) %>%
+  addTiles() %>%
+  addCircleMarkers(lng = ~gps_x, lat = ~gps_y, radius = 0.8, fillOpacity = 0.8, fillColor = "blue")
+carte
+```
+
+# Date de Prelevement
+
+**Après avoir effectué les filtres selon les OWNERS, PROTOCOLES, OS,...:**
+
+Le programme **Theix, annee 2011** n'a pas de **Date de Prelevement**, est ce que c'est normal ?
+
+
+<p align="center">
+  <img src="C:/Users/diall/Downloads/datas/Date_Prelevement_ANNEE_SEULE.png">
+</p>
+
+
+
+
+

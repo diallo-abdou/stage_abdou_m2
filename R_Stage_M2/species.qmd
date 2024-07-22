@@ -21,8 +21,8 @@ code-fold: true
 width: 1700
 height: 900
 toc_depth: 1
-execute:
-  cache: true
+# execute:
+#   cache: true
 ---
 
 # Species explorations
@@ -38,8 +38,11 @@ library(kableExtra)
 library(rmarkdown)
 library(DT)
 library(gtExtras) # pour la
+library(plotly)
+library(openxlsx)
+library(readxl)
+library(reshape2)
 ```
-
 
 ```{r function}
 nuage_point <- function(df, var_rep, predicteur, titre_x, titre_y) {
@@ -127,16 +130,23 @@ ab_supprimee =  c("AB_AD","AB_JV","AB_SA","AB_STAD_X","AB_indéterminable","AB_I
 colonnes_AB <- colonnes_AB[!colonnes_AB %in% ab_supprimee]
 # colonnes_AB
 
+# bdd_sp$AB_Flabellodrilus_bartolii
+colonnes_AB <- colonnes_AB[!colonnes_AB %in% "AB_Flabellodrilus_bartolii"]
+
 ```
 
-- Database size: `r dim(bdd_sp)`
+-   Database size: `r dim(bdd_sp)`
 
 ## Species list
 
-<br/> 
-<div style="text-align: center">*List of 88 species present on EcoBioSoil data (3311 observations).*</div>
+<br/>
+
+::: {style="text-align: center"}
+*List of 87 species present on EcoBioSoil data (3311 observations).*
+:::
 
 ```{r}
+colonnes_AB <- colonnes_AB[!colonnes_AB %in% "AB_Flabellodrilus_bartolii"]
 df_colonnes_AB = colonnes_AB
 df_colonnes_AB <- sub("^AB_", "", df_colonnes_AB)
 df_colonnes_AB = data.frame(species=df_colonnes_AB)
@@ -155,11 +165,16 @@ df_colonnes_AB_italique %>% datatable(options = list(pageLength = 5), escape=TRU
 # expl_sp[, c(1:10)] %>% gt_plt_summary()
 ```
 
+# Global occurences
 
 ## Species occurrence
 
-<br/> 
-<div style="text-align: center">*Taxonomic occurence on the 3311 observations. P = presence (number of values > 0), A = abscence (number of 0) and NA = number of NA.*</div>
+<br/>
+
+::: {style="text-align: center"}
+*Taxonomic occurence on the 3311 observations. P = presence (number of values \> 0) and A = abscence (number of 0 and NA).*
+:::
+
 ```{r ocuu}
 df_occu <- data.frame(species = character(),
                       nbr_P = integer(),
@@ -197,48 +212,63 @@ col_ab = df_occu$species
 rownames(df_occu) <- sub("^AB_", "", rownames(df_occu))
 df_occu$species <- sub("^AB_", "", df_occu$species)
 df_occu_print=df_occu
-colnames(df_occu_print)= c("species","P", "A", "NA")
-# kable(df_occu_print,format ="pipe" ,align = "c",padding=5,caption = "Taxonomic occurence on the 3311 observations. P = presence (number of values > 0), A = abscence (number of 0) and NA = number of NA.")
-
-
+df_occu_print$nbr_A = df_occu_print$nbr_A + df_occu_print$nbr_NA
+df_occu_print$nbr_NA = NULL
+colnames(df_occu_print)= c("species","P", "A")
 df_occu_print %>% datatable(options = list(pageLength = 5))
 ```
 
 ## Species occurrence (%)
 
-<br/> 
-<div style="text-align: center">*Taxonomic occurence on the 3311 observations. P = presence (% number of values > 0), A = abscence (% number of 0) and NA = % number of NA.*</div>
+<br/>
+
+::: {style="text-align: center"}
+*Taxonomic occurence on the 3311 observations. P = presence (% number of values \> 0) and A = abscence (% number of 0 and NA).*
+:::
+
 ```{r occu pourc}
 # OCCU valeur relative _____________________________________________________
 # Calcul des pourcentages pour chaque colonne
 df_occu_pourc= df_occu
+df_occu_pourc$nbr_A = df_occu_pourc$nbr_A + df_occu_pourc$nbr_NA
+df_occu_pourc$nbr_NA = NULL
+
 df_occu_pourc <- df_occu_pourc %>%
-  mutate(pct_P = sprintf("%.2f%%", (nbr_P / nrow(bdd_sp)) * 100),
-         pct_A = sprintf("%.2f%%", (nbr_A / nrow(bdd_sp)) * 100),
-         pct_NA = sprintf("%.2f%%", (nbr_NA / nrow(bdd_sp)) * 100))
+  mutate(pct_P = sprintf("%.0f%%", (nbr_P / nrow(bdd_sp)) * 100),
+         pct_A = sprintf("%.0f%%", (nbr_A / nrow(bdd_sp)) * 100),
+         # pct_NA = sprintf("%.2f%%", (nbr_NA / nrow(bdd_sp)) * 100)
+         )
 
 # Supprimer les colonnes de comptage originales si nécessaire
 df_occu_pourc <- df_occu_pourc %>%
-  select(-nbr_P, -nbr_A, -nbr_NA)
+  dplyr::select(-nbr_P, -nbr_A)
 df_occu_print=df_occu_pourc
-colnames(df_occu_print)= c("species","P", "A", "NA")
-# kable(df_occu_print,format = "pipe",align = "c",padding=5,caption = "Taxonomic occurence on the 3311 observations. P = presence (% number of values > 0), A = abscence (% number of 0) and NA = % number of NA.\n")
-
+colnames(df_occu_print)= c("species","P", "A")
 df_occu_print %>% datatable(options = list(pageLength = 5))
 ```
 
-## Land use and species occurrence
+# Occurrence of species by land use
 
-<br/> 
-<div style="text-align: center">*Lists of land uses present on the 3311 observations of the EcoBioSoil database with n = number of levels of each land use.*</div>
+## Land use
+
+<br/>
+
+::: {style="text-align: center"}
+*Lists of land uses present on the 3311 observations of the EcoBioSoil database with n = number of levels of each land use.*
+:::
 
 ```{r occu par os}
 # levels(bdd_sp$clcm_lvl3)
 bdd_sp$clcm_lvl3= as.factor(bdd_sp$clcm_lvl3)
-levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3)=="Broad-leaved forest"]="Mixed forest"
-levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Coniferous forest"] <- "Mixed forest"
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3)=="Broad-leaved forest"]="Forest"
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Coniferous forest"] <- "Forest"
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3)=="Mixed forest"]="Forest"
 bdd_sp$clcm_lvl3= as.factor(bdd_sp$clcm_lvl3)
 bdd_sp = droplevels(bdd_sp)
+
+new_os = c("Forest","Natural grasslands","Pastures, meadows and other permanent grasslands under agricultural use","Non-irrigated arable land","Vineyards","Green urban areas")
+bdd_sp$clcm_lvl3 <- factor(bdd_sp$clcm_lvl3, levels = new_os)
+
 cl_original <- levels(bdd_sp$clcm_lvl3)
 
 
@@ -247,8 +277,8 @@ bdd_sp = droplevels(bdd_sp)
 sum_os <- as.data.frame(summary(bdd_sp$clcm_lvl3))
 
 
-new_cl <- c("mf", "gua", "ng", "nial", "p", "v")
-levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Mixed forest"] <- "mf"
+new_cl <- c("f", "ng",  "p","nial", "v" , "gua")
+levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Forest"] <- "f"
 levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Green urban areas"] <- "gua"
 levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Natural grasslands"] <- "ng"
 levels(bdd_sp$clcm_lvl3)[levels(bdd_sp$clcm_lvl3) == "Non-irrigated arable land"] <- "nial"
@@ -268,20 +298,18 @@ metric <- c("P", "A")
 # }
 
 # Initialisation du dataframe pour stocker les résultats
-df_occu <- data.frame(
-                      # species = character(),
-                      P_in_mf = as.numeric(), 
-                      A_in_mf = as.numeric(), 
-                      P_in_gua = as.numeric(), 
-                      A_in_gua = as.numeric(), 
-                      P_in_ng = as.numeric(), 
-                      A_in_ng = as.numeric(), 
-                      P_in_nial = as.numeric(), 
-                      A_in_nial = as.numeric(), 
-                      P_in_p = as.numeric(), 
-                      A_in_p = as.numeric(), 
-                      P_in_v = as.numeric(), 
-                      A_in_v = as.numeric(),
+df_occu <- data.frame( P_in_f = as.numeric(), 
+                       A_in_f = as.numeric(),    
+                       P_in_ng = as.numeric(), 
+                       A_in_ng = as.numeric(), 
+                       P_in_p = as.numeric(), 
+                       A_in_p = as.numeric(), 
+                       P_in_nial = as.numeric(), 
+                       A_in_nial = as.numeric(), 
+                       P_in_v = as.numeric(), 
+                       A_in_v = as.numeric(), 
+                       P_in_gua = as.numeric(), 
+                       A_in_gua = as.numeric(),
                       stringsAsFactors = FALSE)
 
 
@@ -291,14 +319,15 @@ for (col in colonnes_AB) {
   for (level in new_cl) {
     # Nombre de cellules avec une valeur différente de 0 et non NA
     P_count <- sum(bdd_sp[[col]] != 0 & !is.na(bdd_sp[[col]]) & bdd_sp$clcm_lvl3 == level)
-    # Nombre de cellules avec une valeur égale à 0
-    A_count <- sum(bdd_sp[[col]] == 0 & bdd_sp$clcm_lvl3 == level, na.rm = TRUE)
+    # Nombre de cellules avec une valeur égale à 0 ou NA
+    # A_count <- sum(bdd_sp[[col]] == 0 | is.na(bdd_sp[[col]]) & bdd_sp$clcm_lvl3 == level)
+    A_count = nrow(bdd_sp[bdd_sp$clcm_lvl3 == level,]) - P_count
     
-    # Assigner les valeurs calculées aux colonnes correspondantes
     df_occu[col, paste0("P_in_", level)] <- P_count
     df_occu[col, paste0("A_in_",level)] <- A_count
   }
 }
+# View(df_occu)
 # df_occu$species = row.names(df_occu)
 
 # rowsum(df_occu,group = 1:nrow(df_occu))
@@ -312,7 +341,18 @@ colnames(sum_os) <- c("n")
 
 
 # kable(sum_os,padding = 5,format = "pipe")
+sum_os$Land_use = rownames(sum_os)
+sum_os$Land_use = as.factor(sum_os$Land_use)
+rownames(sum_os) =1:6
+
+
+order_cols <- c("Land_use", "n")
+sum_os <- sum_os[, order_cols]
 sum_os %>% datatable(options = list(pageLength = 6))
+
+
+
+
 
 # 
 # 
@@ -327,36 +367,36 @@ sum_os %>% datatable(options = list(pageLength = 6))
 
 ## Occurrence of species by land use: presence
 
-<br/> 
-<div style="text-align: center">*Taxonomic occurence on the 3311 observations by land use: Presence only (number of values > 0) and n = number of levels in land use.*</div>
+<br/>
 
-```{r,out.width=2100}
+::: {style="text-align: center"}
+*Taxonomic occurence on the 3311 observations by land use: Presence only (number of values \> 0) and n = number of levels in land use.*
+:::
+
+```{r}
 df= df_occu
-df$mf <- df$P_in_mf
-df$gua <- df$P_in_gua
+df$f <- df$P_in_f
 df$ng <- df$P_in_ng
-df$nial <-df$P_in_nial
 df$p <- df$P_in_p
+df$nial <-df$P_in_nial
 df$v <- df$P_in_v
+df$gua <- df$P_in_gua
+
 df = df [,new_cl]
 df <- data.frame( Tot=apply(df,1,sum, na.rm=T ),df)
 df = df %>% arrange(desc(Tot))
-colnames(df) = c("Tot",paste( levels(bdd_sp$clcm_lvl3), "\n n=", table(bdd_sp$clcm_lvl3), sep="") ) 
-# kable(df, format = "html", align = "c", padding = 10,caption = "Taxonomic occurence on the 3311 observations by land use: Presence only (number of values > 0) and n = number of levels in land use.") %>%
-#   kable_styling(full_width = FALSE) %>%
-#   kable_styling(font_size = 35)
+colnames(df) = c(paste("Tot", "\n n=",nrow(bdd_sp), sep=""),paste( levels(bdd_sp$clcm_lvl3), "\n n=", table(bdd_sp$clcm_lvl3), sep="") ) 
 
-df$Tot = round (df$Tot*100/nrow(bdd_sp),1)
-# rownames(sum_os) = new_cl
-# df[,c(2:7)] = round (df[,c(2:7)]*100/sum_os$n,1)
+# rownames(df) = paste(1:nrow(df), rownames(df), sep = "  ")
+# df[,c(2:7)] = paste0 (round (df[,c(2:7)]*100/sum_os$n),"%")
 
-df$Tot = paste0(df$Tot,"%")
-df[,2] =  paste0(round(df$mf*100/107),"%")
-df[,3] =  paste0(round(df$gua*100/609),"%")
-df[,4]=  paste0(round(df$ng*100/57),"%")
-df[,5] = paste0(round(df$nial*100/1467),"%")
-df[,6] =  paste0(round(df$p*100/343),"%")
-df[,7] =  paste0(round(df$v*100/728),"%")
+df[,1] = paste0(round(df[,1]*100/nrow(bdd_sp)),"%")
+df[,2] =  paste0(round(df[,2]*100/107),"%")
+df[,3] =  paste0(round(df[,3]*100/57),"%")
+df[,4]=  paste0(round(df[,4]*100/343),"%")
+df[,5] = paste0(round(df[,5]*100/1467),"%")
+df[,6] =  paste0(round(df[,6]*100/728),"%")
+df[,7] =  paste0(round(df[,7]*100/609),"%")
 
 
 df %>% datatable(options = list(pageLength = 5))
@@ -365,41 +405,51 @@ df %>% datatable(options = list(pageLength = 5))
 
 ## Occurrence of species by land use : absence
 
-<br/> 
-<div style="text-align: center">*Taxonomic occurence on the 3311 observations by land use: Absence only (number of 0) and n = number of levels in land use.*</div>
+<br/>
+
+::: {style="text-align: center"}
+*Taxonomic occurence on the 3311 observations by land use: Absence only (number of 0 and NA) and n = number of levels in land use.*
+:::
 
 ```{r,out.width=1800}
 df= df_occu
-df$mf <- df$A_in_mf
-df$gua <- df$A_in_gua
+df$f <- df$A_in_f
 df$ng <- df$A_in_ng
-df$nial <-df$A_in_nial
 df$p <- df$A_in_p
+df$nial <-df$A_in_nial
 df$v <- df$A_in_v
+df$gua <- df$A_in_gua
+
 df = df [,new_cl]
 df <- data.frame( Tot=apply(df,1,sum, na.rm=T ),df)
-df = df %>% arrange(desc(Tot))
-colnames(df) = c("Tot",paste( levels(bdd_sp$clcm_lvl3), "\n n=", table(bdd_sp$clcm_lvl3), sep="") ) 
-# kable(df, format = "html", align = "c", padding = 10 ,caption = "Taxonomic occurence on the 3311 observations by land use: Absence only (number of 0) and n = number of levels in land use") %>%
-#   kable_styling(full_width = FALSE) %>%
-#   kable_styling(font_size = 35)
+df = df %>% arrange(Tot)
+colnames(df) = c(paste("Tot", "\n n=",nrow(bdd_sp), sep=""),paste( levels(bdd_sp$clcm_lvl3), "\n n=", table(bdd_sp$clcm_lvl3), sep="") )  
+
+# rownames(sum_os) = new_cl
+# df[,c(2:7)] = paste0 (round (df[,c(2:7)]*100/sum_os$n),"%")
+
+df[,1] = paste0(round(df$Tot*100/nrow(bdd_sp)),"%")
+df[,2] =  paste0(round(df$f*100/107),"%")
+df[,3] =  paste0(round(df$ng*100/57),"%")
+df[,4]=  paste0(round(df$p*100/343),"%")
+df[,5] = paste0(round(df$nial*100/1467),"%")
+df[,6] =  paste0(round(df$v*100/728),"%")
+df[,7] =  paste0(round(df$gua*100/609),"%")
+
 
 df %>% datatable(options = list(pageLength = 5))
 ```
 
+# Taxonomique structture
 
+## Global taxonomic structure
 
+<br/>
 
+::: {style="text-align: center"}
+*Taxonomic occurence on the 3311 observations: Presence only (number of values \> 0) and n = number of levels in land use.*
+:::
 
-
-
-
-
-
-
-
-
-## OCuu
 ```{r}
 df_occu <- data.frame(species = character(),
                       nbr_P = integer(),
@@ -434,16 +484,504 @@ for (i in colonnes_AB) {
 }
 df_occu = df_occu %>% arrange(desc(nbr_P))
 col_ab = df_occu$species
-rownames(df_occu) <- sub("^AB_", "", rownames(df_occu))
-df_occu$species <- sub("^AB_", "", df_occu$species)
-df_occu_print=df_occu
-colnames(df_occu_print)= c("species","P", "A", "NA")
-# kable(df_occu_print,format ="pipe" ,align = "c",padding=5,caption = "Taxonomic occurence on the 3311 observations. P = presence (number of values > 0), A = abscence (number of 0) and NA = number of NA.")
 
+df_occu_print=df_occu
+rownames(df_occu_print) <- sub("^AB_", "", rownames(df_occu_print))
+df_occu_print$species <- sub("^AB_", "", df_occu_print$species)
+df_occu_print$nbr_A = df_occu_print$nbr_A + df_occu_print$nbr_NA
+df_occu_print$nbr_NA = NULL
+colnames(df_occu_print)= c("species","P", "A")
+# df_occu_print %>% datatable(options = list(pageLength = 5))
+
+
+Others = c("AB_Lumbricus_sp", "AB_Aporrectodea_sp","AB_Octolasion_sp","AB_Aporrectodea_caliginosa_indéterminable","AB_Allolobophora_sp","AB_Aporrectodea_indéterminable")
+taxons_20 = df_occu[1:25,"species"]
+taxons_20 <- taxons_20[!taxons_20 %in% Others]
+
+predictors = c("gps_x" ,"gps_y" ,"CN" ,"K" ,"CaCO3" ,"N" ,"P" ,"bio4" ,"CEC" ,"pet_penman_mean" ,"bio13" ,"bio19" ,"cmi_mean" ,"bio15" ,"gdd10" ,"hurs_mean", "sable.0_30","limon.0_30","argile.0_30")
+
+bdd_occu = bdd_sp[, c("ID", "clcm_lvl3", colonnes_AB,predictors )]
+diff_others = c("ID", "clcm_lvl3",taxons_20,predictors)
+cols_to_sum <- setdiff(names(bdd_occu), diff_others)
+bdd_occu$Others <- rowSums(bdd_occu[, cols_to_sum], na.rm = TRUE)
+bdd_occu_mat =bdd_occu[, c("ID", "clcm_lvl3",predictors,taxons_20, "Others")]
+bdd_occu = bdd_occu[, c("ID", "clcm_lvl3",taxons_20, "Others")]
+
+
+
+
+colonnes_sp = c(taxons_20, "Others")
+df_occu <- data.frame(species = character(),
+                      nbr_P = integer(),
+                      nbr_A = integer(),
+                      nbr_NA = integer(),
+                      stringsAsFactors = FALSE)
+
+# Boucle à travers chaque colonne d'espèce
+for (i in colonnes_sp) {
+  
+  # Nombre de NA de l'espèce/colonne
+  i_nbr_NA <- sum(is.na(bdd_occu[, i]))
+  
+  # Nombre de 0 de l'espèce/colonne
+  i_nbr_A <- sum(bdd_occu[, i] == 0, na.rm = TRUE)
+  
+  # Nombre de cellules dont la valeur n'est pas NA et est supérieure à 0
+  i_nbr_P <- sum(!is.na(bdd_occu[, i]) & bdd_occu[, i] > 0)
+  
+  # Création du dataframe temporaire pour l'espèce actuelle
+  df_temp <- data.frame(species = i,
+                        nbr_P = i_nbr_P,
+                        nbr_A = i_nbr_A,
+                        nbr_NA = i_nbr_NA,
+                        stringsAsFactors = FALSE)
+  
+  # Ajout du dataframe temporaire au dataframe global
+  df_occu <- rbind(df_occu, df_temp)
+  
+  # Nettoyage de l'objet temporaire
+  rm(df_temp)
+}
+df_occu = df_occu %>% arrange(species)
+others_rows <- df_occu$species == "Others"
+df_occu <- bind_rows(df_occu[!others_rows, ], df_occu[others_rows, ])
+
+
+col_ab = df_occu$species
+
+df_occu_print=df_occu
+rownames(df_occu_print) <- sub("^AB_", "", rownames(df_occu_print))
+df_occu_print$species <- sub("^AB_", "", df_occu_print$species)
+df_occu_print$nbr_A = df_occu_print$nbr_A + df_occu_print$nbr_NA
+df_occu_print$nbr_NA = NULL
+colnames(df_occu_print)= c("species","P", "A")
+
+
+df_occu_print <- df_occu_print %>%
+  mutate(rank = dense_rank(desc(P)))
+
+
+# df_occu_print$P = paste0(round(df_occu_print$P*100/nrow(bdd_occu)),"%")
+# df_occu_print$A = paste0(round(df_occu_print$A*100/nrow(bdd_occu)),"%")
 
 df_occu_print %>% datatable(options = list(pageLength = 5))
+
 ```
 
+## Taxonomic structure by land use
+
+<br/>
+
+::: {style="text-align: center"}
+*Taxonomic occurence on the 3311 observations by land use: Presence only (number of values \> 0) and n = number of levels in land use.*
+:::
+
+```{r}
+# for (i in new_cl){
+#   cat(paste0(" P_in_", i," = as.numeric(),"))
+#   cat(paste0(" A_in_", i," = as.numeric(),"))
+# }
+
+df_occu <- data.frame( P_in_f = as.numeric(), 
+                       A_in_f = as.numeric(),    
+                       P_in_ng = as.numeric(), 
+                       A_in_ng = as.numeric(), 
+                       P_in_p = as.numeric(), 
+                       A_in_p = as.numeric(), 
+                       P_in_nial = as.numeric(), 
+                       A_in_nial = as.numeric(), 
+                       P_in_v = as.numeric(), 
+                       A_in_v = as.numeric(), 
+                       P_in_gua = as.numeric(), 
+                       A_in_gua = as.numeric(),
+                      stringsAsFactors = FALSE)
 
 
 
+# Boucle à travers chaque espèce
+new_cl <- c("f", "ng",  "p","nial", "v" , "gua")
+for (col in colonnes_sp) {
+  for (level in new_cl) {
+    # Nombre de cellules avec une valeur différente de 0 et non NA
+    P_count <- sum(bdd_occu[[col]] != 0 & !is.na(bdd_occu[[col]]) & bdd_occu$clcm_lvl3 == level)
+    # Nombre de cellules avec une valeur égale à 0 ou NA
+    # A_count <- sum(bdd_occu[[col]] == 0 | is.na(bdd_occu[[col]]) & bdd_occu$clcm_lvl3 == level)
+    A_count = nrow(bdd_occu[bdd_occu$clcm_lvl3 == level,]) - P_count
+    
+    df_occu[col, paste0("P_in_", level)] <- P_count
+    df_occu[col, paste0("A_in_",level)] <- A_count
+  }
+}
+# View(df_occu)
+# df_occu$species = row.names(df_occu)
+
+# rowsum(df_occu,group = 1:nrow(df_occu))
+rownames(df_occu) <- sub("^AB_", "", rownames(df_occu))
+
+
+df= df_occu
+rownames(df) <- sub("^AB_", "", rownames(df))
+df$f <- df$P_in_f
+df$ng <- df$P_in_ng
+df$p <- df$P_in_p
+df$nial <-df$P_in_nial
+df$v <- df$P_in_v
+df$gua <- df$P_in_gua
+
+df = df [,new_cl]
+df <- data.frame( Tot=apply(df,1,sum, na.rm=T ),df)
+df = df %>% arrange(desc(Tot))
+
+df_2 <- df %>%
+  mutate_all(~dense_rank(desc(.)))
+
+
+df_3 <- df %>%
+  mutate_all(~ (. / sum(.)) * 100)
+df_3 = as.data.frame(df_3)
+df_3 = round(df_3,2)
+
+df$Species = rownames(df)
+rownames(df) = 1:nrow(df)
+df = df %>% arrange(Species)
+others_rows <- df$Species == "Others"
+df <- bind_rows(df[!others_rows, ], df[others_rows, ])
+ord = c("Species", names(df)[-8])
+df <- df[, ord]
+
+colnames(df) = c("Species",paste("Tot", "\n n=",nrow(bdd_sp), sep=""),paste( levels(bdd_sp$clcm_lvl3), "\n n=", table(bdd_sp$clcm_lvl3), sep="") ) 
+
+# rownames(df) = paste(1:nrow(df), rownames(df), sep = "  ")
+# df[,c(2:7)] = paste0 (round (df[,c(2:7)]*100/sum_os$n),"%")
+
+# df[,2] = paste0(round(df[,2]*100/nrow(bdd_sp)),"%")
+# df[,3] =  paste0(round(df[,3]*100/107),"%")
+# df[,4] =  paste0(round(df[,4]*100/57),"%")
+# df[,5]=  paste0(round(df[,5]*100/343),"%")
+# df[,6] = paste0(round(df[,6]*100/1467),"%")
+# df[,7] =  paste0(round(df[,7]*100/728),"%")
+# df[,8] =  paste0(round(df[,8]*100/609),"%")
+
+df %>% datatable(options = list(pageLength = 5))
+```
+
+<br/> <br/> <br/>
+
+::: {style="text-align: center"}
+*Rank of species most present (abundance \>0) out of 3311 observations by land use and n = number of land use levels.*
+:::
+
+```{r}
+df_2$Species = rownames(df_2)
+rownames(df_2) = 1:nrow(df_2)
+df_2 = df_2 %>% arrange(Species)
+others_rows <- df_2$Species == "Others"
+df_2 <- bind_rows(df_2[!others_rows, ], df_2[others_rows, ])
+ord = c("Species", names(df_2)[-8])
+df_2 <- df_2[, ord]
+
+colnames(df_2) = c("Species",paste("Tot", "\n n=",nrow(bdd_sp), sep=""),paste( levels(bdd_sp$clcm_lvl3), "\n n=", table(bdd_sp$clcm_lvl3), sep="") )
+
+df_2 %>% datatable(options = list(pageLength = 5))
+```
+
+<br/> <br/> <br/>
+
+::: {style="text-align: center"}
+*Relative proportions of most present species (abundance \>0) out of 3311 observations by land use and n = number of land use levels.*
+:::
+
+```{r}
+df_3$Species = rownames(df_3)
+rownames(df_3) = 1:nrow(df_3)
+df_3 = df_3 %>% arrange(Species)
+others_rows <- df_3$Species == "Others"
+df_3 <- bind_rows(df_3[!others_rows, ], df_3[others_rows, ])
+ord = c("Species", names(df_3)[-8])
+df_3 <- df_3[, ord]
+df3 = df_3
+
+for (i in names(df_3[,-1])) {
+  df_3[[i]] = paste0(round(df_3[[i]],1), "%")
+}
+
+
+colnames(df_3) = c("Species",paste("Tot", "\n n=",nrow(bdd_sp), sep=""),paste( levels(bdd_sp$clcm_lvl3), "\n n=", table(bdd_sp$clcm_lvl3), sep="") )
+
+
+
+df_3 %>% datatable(options = list(pageLength = 5))
+```
+
+## Relative proportions of most present species
+
+```{r,fig.align='center', fig.height=12,fig.width=20}
+df_long <- gather(df3, clcm_lvl3, Pourcentage, -Species)
+df_long$clcm_lvl3 = as.factor(df_long$clcm_lvl3)
+# levels(df_long$clcm_lvl3)
+
+new_cl <- c("f", "ng",  "p","nial", "v" , "gua", "Tot")
+# new_cl = c("gua","v","nial","p", "ng","f","Tot")
+df_long$clcm_lvl3 <- factor(df_long$clcm_lvl3,levels = new_cl)
+library(dplyr)
+df_long <- df_long %>%
+ mutate(clcm_lvl3 = recode(clcm_lvl3,
+                            "f" = "Forest",
+                            "ng" = "Natural \n grasslands",
+                             "p" = "Pastures",
+                            "nial" = "Non irrigated \n arable land",
+                            "v" = "Vineyards",
+                           "gua" = "Green urban\n areas",
+                           "Tot" = "Total",
+                           ))
+
+gg = ggplot(df_long, aes(x = clcm_lvl3, y = Pourcentage, fill = Species)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Relative proportions of most present species in different land uses",
+       x = "Land use", y = "Relative proportions (%)") +
+  # theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_viridis_d() +
+  theme(panel.background=element_rect(fill="grey90"), # #7B7B7B15
+        axis.title=element_text(face="bold"), # Mettre en gras axis
+        axis.text.x=element_text(size=14, face="bold", color="black"),
+        axis.text.y=element_text(size=14, face="bold", color="black"),
+        axis.title.y=element_text(face="bold", vjust=1.5 ,size=15),
+        axis.title.x=element_text(face="bold", hjust=0.5 ,size=15,vjust=-20),
+        panel.grid.major=element_line(size=1.2, color="white"), # Augmenter taille ligne y
+        legend.title=element_blank(),
+        legend.text=element_text(size=12),
+        plot.margin=unit(c(1, 1, 1.5, 1), "cm"), # (top, right, bottom, left)
+        legend.position="right" ,
+        plot.title = element_text(face = "bold", size = 15)) 
+  # coord_flip() 
+
+# ggplotly(gg)
+
+pl <- ggplotly(gg)
+# pl <- layout(pl, margin = list(l = 0, r = 0, b = 0, t = 0))
+pl
+
+# chemin_fichier_excel = "C:/Users/diall/Downloads/datas/Table_Taxonomy_LandWorm_07_03_2024.xlsx"
+# sp_colors <- read.xlsx(chemin_fichier_excel, sheet = "sp_colors")
+# 
+# df_long <- df_long %>%
+#   left_join(sp_colors, by = "Species")
+
+# g=ggplot(df_long, aes(x = clcm_lvl3, y = Pourcentage, fill = Species)) +
+#   geom_bar(stat = "identity", position = "stack") +
+#   labs(title = "Relative occurrence of species in different land uses",
+#        x = "Land use", y = "Relative occurrence") +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   # scale_fill_manual(values = df_long$sp_colors) +
+#   theme(panel.background=element_rect(fill="white"), # #7B7B7B15
+#         axis.title=element_text(face="bold"), # Mettre en gras axis
+#         axis.text.x=element_text(size=14, face="bold", color="black"),
+#         axis.text.y=element_text(size=14, face="bold", color="black"),
+#         axis.title.y=element_text(face="bold", vjust=1.5 ,size=15),
+#         panel.grid.major=element_line(size=1.2, color="white"), # Augmenter taille ligne y
+#         legend.title=element_blank(),
+#         legend.text=element_text(size=12),
+#         plot.margin=unit(c(1, 1, 1.5, 1), "cm"), # (top, right, bottom, left)
+#         legend.position="right" ) +
+#   coord_flip() 
+# g <- g +
+#         scale_colour_manual( values=rev( c( rep ("black",21))) ) + # couleur texte
+#         scale_fill_manual( values=df_long$colors,
+#                            labels=df_long$Species)  # 
+# g
+```
+
+# Occurrences taxonomiques
+
+## Abondance brute (1/4)
+
+**DF brute**
+
+```{r}
+df = bdd_occu
+# dim(bdd_sp)
+# dim(df)
+# all (df$ID == bdd_sp$ID)
+
+# 
+# df$AB_tot = bdd_sp$AB_tot
+# rowSums(df[,3:23],na.rm = TRUE)
+
+# df_re = df
+
+# for ( i in names(df_re[,3:23])) {
+#   df_re[[i]] = df_re[[i]]/df_re$AB_tot *100
+#   df_re[[i]] = round (df_re[[i]],3)
+# }
+# df_re$AB_tot_c = NULL
+# 
+# names(df_re)
+# df_re[df_re$ID == "AF_BE_2014_ATE_NA",]
+
+# cat ("df brute")
+df [,-1] %>% datatable(options = list(pageLength = 10), rownames = FALSE)
+
+```
+
+**DF brute long**
+
+```{r}
+# cat ("df brute long")
+# 1
+df_long <- df %>%
+  pivot_longer(cols = -c(ID, clcm_lvl3),  
+               names_to = "Species",  
+               values_to = "Abundance")  
+df_long[,-1] %>% datatable(options = list(pageLength = 10), rownames = FALSE)
+
+```
+
+## Abondance moyenne de chaque espèces par OS (2/4)
+
+```{r}
+# 2
+df_long_mean <- df_long %>%
+  group_by(clcm_lvl3, Species) %>%
+  summarise(abundance_mean = mean(Abundance, na.rm = TRUE))
+df_long_mean$abundance_mean = round(df_long_mean$abundance_mean,3)
+df_long_mean %>% datatable(options = list(pageLength = 10), rownames = FALSE)
+
+```
+
+## Abondance moyenne relative de chaque especes par OS (3/4)
+
+```{r}
+# 3
+df_long_mean_pour <- df_long_mean %>%
+  group_by(clcm_lvl3) %>%
+  mutate(abundance_mean_pourc = abundance_mean / sum(abundance_mean, na.rm=TRUE))
+df_long_mean_pour$abundance_mean_pourc = df_long_mean_pour$abundance_mean_pourc*100
+df_long_mean_pour$abundance_mean_pourc = round(df_long_mean_pour$abundance_mean_pourc,3)
+df_long_mean_pour %>% datatable(options = list(pageLength = 10), rownames = FALSE)
+
+```
+
+## Histogramme (4/4)
+
+```{r,fig.align='center', fig.height=12,fig.width=20}
+df_long_mean_pour = as.data.frame(df_long_mean_pour)
+df_long_mean_pour$abundance_mean_pourc = round(df_long_mean_pour$abundance_mean_pourc,3)
+
+df_long_mean_pour <- df_long_mean_pour %>%
+  mutate(clcm_lvl3 = recode(clcm_lvl3,
+                            "f" = "Forest",
+                            "ng" = "Natural \n grasslands",
+                            "p" = "Pastures",
+                            "nial" = "Non irrigated \n arable land",
+                            "v" = "Vineyards",
+                            "gua" = "Green urban\n areas",
+                            # "Tot" = "Total",
+  ))
+
+g = ggplot(df_long_mean_pour, aes(x = clcm_lvl3 , y = abundance_mean_pourc, fill = Species)) +
+  geom_bar(stat = "identity", position = "fill") +
+  labs(x = "Occupation du sol", y = "Abondance relative (%)", 
+       title = "Occurrence taxonomique par occupation du sol") +
+  theme_minimal() +
+  scale_fill_viridis_d() +
+  theme(panel.background=element_rect(fill="grey90"), # #7B7B7B15
+        axis.title=element_text(face="bold"), # Mettre en gras axis
+        axis.text.x=element_text(size=14, face="bold", color="black"),
+        axis.text.y=element_text(size=14, face="bold", color="black"),
+        axis.title.y=element_text(face="bold", vjust=1.5 ,size=15),
+        axis.title.x=element_text(face="bold", hjust=0.5 ,size=15,vjust=-20),
+        panel.grid.major=element_line(size=1.2, color="white"), # Augmenter taille ligne y
+        legend.title=element_blank(),
+        legend.text=element_text(size=12),
+        plot.margin=unit(c(1, 1, 1.5, 1), "cm"), # (top, right, bottom, left)
+        legend.position="right" ,
+        plot.title = element_text(face = "bold", size = 15)) 
+
+# g <- g + geom_text(aes(label = format(abundance_mean_pourc, nsmall = 3)), position = position_fill(vjust = 0.5))
+
+ggplotly(g)
+```
+
+# Matrix correlation
+
+## Matrix correlation: species vs. predictors
+
+```{r,fig.align='center', fig.height=10,fig.width=18}
+# names(bdd_occu_mat)
+df = bdd_occu_mat
+colnames(df) = sub("^AB_", "", colnames(df))
+chemin_fichier_excel = "C:/Users/diall/Downloads/datas/Table_Taxonomy_LandWorm_07_03_2024.xlsx"
+sp_code <- read.xlsx(chemin_fichier_excel, sheet = "sp_code")
+
+for (i in names(df)){
+  if (i %in% sp_code$Species){
+    colnames(df)[colnames(df)==i]= sp_code[sp_code$Species==i,"code"]
+  }
+}
+# colnames(df)
+colnames(df)[colnames(df)=="pet_penman_mean"]= "PET"
+colnames(df)[colnames(df)=="sable.0_30"]= "sand"
+colnames(df)[colnames(df)=="limon.0_30"]= "silt"
+colnames(df)[colnames(df)=="argile.0_30"]= "clay"
+
+
+df$ID=NULL
+df$clcm_lvl3 = NULL
+
+# str(df)
+# df <- sapply(df, as.numeric)
+# df = as.data.frame(df)
+
+# nrow(df[!df$ACPX == 0 & !is.na(df$ACPX), ])
+# nrow(df[!df$LFE == 0 & !is.na(df$LFE), ])
+
+df  = df %>% select(-ACPX,-LFE)
+# names(df)
+colonnes_especes <- 20:40
+colonnes_especes <- 20:38
+colonnes_predicteurs <- 1:19
+
+# colSums(is.na(df))
+correlation_matrix <- cor(df[, colonnes_especes], df[, colonnes_predicteurs],use = "na.or.complete")
+
+# corrplot::corrplot(correlation_matrix, method = "color")
+# correlation_matrix %>% datatable(options = list(pageLength = 5))
+
+
+cor_df_long <- melt(correlation_matrix)
+colnames(cor_df_long) <- c( "Species", "Predictors", "Correlation")
+cor_df_long$Correlation = round(cor_df_long$Correlation,2)
+gg <- ggplot(cor_df_long, aes(x = Predictors , y = Species, fill = Correlation))+
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  labs(title = "Matrix correlation: species vs. predictors",
+       x = "Predictors ", y = "Species") +
+  # theme(axis.text.x = element_text(angle = 45, hjust = 0)) +
+  # coord_fixed() +
+  # theme_minimal() +
+  theme(panel.background=element_rect(fill="grey90"), # #7B7B7B15
+        axis.title=element_text(face="bold"), # Mettre en gras axis
+        axis.text.x=element_text(size=10, face="bold", color="black", angle = 45, hjust = 1),
+        axis.text.y=element_text(size=10, face="bold", color="black"),
+        axis.title.y=element_text(face="bold", vjust=1.5 ,size=12),
+        axis.title.x=element_text(face="bold", hjust=0.5 ,size=12,vjust=-15),
+        panel.grid.major=element_line(size=1, color="white"), # Augmenter taille ligne y
+        legend.title=element_blank(),
+        legend.text=element_text(size=10),
+        plot.margin=unit(c(1, 1, 1.5, 1), "cm"), # (top, right, bottom, left)
+        legend.position="right" ,
+        plot.title = element_text(face = "bold", size = 12)) 
+pl <- ggplotly(gg)
+pl
+
+```
+
+# Additional information {.unnumbered}
+
+<br/> <br/> <br/> See [species explorations](https://posit.cloud/content/7997063){target="_blank"} <br/> <br/> All the material from my internship, including scripts and datasets, is available on my [GitHub.](https://github.com/diallo-abdou/stage_abdou_m2){target="_blank"}
+
+#  {.unnumbered}
+
+::: {style="text-align: center; font-size: larger"}
+<strong>Thank you for your attention</strong>
+:::

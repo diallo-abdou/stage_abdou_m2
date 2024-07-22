@@ -1,9 +1,5 @@
 
 
-
-
-
-
 # POLY + RF ---------------------------------------------------------------
 
 
@@ -413,31 +409,37 @@ chemin = paste0("Results/kenSton_partition/RF_AB_tot_fig.png")
 ggsave(chemin, plot = RF_AB_tot,dpi = 300,width = 2.333333,height = 3)
 
 
-# selection ---------------------------------------------------------------
+
+
+# selection des variables ---------------------------------------------------------------
 
 
 ### AB_tot
-VAR_REP = "AB_tot"
-TRAIN = df_train_AB_tot
-TEST = df_test_AB_tot
 
-variables = names(df_explo_AB_tot[,-c(1:2)])
-interation=length(variables)
+VAR_REP = "AB_tot"
+TITRE = "Abundance"
+
+TRAIN = read.csv2(paste0("datas/",VAR_REP,"_train.csv"))
+TEST = read.csv2(paste0("datas/",VAR_REP,"_test.csv"))
+
+
+variables = names(TRAIN[,-1])
+iteration=length(variables)
 AB_tot_select_rf <- data.frame(var_rep=character(),
                                R_adj_train = numeric(),
                                R_adj_test = numeric(),
                                RMSE = numeric(),
                                delet = character(),
-                               interation = numeric())
+                               iteration = numeric())
 
 
 # Boucle pour la sélection des variables
-for (i in 1:interation) {
+for (i in 1:iteration) {
   AB_tot_RF_model <- ForetAlea(var_rep = VAR_REP, 
-                               df_app = TRAIN[, c(VAR_REP,"clcm_lvl3", variables)], 
-                               df_valid = TEST[, c(VAR_REP,"clcm_lvl3", variables)], 
+                               df_app = TRAIN[, c(VAR_REP, variables)], 
+                               df_valid = TEST[, c(VAR_REP, variables)], 
                                mtry = round(length(variables)/3), ntree = 1000, maxnodes = NULL)
-  cat(i, "/",interation,"\n")
+  cat(i, "/",iteration,"\n")
   
   #  la variable à supprimer
   var_importance <- data.frame(AB_tot_RF_model$model$importance)
@@ -451,13 +453,37 @@ for (i in 1:interation) {
                    R_adj_test = AB_tot_RF_model$R_adj_test,
                    RMSE = AB_tot_RF_model$RMSE,
                    delet = to_remove,
-                   interation = i)
+                   iteration = i)
   AB_tot_select_rf = rbind(AB_tot_select_rf,df)
   rm("df")
 }
 AB_tot_select_rf 
 write.csv2(x =AB_tot_select_rf,file = "models/AB_tot_select_rf.csv", row.names = FALSE)
 best_var_AB_tot = c("clcm_lvl3",variables,"bio4","N","gdd0","clay","P","CN","silt")
+
+
+
+AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+AB_tot_test = read.csv2("datas/AB_tot_test.csv")
+RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
+  df_app=AB_tot_train[, !colnames(AB_tot_train) %in% AB_tot_var_sup ], 
+  df_valid = AB_tot_test [, !colnames(AB_tot_train) %in% AB_tot_var_sup],
+                             mtry = AB_tot_best_mtry,
+                             ntree= AB_tot_best_ntree,
+                             maxnodes = NULL)
+RF_result_AB_tot$RMSE^2 # 29.8116;29.7025;29.7025;29.5936;29.9209;29.7025;29.7025;29.5936;29.4849;29.3764;29.4849
+RF_result_AB_tot$R_adj_train # 0.37;0.37;0.37;0.37; 0.37; 37;0.37; 0.37;0.37;0.37;0.37
+RF_result_AB_tot$R_adj_test #0.34; 0.35;0.35;0.35; 0.34;35;0.35; 0.35;0.36;0.36;0.36
+RF_result_AB_tot$model#  ;36.21;36.49;36.37; 36.33; 36.49;36.57; 36.67;36.11;36.35;36.43
+var_importance <- data.frame(RF_result_AB_tot$model$importance)
+row.names(var_importance)[which.min(var_importance$IncNodePurity)]
+var_importance$nom=rownames(var_importance)
+var_importance <- var_importance[order(var_importance$IncNodePurity,decreasing = TRUE), ]
+var_importance
+
+# on supprime: 
+AB_tot_var_sup=c("bio7","bio6", "bio4", "elevation","sand","hurs_mean", "bio15", "CEC","P", "gdd0","CN")
+
 
 
 
@@ -469,22 +495,22 @@ TRAIN = df_train_BM_tot
 TEST = df_test_BM_tot
 
 variables = names(df_explo_BM_tot[,-c(1:2)])
-interation=length(variables)
+iteration=length(variables)
 BM_tot_select_rf <- data.frame(var_rep=character(),
                                R_adj_train = numeric(),
                                R_adj_test = numeric(),
                                RMSE = numeric(),
                                delet = character(),
-                               interation = numeric())
+                               iteration = numeric())
 
 
 # Boucle pour la sélection des variables
-for (i in 1:interation) {
+for (i in 1:iteration) {
   BM_tot_RF_model <- ForetAlea(var_rep = VAR_REP, 
                                df_app = TRAIN[, c(VAR_REP,"clcm_lvl3", variables)], 
                                df_valid = TEST[, c(VAR_REP,"clcm_lvl3", variables)], 
                                mtry = round(length(variables)/3), ntree = 1000, maxnodes = NULL)
-  cat(i, "/",interation,"\n")
+  cat(i, "/",iteration,"\n")
   
   #  la variable à supprimer
   var_importance <- data.frame(BM_tot_RF_model$model$importance)
@@ -498,17 +524,43 @@ for (i in 1:interation) {
                    R_adj_test = BM_tot_RF_model$R_adj_test,
                    RMSE = BM_tot_RF_model$RMSE,
                    delet = to_remove,
-                   interation = i)
+                   iteration = i)
   BM_tot_select_rf = rbind(BM_tot_select_rf,df)
   rm("df")
 }
 BM_tot_select_rf 
 write.csv2(x =BM_tot_select_rf,file = "models/BM_tot_select_rf.csv", row.names = FALSE)
 best_var_BM_tot = c("clcm_lvl3",variables,"bio4","N","gdd0","clay","P","CN","silt")
-
 rest_BM_tot = variables[!variables %in% BM_tot_select_rf$delet]
 
 best_var_BM_tot = c("clcm_lvl3",rest_BM_tot,"CaCO3","bio18","clay")
+
+
+
+
+
+
+BM_tot_train = read.csv2("datas/BM_tot_train.csv")
+BM_tot_test = read.csv2("datas/BM_tot_test.csv")
+# names(BM_tot_train)
+RF_result_BM_tot = ForetAlea(var_rep ="BM_tot", 
+                             df_app=BM_tot_train[, !colnames(BM_tot_train) %in% BM_tot_var_sup ], 
+                             df_valid = BM_tot_test [, !colnames(BM_tot_train) %in% BM_tot_var_sup],
+                             mtry = BM_tot_best_mtry,
+                             ntree= BM_tot_best_ntree,
+                             maxnodes = NULL)
+RF_result_BM_tot$RMSE^2 #9.3636;9.3636;9.4864;9.5481;9.5481;9.5481;9.5481;9.61;9.61;9.7344;9.61;9.7344;9.8596
+RF_result_BM_tot$R_adj_train #0.3;0.3;0.31;0.3;0.31;0.3;0.31;0.31;0.31;0.31;0.31;0.3;0.31
+RF_result_BM_tot$R_adj_test #0.17;0.17;0.17;0.17;0.17;0.17;0.18;0.18;0.18;0.17;0.18;0.18;0.18
+RF_result_BM_tot$model#31.04;31.08;31.51;31.12;31.18;30.74;31.09;30.85;30.85;31.06;31.04;30.21;30.65
+var_importance <- data.frame(RF_result_BM_tot$model$importance)
+row.names(var_importance)[which.min(var_importance$IncNodePurity)]
+var_importance$nom=rownames(var_importance)
+var_importance <- var_importance[order(var_importance$IncNodePurity,decreasing = TRUE), ]
+var_importance
+
+# on supprime: 
+BM_tot_var_sup=c("bio7","pH","hurs_mean","bio3","bio4","sand","N","CN","gdd10","PET","K","CEC")
 
 
 
@@ -519,21 +571,21 @@ TRAIN = df_train_Richesse_tot
 TEST = df_test_Richesse_tot
 
 variables = names(df_explo_Richesse_tot[,-c(1:2)])
-interation=length(variables)
+iteration=length(variables)
 Richesse_tot_select_rf <- data.frame(var_rep=character(),
                                R_adj_train = numeric(),
                                R_adj_test = numeric(),
                                RMSE = numeric(),
                                delet = character(),
-                               interation = numeric())
+                               iteration = numeric())
 
 # Boucle pour la sélection des variables
-for (i in 1:interation) {
+for (i in 1:iteration) {
   Richesse_tot_RF_model <- ForetAlea(var_rep = VAR_REP, 
                                df_app = TRAIN[, c(VAR_REP,"clcm_lvl3", variables)], 
                                df_valid = TEST[, c(VAR_REP,"clcm_lvl3", variables)], 
                                mtry = round(length(variables)/3), ntree = 1000, maxnodes = NULL)
-  cat(i, "/",interation,"\n")
+  cat(i, "/",iteration,"\n")
   
   #  la variable à supprimer
   var_importance <- data.frame(Richesse_tot_RF_model$model$importance)
@@ -547,7 +599,7 @@ for (i in 1:interation) {
                    R_adj_test = Richesse_tot_RF_model$R_adj_test,
                    RMSE = Richesse_tot_RF_model$RMSE,
                    delet = to_remove,
-                   interation = i)
+                   iteration = i)
   Richesse_tot_select_rf = rbind(Richesse_tot_select_rf,df)
   rm("df")
 }
@@ -558,20 +610,60 @@ rest_Richesse_tot = variables[!variables %in% Richesse_tot_select_rf$delet]
   
 best_var_Richesse_tot = c("clcm_lvl3",rest_Richesse_tot,"CaCO3","bio18","clay")
 
-Richesse_tot_RF_model <- ForetAlea(var_rep = VAR_REP, 
-                                   df_app = TRAIN[, c(VAR_REP,best_var_Richesse_tot)], 
-                                   df_valid = TEST[, c(VAR_REP,best_var_Richesse_tot)], 
-                                   mtry = round(length(best_var_Richesse_tot)/3), ntree = 1000, maxnodes = NULL)
 
 
 
 
 
+Richesse_tot_train = read.csv2("datas/Richesse_tot_train.csv")
+Richesse_tot_test = read.csv2("datas/Richesse_tot_test.csv")
+RF_result_Richesse_tot = ForetAlea(var_rep ="Richesse_tot", 
+                             df_app=Richesse_tot_train[, !colnames(Richesse_tot_train) %in% Richesse_tot_var_sup ], 
+                             df_valid = Richesse_tot_test [, !colnames(Richesse_tot_train) %in% Richesse_tot_var_sup],
+                             mtry = 3,
+                             ntree= Richesse_tot_best_ntree,
+                             maxnodes = NULL)
+RF_result_Richesse_tot$RMSE # 1.79;1.79;1.78;1.8;1.8;1.81;1.78;1.79.1.79;1.8;1.84
+RF_result_Richesse_tot$R_adj_train # 0.53;0.53;0.53;0.52;0.53;0.53;0.53;0.53;0.530.52
+RF_result_Richesse_tot$R_adj_test #0.54;0.55;0.55;0.54;0.54;0.54;0.55;0.55;0.55;0.53
+RF_result_Richesse_tot$model#53.41;52.87;53.24;52.4;53.27;53.07;52.58;53.33;53.09
+var_importance <- data.frame(RF_result_Richesse_tot$model$importance)
+row.names(var_importance)[which.min(var_importance$IncNodePurity)]
+var_importance$nom=rownames(var_importance)
+var_importance <- var_importance[order(var_importance$IncNodePurity,decreasing = TRUE), ]
+var_importance
+
+# on supprime: 
+Richesse_tot_var_sup=c("bio10","bio9","elevation","hurs_mean","bio15","bio7","gdd10","CEC","bio13","bio18","pH","bio16","PET","bio4")
 
 
 
 
 
+# fusion predictors
+
+all_p = c(names(AB_tot_train),names(BM_tot_train), names(Richesse_tot_train))
+all_p = unique(all_p)
+
+
+
+AB_tot_predictors = c("CaCO3","gps_x","N","bio3","gps_y","argile.0_30",
+                      "limon.0_30","clcm_lvl3")
+
+BM_tot_predictors = c("gps_x","CaCO3","P","argile.0_30","gps_y",
+                      "limon.0_30","bio12", "clcm_lvl3")
+
+Richesse_tot_predictors = c("CaCO3","gps_x","N","gps_y", "P",
+                            "clcm_lvl3")
+
+Predictors_f = c(AB_tot_predictors,Richesse_tot_predictors,BM_tot_predictors)
+
+Predictors_f = unique(Predictors_f)
+Predictors_f
+for (i in Predictors_f){ cat(i,",")}
+
+Predictors_f = c("CaCO3" ,"gps_x" ,"N" ,"bio3" ,"gps_y" ,"clay" ,
+                 "silt" ,"clcm_lvl3" ,"P" ,"bio12" )
 
 
 

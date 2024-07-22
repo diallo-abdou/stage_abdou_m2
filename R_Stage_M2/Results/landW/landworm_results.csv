@@ -1,0 +1,16 @@
+"Datas","Algorithms","Response_variables","R2_adjusted_train","R2_adjusted_test","RMSE","MAE"
+"LandWorm","GLM","AB_tot",0.21,0.22,34.57,4.69
+"LandWorm","GAM","AB_tot",0.26,0.26,33.06,4.53
+"LandWorm","RF","AB_tot",0.78,0.43,25.2,3.95
+"LandWorm","GBM","AB_tot",0.65,0.43,25.3,3.96
+"LandWorm","ANN","AB_tot",0.34,0.35,28.95,4.25
+"LandWorm","GLM","BM_tot",0.16,0.23,10.69,2.57
+"LandWorm","GAM","BM_tot",0.23,0.24,10.5,2.54
+"LandWorm","RF","BM_tot",0.69,0.35,8.76,2.36
+"LandWorm","GBM","BM_tot",0.46,0.32,9.3,2.39
+"LandWorm","ANN","BM_tot",0.35,0.28,9.86,2.46
+"LandWorm","GLM","Richesse_tot",0.34,0.36,2.18,1.7
+"LandWorm","GAM","Richesse_tot",0.42,0.44,2.04,1.57
+"LandWorm","RF","Richesse_tot",0.83,0.59,1.75,1.32
+"LandWorm","GBM","Richesse_tot",0.76,0.59,1.75,1.33
+"LandWorm","ANN","Richesse_tot",0.43,0.4,2.16,1.64

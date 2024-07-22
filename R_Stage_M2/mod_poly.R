@@ -33,8 +33,8 @@ poly_models <- function(df, response_var, predictor_vars, degree = 2) {
 VAR_REP = "AB_tot"
 TITRE = "Abundance"
 
-training = read.csv2(paste0("datas/",VAR_REP,"_train.csv"))
-test = read.csv2(paste0("datas/",VAR_REP,"_test.csv"))
+training = read.csv2(paste0("datas/proDij/",VAR_REP,"_train.csv"))
+test = read.csv2(paste0("datas/proDij/",VAR_REP,"_test.csv"))
 
 # varImpPlot(best20_var_AB_tot$model)
 # sup_var_AB_tot = c( "bio6", "CEC","sand","elevation","bio4","hurs_mean","bio7","silt","P", "bio15")
@@ -42,8 +42,8 @@ test = read.csv2(paste0("datas/",VAR_REP,"_test.csv"))
 # test = test %>% select(- sup_var_AB_tot)
 
 
-
-variables = names(training[,2:20])
+# variables = names(training[,2:20])
+variables = c("Long", "Lat" ,"SableF" , "LimonF" ,"LimonG" ,"Argile" ,"C_org" ,"C.N", "pH_eau")
 AB_tot_poly_models <- poly_models(df = training, response_var = VAR_REP, predictor_vars = variables, degree = 5)
 AB_tot_poly_models$best_degree <- apply(AB_tot_poly_models[, -1], 1, which.max)
 AB_tot_poly_models$formula <- paste("poly(", AB_tot_poly_models$predictor, ",", AB_tot_poly_models$best_degree, ")", 
@@ -51,6 +51,8 @@ AB_tot_poly_models$formula <- paste("poly(", AB_tot_poly_models$predictor, ",", 
 
 formula_str <- paste(VAR_REP, "~ clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + 
                      clcm_lvl3p + clcm_lvl3v")
+
+formula_str <- paste(VAR_REP, "~ OS")
 
 for (var in AB_tot_poly_models$formula ) {
   formula_str <-
@@ -68,6 +70,13 @@ mod <- lm(formula_str, data = training)
 mod = stepAIC(mod)
 # plot(mod)
 summary(mod)
+
+pred__ = predict(mod, newdata = test)
+
+df__ = data.frame(obs = test[[VAR_REP]], prd = as.numeric(pred__))
+res__ <- rms::lrm(df__$obs  ~df__$prd , x= TRUE, y = TRUE)
+res__ = res__$stats
+r_adj_test__ = round (res__[["R2"]],2)
 # 
 # for(i in names(training[,2:20])) cat(i,"*")
 # mod <- lm(AB_tot ~ clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial +

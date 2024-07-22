@@ -1,3 +1,4 @@
+
 # Flags
 FLAGS <- flags(flag_integer('dense_units1', 64),
                flag_integer('dense_units2', 32),
@@ -26,10 +27,6 @@ model <- keras_model_sequential() %>%
   layer_dropout(rate = FLAGS$dropout4) %>% 
   
   layer_dense(units = 1)
-
-
-
-
 
 
 

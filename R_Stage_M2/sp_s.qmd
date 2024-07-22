@@ -4,9 +4,10 @@ format: revealjs
 editor: visual
 ---
 
-# Relationship between species abundance and predictors 
+# Relationship between species abundance and predictors
 
 ## Menu
+
 ```{r}
 bdd_sp_explo=bdd_sp
 
@@ -96,11 +97,11 @@ predictors = c("gps_x" ,"gps_y" ,"CN" ,"K" ,"CaCO3" ,"N" ,"clay" ,"P" ,"bio4" ,"
 
 [AB_Lumbricus_festivus]
 
-[AB_Aporrectodea_indéterminable]
+[AB_Aporrectodea_indéterminable](#ab_aporrectodea_ind�terminable)
 
 [AB_Proctodrilus_antipai_antipai]
 
-[AB_Aporrectodea_caliginosa_indéterminable]
+[AB_Aporrectodea_caliginosa_indéterminable](#ab_aporrectodea_caliginosa_ind�terminable)
 
 [AB_Allolobophora_sp]
 
@@ -114,7 +115,7 @@ predictors = c("gps_x" ,"gps_y" ,"CN" ,"K" ,"CaCO3" ,"N" ,"clay" ,"P" ,"bio4" ,"
 
 [AB_Eiseniella_tetraedra]
 
-[AB_Lumbricus_rubellus_indéterminable]
+[AB_Lumbricus_rubellus_indéterminable](#ab_lumbricus_rubellus_ind�terminable)
 
 [AB_Eisenia_andrei]
 
@@ -138,8 +139,7 @@ predictors = c("gps_x" ,"gps_y" ,"CN" ,"K" ,"CaCO3" ,"N" ,"clay" ,"P" ,"bio4" ,"
 
 [AB_Aporrectodea_ripicola]
 
-[AB_Prosellodrilus_fragilis_indéterminable]
-
+[AB_Prosellodrilus_fragilis_indéterminable](#ab_prosellodrilus_fragilis_ind�terminable)
 
 ```{r gener code}
 # code <- NULL
@@ -159,9 +159,10 @@ predictors = c("gps_x" ,"gps_y" ,"CN" ,"K" ,"CaCO3" ,"N" ,"clay" ,"P" ,"bio4" ,"
 
 ```
 
+## AB_Allolobophora_chlorotica_chlorotica
 
-##  AB_Allolobophora_chlorotica_chlorotica
 [Menu]
+
 ```{r  AB_Allolobophora_chlorotica_chlorotica , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Allolobophora_chlorotica_chlorotica'
 titre <- paste('
@@ -180,12 +181,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_caliginosa
 [Menu]
+
+## AB_Aporrectodea_caliginosa
+
+[Menu]
+
 ```{r  AB_Aporrectodea_caliginosa , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_caliginosa'
 titre <- paste('
@@ -204,12 +206,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_rosea
 [Menu]
+
+## AB_Aporrectodea_rosea
+
+[Menu]
+
 ```{r  AB_Aporrectodea_rosea , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_rosea'
 titre <- paste('
@@ -228,12 +231,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_terrestris
 [Menu]
+
+## AB_Lumbricus_terrestris
+
+[Menu]
+
 ```{r  AB_Lumbricus_terrestris , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_terrestris'
 titre <- paste('
@@ -252,12 +256,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_castaneus
 [Menu]
+
+## AB_Lumbricus_castaneus
+
+[Menu]
+
 ```{r  AB_Lumbricus_castaneus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_castaneus'
 titre <- paste('
@@ -276,12 +281,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_longa_longa
 [Menu]
+
+## AB_Aporrectodea_longa_longa
+
+[Menu]
+
 ```{r  AB_Aporrectodea_longa_longa , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_longa_longa'
 titre <- paste('
@@ -300,12 +306,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_icterica
 [Menu]
+
+## AB_Aporrectodea_icterica
+
+[Menu]
+
 ```{r  AB_Aporrectodea_icterica , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_icterica'
 titre <- paste('
@@ -324,12 +331,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_giardi
 [Menu]
+
+## AB_Aporrectodea_giardi
+
+[Menu]
+
 ```{r  AB_Aporrectodea_giardi , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_giardi'
 titre <- paste('
@@ -348,12 +356,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_sp
 [Menu]
+
+## AB_Lumbricus_sp
+
+[Menu]
+
 ```{r  AB_Lumbricus_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_sp'
 titre <- paste('
@@ -372,12 +381,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_nocturna
 [Menu]
+
+## AB_Aporrectodea_nocturna
+
+[Menu]
+
 ```{r  AB_Aporrectodea_nocturna , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_nocturna'
 titre <- paste('
@@ -396,12 +406,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Satchellius_mammalis
 [Menu]
+
+## AB_Satchellius_mammalis
+
+[Menu]
+
 ```{r  AB_Satchellius_mammalis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Satchellius_mammalis'
 titre <- paste('
@@ -420,12 +431,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_sp
 [Menu]
+
+## AB_Aporrectodea_sp
+
+[Menu]
+
 ```{r  AB_Aporrectodea_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_sp'
 titre <- paste('
@@ -444,12 +456,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_caliginosa_meridionalis
 [Menu]
+
+## AB_Aporrectodea_caliginosa_meridionalis
+
+[Menu]
+
 ```{r  AB_Aporrectodea_caliginosa_meridionalis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_caliginosa_meridionalis'
 titre <- paste('
@@ -468,12 +481,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Octolasion_cyaneum
 [Menu]
+
+## AB_Octolasion_cyaneum
+
+[Menu]
+
 ```{r  AB_Octolasion_cyaneum , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Octolasion_cyaneum'
 titre <- paste('
@@ -492,12 +506,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_rubellus_rubellus
 [Menu]
+
+## AB_Lumbricus_rubellus_rubellus
+
+[Menu]
+
 ```{r  AB_Lumbricus_rubellus_rubellus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_rubellus_rubellus'
 titre <- paste('
@@ -516,12 +531,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_friendi
 [Menu]
+
+## AB_Lumbricus_friendi
+
+[Menu]
+
 ```{r  AB_Lumbricus_friendi , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_friendi'
 titre <- paste('
@@ -540,12 +556,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Murchieona_muldali
 [Menu]
+
+## AB_Murchieona_muldali
+
+[Menu]
+
 ```{r  AB_Murchieona_muldali , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Murchieona_muldali'
 titre <- paste('
@@ -564,12 +581,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_rubellus_castanoides
 [Menu]
+
+## AB_Lumbricus_rubellus_castanoides
+
+[Menu]
+
 ```{r  AB_Lumbricus_rubellus_castanoides , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_rubellus_castanoides'
 titre <- paste('
@@ -588,12 +606,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_centralis
 [Menu]
+
+## AB_Lumbricus_centralis
+
+[Menu]
+
 ```{r  AB_Lumbricus_centralis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_centralis'
 titre <- paste('
@@ -612,12 +631,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Octolasion_sp
 [Menu]
+
+## AB_Octolasion_sp
+
+[Menu]
+
 ```{r  AB_Octolasion_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Octolasion_sp'
 titre <- paste('
@@ -636,12 +656,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Allolobophora_chlorotica_postepheba
 [Menu]
+
+## AB_Allolobophora_chlorotica_postepheba
+
+[Menu]
+
 ```{r  AB_Allolobophora_chlorotica_postepheba , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Allolobophora_chlorotica_postepheba'
 titre <- paste('
@@ -660,12 +681,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_festivus
 [Menu]
+
+## AB_Lumbricus_festivus
+
+[Menu]
+
 ```{r  AB_Lumbricus_festivus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_festivus'
 titre <- paste('
@@ -684,12 +706,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_indéterminable
 [Menu]
+
+## AB_Aporrectodea_indéterminable {#ab_aporrectodea_ind�terminable}
+
+[Menu]
+
 ```{r  AB_Aporrectodea_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_indéterminable'
 titre <- paste('
@@ -708,12 +731,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Proctodrilus_antipai_antipai
 [Menu]
+
+## AB_Proctodrilus_antipai_antipai
+
+[Menu]
+
 ```{r  AB_Proctodrilus_antipai_antipai , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Proctodrilus_antipai_antipai'
 titre <- paste('
@@ -732,12 +756,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_caliginosa_indéterminable
 [Menu]
+
+## AB_Aporrectodea_caliginosa_indéterminable {#ab_aporrectodea_caliginosa_ind�terminable}
+
+[Menu]
+
 ```{r  AB_Aporrectodea_caliginosa_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_caliginosa_indéterminable'
 titre <- paste('
@@ -756,12 +781,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Allolobophora_sp
 [Menu]
+
+## AB_Allolobophora_sp
+
+[Menu]
+
 ```{r  AB_Allolobophora_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Allolobophora_sp'
 titre <- paste('
@@ -780,12 +806,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_castaneus_disjonctus
 [Menu]
+
+## AB_Lumbricus_castaneus_disjonctus
+
+[Menu]
+
 ```{r  AB_Lumbricus_castaneus_disjonctus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_castaneus_disjonctus'
 titre <- paste('
@@ -804,12 +831,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Eisenia_fetida
 [Menu]
+
+## AB_Eisenia_fetida
+
+[Menu]
+
 ```{r  AB_Eisenia_fetida , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Eisenia_fetida'
 titre <- paste('
@@ -828,12 +856,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Dendrobaena_octaedra
 [Menu]
+
+## AB_Dendrobaena_octaedra
+
+[Menu]
+
 ```{r  AB_Dendrobaena_octaedra , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Dendrobaena_octaedra'
 titre <- paste('
@@ -852,12 +881,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_trapezoides
 [Menu]
+
+## AB_Aporrectodea_trapezoides
+
+[Menu]
+
 ```{r  AB_Aporrectodea_trapezoides , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_trapezoides'
 titre <- paste('
@@ -876,12 +906,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Eiseniella_tetraedra
 [Menu]
+
+## AB_Eiseniella_tetraedra
+
+[Menu]
+
 ```{r  AB_Eiseniella_tetraedra , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Eiseniella_tetraedra'
 titre <- paste('
@@ -900,12 +931,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_rubellus_indéterminable
 [Menu]
+
+## AB_Lumbricus_rubellus_indéterminable {#ab_lumbricus_rubellus_ind�terminable}
+
+[Menu]
+
 ```{r  AB_Lumbricus_rubellus_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_rubellus_indéterminable'
 titre <- paste('
@@ -924,12 +956,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Eisenia_andrei
 [Menu]
+
+## AB_Eisenia_andrei
+
+[Menu]
+
 ```{r  AB_Eisenia_andrei , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Eisenia_andrei'
 titre <- paste('
@@ -948,12 +981,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_cupulifera
 [Menu]
+
+## AB_Aporrectodea_cupulifera
+
+[Menu]
+
 ```{r  AB_Aporrectodea_cupulifera , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_cupulifera'
 titre <- paste('
@@ -972,12 +1006,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Dendrodrilus_rubidus
 [Menu]
+
+## AB_Dendrodrilus_rubidus
+
+[Menu]
+
 ```{r  AB_Dendrodrilus_rubidus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Dendrodrilus_rubidus'
 titre <- paste('
@@ -996,12 +1031,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Dendrobaena_attemsi
 [Menu]
+
+## AB_Dendrobaena_attemsi
+
+[Menu]
+
 ```{r  AB_Dendrobaena_attemsi , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Dendrobaena_attemsi'
 titre <- paste('
@@ -1020,12 +1056,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Prosellodrilus_amplisetosus_amplisetosus
 [Menu]
+
+## AB_Prosellodrilus_amplisetosus_amplisetosus
+
+[Menu]
+
 ```{r  AB_Prosellodrilus_amplisetosus_amplisetosus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Prosellodrilus_amplisetosus_amplisetosus'
 titre <- paste('
@@ -1044,12 +1081,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_georgii
 [Menu]
+
+## AB_Aporrectodea_georgii
+
+[Menu]
+
 ```{r  AB_Aporrectodea_georgii , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_georgii'
 titre <- paste('
@@ -1068,12 +1106,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Dendrobaena_sp
 [Menu]
+
+## AB_Dendrobaena_sp
+
+[Menu]
+
 ```{r  AB_Dendrobaena_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Dendrobaena_sp'
 titre <- paste('
@@ -1092,12 +1131,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Avelona_ligra
 [Menu]
+
+## AB_Avelona_ligra
+
+[Menu]
+
 ```{r  AB_Avelona_ligra , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Avelona_ligra'
 titre <- paste('
@@ -1116,12 +1156,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Octolasion_lacteum_lacteum
 [Menu]
+
+## AB_Octolasion_lacteum_lacteum
+
+[Menu]
+
 ```{r  AB_Octolasion_lacteum_lacteum , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Octolasion_lacteum_lacteum'
 titre <- paste('
@@ -1140,12 +1181,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Allolobophora_burgondiae
 [Menu]
+
+## AB_Allolobophora_burgondiae
+
+[Menu]
+
 ```{r  AB_Allolobophora_burgondiae , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Allolobophora_burgondiae'
 titre <- paste('
@@ -1164,12 +1206,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_ripicola
 [Menu]
+
+## AB_Aporrectodea_ripicola
+
+[Menu]
+
 ```{r  AB_Aporrectodea_ripicola , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_ripicola'
 titre <- paste('
@@ -1188,12 +1231,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Prosellodrilus_fragilis_indéterminable
 [Menu]
+
+## AB_Prosellodrilus_fragilis_indéterminable {#ab_prosellodrilus_fragilis_ind�terminable}
+
+[Menu]
+
 ```{r  AB_Prosellodrilus_fragilis_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Prosellodrilus_fragilis_indéterminable'
 titre <- paste('
@@ -1212,12 +1256,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Dendrodrilus_rubidus_subrubicundus
 [Menu]
+
+## AB_Dendrodrilus_rubidus_subrubicundus
+
+[Menu]
+
 ```{r  AB_Dendrodrilus_rubidus_subrubicundus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Dendrodrilus_rubidus_subrubicundus'
 titre <- paste('
@@ -1236,12 +1281,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Scherotheca_sp
 [Menu]
+
+## AB_Scherotheca_sp
+
+[Menu]
+
 ```{r  AB_Scherotheca_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Scherotheca_sp'
 titre <- paste('
@@ -1260,12 +1306,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Microscolex_dubius
 [Menu]
+
+## AB_Microscolex_dubius
+
+[Menu]
+
 ```{r  AB_Microscolex_dubius , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Microscolex_dubius'
 titre <- paste('
@@ -1284,12 +1331,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Prosellodrilus_sp
 [Menu]
+
+## AB_Prosellodrilus_sp
+
+[Menu]
+
 ```{r  AB_Prosellodrilus_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Prosellodrilus_sp'
 titre <- paste('
@@ -1308,12 +1356,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_tuberculata
 [Menu]
+
+## AB_Aporrectodea_tuberculata
+
+[Menu]
+
 ```{r  AB_Aporrectodea_tuberculata , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_tuberculata'
 titre <- paste('
@@ -1332,12 +1381,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Scherotheca_savignyi_savignyi
 [Menu]
+
+## AB_Scherotheca_savignyi_savignyi
+
+[Menu]
+
 ```{r  AB_Scherotheca_savignyi_savignyi , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Scherotheca_savignyi_savignyi'
 titre <- paste('
@@ -1356,12 +1406,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_longa
 [Menu]
+
+## AB_Aporrectodea_longa
+
+[Menu]
+
 ```{r  AB_Aporrectodea_longa , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_longa'
 titre <- paste('
@@ -1380,12 +1431,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Eisenia_veneta
 [Menu]
+
+## AB_Eisenia_veneta
+
+[Menu]
+
 ```{r  AB_Eisenia_veneta , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Eisenia_veneta'
 titre <- paste('
@@ -1404,12 +1456,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_limicola
 [Menu]
+
+## AB_Aporrectodea_limicola
+
+[Menu]
+
 ```{r  AB_Aporrectodea_limicola , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_limicola'
 titre <- paste('
@@ -1428,12 +1481,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Microscolex_phosphoreus
 [Menu]
+
+## AB_Microscolex_phosphoreus
+
+[Menu]
+
 ```{r  AB_Microscolex_phosphoreus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Microscolex_phosphoreus'
 titre <- paste('
@@ -1452,12 +1506,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Eisenia_sp
 [Menu]
+
+## AB_Eisenia_sp
+
+[Menu]
+
 ```{r  AB_Eisenia_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Eisenia_sp'
 titre <- paste('
@@ -1476,12 +1531,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Eisenia_fetida_indéterminable
 [Menu]
+
+## AB_Eisenia_fetida_indéterminable
+
+[Menu]
+
 ```{r  AB_Eisenia_fetida_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Eisenia_fetida_indéterminable'
 titre <- paste('
@@ -1500,12 +1556,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Prosellodrilus_fragilis_fragilis
 [Menu]
+
+## AB_Prosellodrilus_fragilis_fragilis
+
+[Menu]
+
 ```{r  AB_Prosellodrilus_fragilis_fragilis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Prosellodrilus_fragilis_fragilis'
 titre <- paste('
@@ -1524,12 +1581,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_friendi_lineatus
 [Menu]
+
+## AB_Lumbricus_friendi_lineatus
+
+[Menu]
+
 ```{r  AB_Lumbricus_friendi_lineatus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_friendi_lineatus'
 titre <- paste('
@@ -1548,12 +1606,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Dendrobaena_cognettii
 [Menu]
+
+## AB_Dendrobaena_cognettii
+
+[Menu]
+
 ```{r  AB_Dendrobaena_cognettii , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Dendrobaena_cognettii'
 titre <- paste('
@@ -1572,12 +1631,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Dendrobaena_hortensis
 [Menu]
+
+## AB_Dendrobaena_hortensis
+
+[Menu]
+
 ```{r  AB_Dendrobaena_hortensis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Dendrobaena_hortensis'
 titre <- paste('
@@ -1596,12 +1656,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Bimastos_eiseni
 [Menu]
+
+## AB_Bimastos_eiseni
+
+[Menu]
+
 ```{r  AB_Bimastos_eiseni , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Bimastos_eiseni'
 titre <- paste('
@@ -1620,12 +1681,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Allolobophora_chlorotica_indéterminable
 [Menu]
+
+## AB_Allolobophora_chlorotica_indéterminable
+
+[Menu]
+
 ```{r  AB_Allolobophora_chlorotica_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Allolobophora_chlorotica_indéterminable'
 titre <- paste('
@@ -1644,12 +1706,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_rubellus_friendoides
 [Menu]
+
+## AB_Lumbricus_rubellus_friendoides
+
+[Menu]
+
 ```{r  AB_Lumbricus_rubellus_friendoides , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_rubellus_friendoides'
 titre <- paste('
@@ -1668,12 +1731,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Haplotaxis_sp
 [Menu]
+
+## AB_Haplotaxis_sp
+
+[Menu]
+
 ```{r  AB_Haplotaxis_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Haplotaxis_sp'
 titre <- paste('
@@ -1692,12 +1756,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Octodrilus_complanatus
 [Menu]
+
+## AB_Octodrilus_complanatus
+
+[Menu]
+
 ```{r  AB_Octodrilus_complanatus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Octodrilus_complanatus'
 titre <- paste('
@@ -1716,12 +1781,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Lumbricus_meliboeus
 [Menu]
+
+## AB_Lumbricus_meliboeus
+
+[Menu]
+
 ```{r  AB_Lumbricus_meliboeus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Lumbricus_meliboeus'
 titre <- paste('
@@ -1740,12 +1806,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Prosellodrilus_occidentalis_occidentalis
 [Menu]
+
+## AB_Prosellodrilus_occidentalis_occidentalis
+
+[Menu]
+
 ```{r  AB_Prosellodrilus_occidentalis_occidentalis , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Prosellodrilus_occidentalis_occidentalis'
 titre <- paste('
@@ -1764,12 +1831,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Scherotheca_dinoscolex
 [Menu]
+
+## AB_Scherotheca_dinoscolex
+
+[Menu]
+
 ```{r  AB_Scherotheca_dinoscolex , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Scherotheca_dinoscolex'
 titre <- paste('
@@ -1788,12 +1856,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Dendrobaena_alpina_zeugochaeta
 [Menu]
+
+## AB_Dendrobaena_alpina_zeugochaeta
+
+[Menu]
+
 ```{r  AB_Dendrobaena_alpina_zeugochaeta , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Dendrobaena_alpina_zeugochaeta'
 titre <- paste('
@@ -1812,12 +1881,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Microscolex_sp
 [Menu]
+
+## AB_Microscolex_sp
+
+[Menu]
+
 ```{r  AB_Microscolex_sp , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Microscolex_sp'
 titre <- paste('
@@ -1836,12 +1906,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Hemigastrodrilus_monicae
 [Menu]
+
+## AB_Hemigastrodrilus_monicae
+
+[Menu]
+
 ```{r  AB_Hemigastrodrilus_monicae , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Hemigastrodrilus_monicae'
 titre <- paste('
@@ -1860,12 +1931,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Prosellodrilus_praticola
 [Menu]
+
+## AB_Prosellodrilus_praticola
+
+[Menu]
+
 ```{r  AB_Prosellodrilus_praticola , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Prosellodrilus_praticola'
 titre <- paste('
@@ -1884,12 +1956,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Octolasion_lacteum
 [Menu]
+
+## AB_Octolasion_lacteum
+
+[Menu]
+
 ```{r  AB_Octolasion_lacteum , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Octolasion_lacteum'
 titre <- paste('
@@ -1908,12 +1981,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Scherotheca_savignyi_indéterminable
 [Menu]
+
+## AB_Scherotheca_savignyi_indéterminable
+
+[Menu]
+
 ```{r  AB_Scherotheca_savignyi_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Scherotheca_savignyi_indéterminable'
 titre <- paste('
@@ -1932,12 +2006,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Aporrectodea_rubra
 [Menu]
+
+## AB_Aporrectodea_rubra
+
+[Menu]
+
 ```{r  AB_Aporrectodea_rubra , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Aporrectodea_rubra'
 titre <- paste('
@@ -1956,12 +2031,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Scherotheca_rhodana
 [Menu]
+
+## AB_Scherotheca_rhodana
+
+[Menu]
+
 ```{r  AB_Scherotheca_rhodana , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Scherotheca_rhodana'
 titre <- paste('
@@ -1980,12 +2056,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Pheretima_indéterminable
 [Menu]
+
+## AB_Pheretima_indéterminable
+
+[Menu]
+
 ```{r  AB_Pheretima_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Pheretima_indéterminable'
 titre <- paste('
@@ -2004,12 +2081,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Prosellodrilus_pyrenaicus
 [Menu]
+
+## AB_Prosellodrilus_pyrenaicus
+
+[Menu]
+
 ```{r  AB_Prosellodrilus_pyrenaicus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Prosellodrilus_pyrenaicus'
 titre <- paste('
@@ -2028,12 +2106,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Scherotheca_nivicola
 [Menu]
+
+## AB_Scherotheca_nivicola
+
+[Menu]
+
 ```{r  AB_Scherotheca_nivicola , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Scherotheca_nivicola'
 titre <- paste('
@@ -2052,12 +2131,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Panoniona_leoni
 [Menu]
+
+## AB_Panoniona_leoni
+
+[Menu]
+
 ```{r  AB_Panoniona_leoni , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Panoniona_leoni'
 titre <- paste('
@@ -2076,12 +2156,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Pheritima_Diffringens
 [Menu]
+
+## AB_Pheritima_Diffringens
+
+[Menu]
+
 ```{r  AB_Pheritima_Diffringens , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Pheritima_Diffringens'
 titre <- paste('
@@ -2100,12 +2181,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Scherotheca_aquitana
 [Menu]
+
+## AB_Scherotheca_aquitana
+
+[Menu]
+
 ```{r  AB_Scherotheca_aquitana , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Scherotheca_aquitana'
 titre <- paste('
@@ -2124,12 +2206,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Proctodrilus_antipai_indéterminable
 [Menu]
+
+## AB_Proctodrilus_antipai_indéterminable
+
+[Menu]
+
 ```{r  AB_Proctodrilus_antipai_indéterminable , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Proctodrilus_antipai_indéterminable'
 titre <- paste('
@@ -2148,12 +2231,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Prosellodrilus_amplisetosus
 [Menu]
+
+## AB_Prosellodrilus_amplisetosus
+
+[Menu]
+
 ```{r  AB_Prosellodrilus_amplisetosus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Prosellodrilus_amplisetosus'
 titre <- paste('
@@ -2172,12 +2256,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Scherotheca_porotheca
 [Menu]
+
+## AB_Scherotheca_porotheca
+
+[Menu]
+
 ```{r  AB_Scherotheca_porotheca , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Scherotheca_porotheca'
 titre <- paste('
@@ -2196,12 +2281,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Orodrilus_paradoxus_paradoxus
 [Menu]
+
+## AB_Orodrilus_paradoxus_paradoxus
+
+[Menu]
+
 ```{r  AB_Orodrilus_paradoxus_paradoxus , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Orodrilus_paradoxus_paradoxus'
 titre <- paste('
@@ -2220,12 +2306,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Octolasion_lacteum_gracile
 [Menu]
+
+## AB_Octolasion_lacteum_gracile
+
+[Menu]
+
 ```{r  AB_Octolasion_lacteum_gracile , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Octolasion_lacteum_gracile'
 titre <- paste('
@@ -2244,12 +2331,13 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-##  AB_Flabellodrilus_bartolii
 [Menu]
+
+## AB_Flabellodrilus_bartolii
+
+[Menu]
+
 ```{r  AB_Flabellodrilus_bartolii , fig.align='center', fig.height=4, fig.width=4, fig.dpi=150}
 var_rep <- 'AB_Flabellodrilus_bartolii'
 titre <- paste('
@@ -2268,16 +2356,5 @@ for (i in 1:length(predictors)) {
   print(g)
 }
 ```
-[Menu] 
 
-
-
-
-
-
-
-
-
-
-
-
+[Menu]

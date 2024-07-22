@@ -23,6 +23,7 @@ height: 700
 toc_depth: 1
 execute: 
   cache: true
+# quarto render Stage_M2_Abdou.qmd --cache-refresh 
 ---
 
 # Setting {.unnumbered}
@@ -37,22 +38,22 @@ execute:
 ## Packages {.unnumbered}
 
 ```{r packages,echo=TRUE}
-  library(tidyverse)
-  library(glme)
-  library(lsmeans)
-  library(agricolae)
-  library(RVAideMemoire)
+    library(tidyverse)
+  # library(glme)
+  # library(lsmeans)
+  # library(agricolae)
+  # library(RVAideMemoire)
   library(corrplot)
-  library(emmeans)
+  # library(emmeans)
   library(lme4)
   library(multcomp)
   library(MASS)
-  library(R2WinBUGS)
+  # library(R2WinBUGS)
   library(arm)
-  library(performance)
-  library(AER)
-  library(AICcmodavg)
-  library(MuMIn)
+  # library(performance)
+  # library(AER)
+  # library(AICcmodavg)
+  # library(MuMIn)
   library(ade4)
   library(Hmisc)
   library(labdsv)
@@ -77,39 +78,42 @@ execute:
   library(ggeffects)
   library(gratia)
   library(GGally) # pour ggpair
-  library(caTools)
-  library(rpart)
-  library(rpart.plot)
+  # library(caTools)
+  # library(rpart)
+  # library(rpart.plot)
   library(openxlsx)
   library(readxl)
-  library(leaflet)
+  library(leaflet) # pour la carto
   library(quarto)
   library(raster)
   library(knitr)
   library(kableExtra)
   library(stringr)
   library(plotly)
-  library(PerformanceAnalytics)
-  library(usdm)
+  # library(PerformanceAnalytics)
+  # library(usdm)
   library(vcd) # pour la distribution des var reponse
   library(prospectr)# pour split data avec kenSton()
-  library(glmnet)
+  # library(glmnet)
   library(randomForest)
-  library(doParallel)
+  # library(doParallel)
   library(gbm)
   library(kernlab)
-  library(e1071)
+  # library(e1071)
   library(ggforce)
   library(keras)
   library(tensorflow)
   library(neuralnet)
-  library(parallel)
-  library(iml) # pour l'interpretabilitÃ© des models https://cran.r-project.org/web/packages/iml/vignettes/intro.html
-  library(e1071)
+  # library(parallel)
+  library(iml) # pour l'interpretabilité des models https://cran.r-project.org/web/packages/iml/vignettes/intro.html
   library(stats)
-  library(Boruta) # importance des predicteurs
-
-
+  # library(Boruta) # importance des predicteurs
+  library(bestNormalize)
+  library(rmarkdown)
+  library(DT)
+  library(gtExtras) # pour la
+  library(reshape2)
+  # library(mapview)
 
 ```
 
@@ -127,7 +131,7 @@ taux_completion<-
     # Calcule du pourcentage de NA par colonne
     pourcentage_colonnes <- round(colMeans(is.na(df)) * 100, 1)
     
-    # Creation d'un dataframe rÃ©sultat avec deux colonnes
+    # Creation d'un dataframe résultat avec deux colonnes
     result <-
       data.frame(
         Variables = names(df),
@@ -198,10 +202,10 @@ extraction <- function(nom_col, tif_file_path, df = bdd, conv = 1) {
   #df <- df %>%filter(!is.na(gps_x) & !is.na(gps_y))
   raster_data <- raster(tif_file_path)
   
-  # CrÃ©ation d'un dataframe pour stocker les valeurs extraites
+  # Création d'un dataframe pour stocker les valeurs extraites
   df_interne <- data.frame(gps_x = df$gps_x, gps_y = df$gps_y)
   proj4Str <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-  # Transformer les coordonnÃ©es GPS en systÃ¨me de coordonnÃ©es du raster
+  # Transformer les coordonnées GPS en systÃ¨me de coordonnées du raster
   gps_coords_sp <- SpatialPoints(df_interne, proj4string = CRS(proj4Str))
   gps_coords_proj <- spTransform(gps_coords_sp, crs(raster_data))
   
@@ -225,18 +229,18 @@ moyenne_val_extrct <- function(nom_col, vec_col, df=bdd) {
 }
 
 
-# tests de corrÃ©lation avec un seuil -----------------------------------------------
+# tests de corrélation avec un seuil -----------------------------------------------
 cor_function_seuil <- function(data, seuil,affiche=FALSE) {
-  # CrÃ©ation d'un vecteur pour stocker les paires de variables corrÃ©lÃ©es
+  # Création d'un vecteur pour stocker les paires de variables corrélées
   variables_corr <- c()
   
-  # Boucle pour tester la corrÃ©lation entre chaque paire de variables
+  # Boucle pour tester la corrélation entre chaque paire de variables
   for (i in 1:(ncol(data) - 1)) {
     for (j in (i + 1):ncol(data)) {
-      # Calcul de la corrÃ©lation entre les variables i et j
+      # Calcul de la corrélation entre les variables i et j
       cor_value <- stats::cor(data[, i], data[, j], use = "na.or.complete")
       
-      # Stockage du rÃ©sultat dans le vecteur si supÃ©rieur au seuil
+      # Stockage du résultat dans le vecteur si supérieur au seuil
       if (cor_value >= seuil | cor_value <= -seuil) {
         if(affiche){
         cat(
@@ -270,7 +274,7 @@ test_grub <- function(data, variable, direction = "maxi") {
       
       # Obtenir la p-valeur du test
       p.value <- test_aberrant$p.value
-      # Si la p-valeur est infÃ©rieure au seuil de 0.05, on supprime la valeur aberrante
+      # Si la p-valeur est inférieure au seuil de 0.05, on supprime la valeur aberrante
       if (p.value < 0.05) {
         max_value <- max(data[[variable]],na.rm=TRUE)
         data <- subset(data, data[[variable]] != max_value | is.na(data[[variable]]))
@@ -287,7 +291,7 @@ test_grub <- function(data, variable, direction = "maxi") {
       test_aberrant <- grubbs.test(data[[variable]], opposite = TRUE)
       # Obtenir la p-valeur du test
       p.value <- test_aberrant$p.value
-      # Si la p-valeur est infÃ©rieure au seuil de 0.05, on supprime la valeur aberrante
+      # Si la p-valeur est inférieure au seuil de 0.05, on supprime la valeur aberrante
       if (p.value < 0.05) {
         min_value <- min(data[[variable]],na.rm=TRUE)
         data <- subset(data, data[[variable]] != min_value | is.na(data[[variable]]))
@@ -420,8 +424,8 @@ plot_comp = function (df,ylabel, title_class, legende = TRUE,plotly = FALSE,xlab
   
   p = ggplot(df, aes(x = observation)) + 
   #graph representant observed
-  geom_point(aes(y = Observed, color = "Real values")) +
-  geom_line(aes(y = Observed, color = "Real values")) + 
+  geom_point(aes(y = Observed, color = "Observed valuess")) +
+  geom_line(aes(y = Observed, color = "Observed valuess")) + 
   
   #graph representant  preticted
   geom_point(aes(y = Predicted, color="Predicted values")) +
@@ -432,7 +436,7 @@ plot_comp = function (df,ylabel, title_class, legende = TRUE,plotly = FALSE,xlab
   ylim(min(c(min(df$Predicted), min(df$Observed))),
             max(c(max(df$Predicted), max(df$Observed)))+1  ) +
     
-  scale_color_manual(values = c("Real values"='red', "Predicted values"='green')) +
+  scale_color_manual(values = c("Observed valuess"='red', "Predicted values"='green')) +
   annotate("text", x = 8, y =  max(c(max(df$Predicted), max(df$Observed)))+1, 
            label = title_class, col = "black", size = 3)
 
@@ -457,24 +461,35 @@ calcule_R2 = function(x, y) {cor(x, y)^2}
 
 ## Plan {.unnumbered}
 
--   Database exploration
+<!-- -   Database exploration -->
 
--   Earthworms data
+<!-- -   Earthworms data -->
 
--   Soil data extraction
+<!-- -   Soil data extraction -->
 
--   Climate data extraction
+<!-- -   Climate data extraction -->
 
--   Exploratory analysis
+<!-- -   Exploratory analysis -->
 
--   Importance of variables
+<!-- -   Importance of variables -->
 
--   Predictive modeling
+<!-- -   Predictive modeling -->
 
--   Results 
+<!-- -   Results  -->
 
--   Conclusion
+<!-- -   Conclusion -->
 
+-   Explorations de l'occurence des espÃ¨ces ( [species.html](species.html){target="_blank"} )
+
+<!-- Exploration des relations entre les espÃ¨ces et les predicteurs -->
+
+-   ACP sur les predicteurs de l'abondance, la biomasse et la richesse ( [ACP])
+
+-   Resultats ( [Réduction et effets des variables](#rãduction-et-effets-des-variables) )
+
+-   Plan du rapport ( [Stage_abdou.docx](C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/Redaction/Stage_abdou.docx){target="_blank"} )
+
+-   To do next ( [To do next] )
 
 # Database import
 
@@ -554,7 +569,7 @@ bdd <- bdd %>%filter(!is.na(gps_x) & !is.na(gps_y))
 -   Merging database and climat database
 
 ```{r mergins & climat, echo=TRUE}
-# Ajout variables climatiques (voir chunk extraction donnÃ©es climatiques)
+# Ajout variables climatiques (voir chunk extraction données climatiques)
 chemin_fichier <- "C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/datas/bdd_climat_ok.rds"
 # saveRDS(bdd_climat_ok, chemin_fichier)
 bdd_climat_ok <- readRDS(chemin_fichier)
@@ -595,17 +610,15 @@ bdd <- droplevels(bdd)
 
 ## Focus on years
 
--   Cleaning the Annee column 
-<br/> 
-<!--
-```{r years1, echo=TRUE}
-# levels(bdd$Annee) # parfois annÃ©es et jours et ou mois
-# bdd$Annee= as.factor(bdd$Annee)
-# bdd$Annee <- gsub("^(\\d{4}).*$", "\\1", bdd$Annee) # on prend uniquement les 04 premier chiffre
-# bdd$Annee= as.factor(bdd$Annee)
+-   Cleaning the Annee column <br/> <!--
+            ```{r years1, echo=TRUE}
+            # levels(bdd$Annee) # parfois années et jours et ou mois
+            # bdd$Annee= as.factor(bdd$Annee)
+            # bdd$Annee <- gsub("^(\\d{4}).*$", "\\1", bdd$Annee) # on prend uniquement les 04 premier chiffre
+            # bdd$Annee= as.factor(bdd$Annee)
 
-```
--->
+            ```
+            -->
 
 -   CR of Annee = **`r df_col[df_col$Variable=="Annee", "CR"]`** (`r length(levels(bdd$Annee))` levels)
 
@@ -616,7 +629,7 @@ colnames(summary_df) <- c("Numbers")
 kable(summary_df)
 ```
 
-
+````{=html}
 <!-- 
 -   We remove all the years before **1990** and the NA 
 
@@ -635,9 +648,9 @@ kable(summary_df,padding = 5)
 
 -   The database therefore changes from **`r n_ligne`** to **`r nrow(bdd)`** observations. 
 -->
+````
 
-
-
+````{=html}
 <!--
 ## Table land use & protocol ( start )
 
@@ -664,7 +677,7 @@ kable(table(bdd$clcm_lvl2, bdd$Protocole,exclude = NULL),padding = 10,align = "c
 kable(table(bdd$clcm_lvl3, bdd$Protocole,exclude = NULL),padding = 0,align = "c")
 ```
 -->
-
+````
 
 ## Focus on protocols
 
@@ -677,11 +690,11 @@ colnames(summary_df) <- c("Numbers")
 kable(summary_df,padding = 5)
 ```
 
-
+```{=html}
 <!--
 -   Selection of protocols: **F_HS, FHS, hand sorting, HS**
 -->
-
+```
 -   Selection of protocols: **F_HS, HS**
 
 ```{r select protocols,echo=TRUE}
@@ -698,7 +711,7 @@ kable(summary_df,padding = 5)
 
 -   The database therefore changes from **`r n_ligne`** to **`r nrow(bdd)`** observations.
 
-
+```{=html}
 <!--
 -   Merging levels :
 
@@ -714,7 +727,7 @@ kable(summary_df,padding = 5)
     kable(summary_df,padding = 5)
     ```
 -->
-
+```
 ## Focus on clcm_lvl1
 
 -   CR of clcm_lvl1 = **`r df_col[df_col$Variable=="clcm_lvl1","CR"]`** (`r length(levels(bdd$clcm_lvl1))` levels)
@@ -794,7 +807,7 @@ kable(summary_df,padding = 5)
 
 ## Land use selection (clcm_lvl3)
 
-
+```{=html}
 <!--
 -   **Broad-leaved forest** 
 -   **Coniferous forest** 
@@ -810,7 +823,7 @@ kable(summary_df,padding = 5)
 
 -   **Natural grasslands**
 -->
-
+```
 ```{r select clcm_lvl3, echo=TRUE}
 select_os= c("Broad-leaved forest", "Coniferous forest", "Mixed forest", 
 "Pastures, meadows and other permanent grasslands under agricultural use", "Non-irrigated arable land", 
@@ -835,8 +848,6 @@ kable(summary_df)
 kable (table(bdd$clcm_lvl3, bdd$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)
 ```
 
-
-
 # Earthworms data
 
 ## Total richness calculation method
@@ -846,7 +857,6 @@ kable (table(bdd$clcm_lvl3, bdd$Protocole,exclude = NULL), align = "c", format =
 -   Deletion of **AB\_** columns that are not species
 -   Calculate richness by assigning **1** to each column if the value is different from 0 and NA
 -   Total richness = **1** if the plot has a value in AB and/or BM
-
 
 ```{r calcul richness, echo=FALSE}
 # on supprime tout les colonnes ayant que des NA
@@ -865,18 +875,18 @@ bdd <- bdd[, !colnames(bdd) %in% colonnes_zeros]
 
 
 
-# On rÃ©cupÃ¨re toutes les colonnes qui commencent par **AB_**
+# On récupÃ¨re toutes les colonnes qui commencent par **AB_**
 colonnes_AB <- grep("^AB_", names(bdd), value = TRUE)
 
 
 
 # On supprimme les colonnes AB_ qui ne sont pas des espÃ¨ces dans le calcule
-ab_supprimee =  c("AB_AD","AB_JV","AB_SA","AB_STAD_X","AB_indÃ©terminable","AB_IndÃ©terminable","AB_indÃ©terminable_endogeic","AB_tot","AB_IndÃ©terminable_epigeic","AB_indÃ©terminable_endogeic","AB_Ep.X","AB_vide", "AB_Ep.X1","AB_Ep.X2","AB_A.X","AB_Adult","AB_cocon","AB_indÃ©terminÃ©","AB_Juvenile","AB_Sub.adult","AB_IndÃ©terminÃ©","AB_Lumbricidae")
+ab_supprimee =  c("AB_AD","AB_JV","AB_SA","AB_STAD_X","AB_indéterminable","AB_Indéterminable","AB_indéterminable_endogeic","AB_tot","AB_Indéterminable_epigeic","AB_indéterminable_endogeic","AB_Ep.X","AB_vide", "AB_Ep.X1","AB_Ep.X2","AB_A.X","AB_Adult","AB_cocon","AB_indéterminé","AB_Juvenile","AB_Sub.adult","AB_Indéterminé","AB_Lumbricidae")
 colonnes_AB <- colonnes_AB[!colonnes_AB %in% ab_supprimee]
 
 
 
-# On calcule la richesse en attribiant 1 Ã  chaque colonne si la valeur est diffÃ©rent de 0 et de NA
+# On calcule la richesse en attribiant 1 Ã  chaque colonne si la valeur est différent de 0 et de NA
 bdd$Richesse_tot <- 0
 bdd$Richesse_tot <- rowSums(!is.na(bdd[colonnes_AB]) & bdd[colonnes_AB] != 0)
 #sum (is.na(bdd$Richesse_tot) )
@@ -900,7 +910,7 @@ resultat <- subset(bdd, is.na(AB_tot) & is.na(BM_tot) & is.na(Richesse_tot))
 
 
 
-# Check si y a des ligne ayant que des zÃ©ros ou des NA dans AB, BM et Richesse_tot: 66 ligne
+# Check si y a des ligne ayant que des zéros ou des NA dans AB, BM et Richesse_tot: 66 ligne
 vdt <- c("AB_tot", "BM_tot", "Richesse_tot")
 lignes_zero <- which(rowSums(bdd[vdt] != 0, na.rm = TRUE) == 0)
 # View(bdd[lignes_zero,c("ID_Site","AB_tot", "BM_tot", "Richesse_tot")])
@@ -921,8 +931,6 @@ ab_sans_bm <- subset(bdd, BM_tot == 0 & AB_tot != 0) # 1 parcelles
 
 ```
 
-
-
 ## Total abundance (CR = 100 % )
 
 ```{r fig AB_tot,fig.align='center',fig.height=10}
@@ -940,7 +948,6 @@ bdd = df_cleaned
 
 ```
 
-
 ## Total biomass (CR = `r df_col[df_col$Variable=="BM_tot","CR"]`)
 
 ```{r fig BM_tot,fig.align='center',fig.height=10}
@@ -956,9 +963,6 @@ explo_num(nom_col = 'BM_tot', titre = 'BM_tot (after cleaning)', df = df_cleaned
 bdd = df_cleaned
 ```
 
-
-
-
 ## Total taxonomic richness (CR = 100 % )
 
 ```{r fig richness, fig.align='center',fig.height=10}
@@ -973,7 +977,6 @@ explo_num(nom_col = 'Richesse_tot', titre = 'Richesse_tot (after cleaning)', df 
 bdd = df_cleaned
 
 ```
-
 
 ## Graphe valeurs aberant AB_tot
 
@@ -1004,10 +1007,12 @@ g_AB_tot_aberant
 ```
 
 <!-- <p align="center"> -->
+
 <!--   <img src="g_AB_tot_aberant.png"> -->
+
 <!-- </p> -->
 
-
+````{=html}
 <!--
 # SynthÃ¨se du taux de remplissage
 
@@ -1028,11 +1033,10 @@ kable(df_col, caption = " ", col.width = c("75%", "25%"))
 ```
 
 -->
-
-
-
+````
 
 # Climate data extraction
+
 ## The source database ([CHELSA V2](https://chelsa-climate.org/bioclim/){target="_blank"})
 
 ```{r Climate df extraction,echo=TRUE}
@@ -1041,7 +1045,7 @@ kable(df_col, caption = " ", col.width = c("75%", "25%"))
 chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
 climat <- read.xlsx(chemin_fichier_excel, sheet = "climat")
 
-# Fusions des cellules des colonnes avec des Ã©lÃ©ments dupliquÃ©s
+# Fusions des cellules des colonnes avec des éléments dupliqués
 for (col in names(climat)) {
   climat[[col]] <- ifelse(duplicated(climat[[col]]), "", climat[[col]])
 }
@@ -1066,7 +1070,7 @@ kableExtra::kable(climat) %>%
 -   Adding variables to the LANDWORM database
 
 ```{r Extraction method,echo=TRUE}
-liens_tif = read.table(file = "C:/Users/diall/Downloads/datas/envidatS3paths.txt")
+liens_tif = utils::read.table(file = "C:/Users/diall/Downloads/datas/envidatS3paths.txt")
 liens_tif$shortname <- str_extract(liens_tif$V1, "(?<=CHELSA_).*?(?=_1981)")
 liens_tif[liens_tif$shortname=="rsds","shortname"]=c("rsds_max","rsds_mean","rsds_min","rsds_range")
 
@@ -1113,7 +1117,7 @@ scale_01=c("hurs_max","hurs_mean","hurs_min","hurs_range","pet_penman_max",
 # scale = 0.001
 scale_001=c("rsds","sfcWind_max","sfcWind_mean","sfcWind_min","sfcWind_range","pet_penman_max","pet_penman_mean","pet_penman_min","pet_penman_range","rsds_max","rsds_mean","rsds_min","rsds_range")
 
-# Remplacement des valeurs de l'Ã©chelle en fonction des conditions
+# Remplacement des valeurs de l'échelle en fonction des conditions
 conv_df_climat$scale <- ifelse(conv_df_climat$shortname %in% scale_1, 1,
               ifelse(conv_df_climat$shortname %in% scale_01, 0.01,
                     ifelse(conv_df_climat$shortname %in% scale_001,0.001, 0.1)))
@@ -1161,9 +1165,6 @@ conv_df_climat[conv_df_climat$shortname %in% pas_pdf,"scale"] = 1
 summary(bdd_climat_ok)
 ```
 
-
-
-
 ## Temperature
 
 -   Average annual air temperature (Â°C) = bio1
@@ -1179,13 +1180,10 @@ explo_num(nom_col = "bio1", titre = "tempÂ°.")
 
 ```{r Precipitation,fig.align='center',fig.height=8}
 summary(bdd$bio12)
-explo_num(nom_col = "bio12", titre = "PrÃ©cipitatÂ°.")
+explo_num(nom_col = "bio12", titre = "PrécipitatÂ°.")
 ```
 
-
-
-
-
+````{=html}
 <!--
 # Questions
 
@@ -1201,12 +1199,13 @@ lignes_unique <- unique(lignes_dupliquees$ID_Site)
 # nrow(bdd) - length(ID_Site_dupliques) + length(lignes_unique)
 ```
 
--   Comment gÃ©rer la rÃ©pÃ©tition temporelle des parcelles ?
-    -   Avec rÃ©pÃ©tition : **`r nrow(bdd)`** observations
-    -   Sans rÃ©pÃ©tition : **`r nrow(bdd) - length(ID_Site_dupliques) + length(lignes_unique)`** observations
--   Liens des donnÃ©es du sol (sable, argile et limon) de data.gouv.fr ?
+-   Comment gérer la répétition temporelle des parcelles ?
+    -   Avec répétition : **`r nrow(bdd)`** observations
+    -   Sans répétition : **`r nrow(bdd) - length(ID_Site_dupliques) + length(lignes_unique)`** observations
+-   Liens des données du sol (sable, argile et limon) de data.gouv.fr ?
 
 -->
+````
 
 # Soil data extraction
 
@@ -1220,14 +1219,13 @@ df_col= taux_completion(bdd,FALSE,trie = TRUE)
 df_col = df_col[df_col$Variables != "Total",]
 ```
 
-
 ## The source database ([openlandmap](https://openlandmap.org/?center=25,39&zoom=4&opacity=72&base=OpenStreetMap&layer=lc_glc.fcs30d&time=2022){target="_blank"})
 
 ```{r soil source database,echo=TRUE}
 chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
 pedo <- read.xlsx(chemin_fichier_excel, sheet = "pedo")
 
-# Fusion des cellules des colonnes avec des Ã©lÃ©ments dupliquÃ©s
+# Fusion des cellules des colonnes avec des éléments dupliqués
 for (col in names(pedo)) {
   pedo[[col]] <- ifelse(duplicated(pedo[[col]]), "", pedo[[col]])
 }
@@ -1239,8 +1237,8 @@ kableExtra::kable(pedo) %>%
 ```
 
 \n
--   Average values between surface (0 cm) and 30 cm depth
 
+-   Average values between surface (0 cm) and 30 cm depth
 
 ## Changing the resolution ![](https://logowik.com/content/uploads/images/python.jpg){width="200"}
 
@@ -1272,7 +1270,7 @@ kableExtra::kable(pedo) %>%
     bdd_echan <- bdd_echan %>%filter(!is.na(ph_10_origine) & !is.na(ph_10_rech))
 
     # graphique avec ggplot
-        # coefficient de corrÃ©lation
+        # coefficient de corrélation
     correlation <- cor(as.numeric(bdd_echan$ph_10_origine), bdd_echan$ph_10_rech)
     p <- ggplot(bdd_echan, aes(x = ph_10_origine, y = ph_10_rech)) +
       geom_point() + # Ajout des points
@@ -1283,11 +1281,7 @@ kableExtra::kable(pedo) %>%
 
     p
 
-    ```
-
-
-
-
+```
 
 ## Soil organic carbone (g/kg)
 
@@ -1422,6 +1416,7 @@ p
 :::
 :::
 
+````{=html}
 <!--
 ## Bulk density (kg / m-cube)
 
@@ -1455,6 +1450,7 @@ explo_num(nom_col = "sable_0_a_30", titre = "Sand (0 - 30 cm)")
 
 
 -->
+````
 
 ## Sand
 
@@ -1574,7 +1570,6 @@ p
 # plot(as.numeric(df_comp$sand))
 # plot(df_comp$sable.0_30)
 ```
-
 :::
 :::
 
@@ -1699,8 +1694,6 @@ p
 
 # plot(as.numeric(df_comp$limon.0_30))
 ```
-
-
 :::
 :::
 
@@ -1827,8 +1820,6 @@ bdd = df_cleaned
 
 ```
 
-
-<!--
 ## pH_H2O_CaCl 
 
 ```{r,fig.align='center',fig.height=8}
@@ -1873,8 +1864,6 @@ summary(bdd$jrc_pH_CaCl)
 
 explo_num(nom_col = 'jrc_pH_CaCl', titre = 'jrc_pH_CaCl')
 ```
-
--->
 
 
 ## Phosphore (P, mg/kg)
@@ -1944,7 +1933,7 @@ explo_num(nom_col = 'CN', titre = 'CN (after cleaning)', df = df_cleaned)
 bdd = df_cleaned
 ```
 
-## CapacitÃ© d'Ã©change de cations (CEC, cmol/kg)
+## Capacité d'échange de cations (CEC, cmol/kg)
 
 ```{r,fig.align='center',fig.height=8}
 bdd <- extraction(nom_col = 'CEC', df = bdd, conv = 1, tif_file_path = 'C:/Users/diall/Downloads/datas/raster_modif/CEC.tif')
@@ -2006,11 +1995,21 @@ bdd_explo$ID = as.factor(bdd_explo$ID)
 
 
 # Renome
-new_soil_col=c("pH","sand","silt","clay","C","P","N","K","CN","CEC","CaCO3")
-bdd_explo <- rename(bdd_explo, !!setNames(soil_col, new_soil_col))
 
-bdd_explo <- bdd_explo %>% 
-  rename(PET = pet_penman_mean)
+new_soil_col=c("pH","sand","silt","clay","C","P","N","K","CN","CEC","CaCO3")
+# bdd_explo <- rename(bdd_explo, !!setNames(soil_col, new_soil_col))
+bdd_explo <- bdd_explo %>%
+  dplyr::rename(
+    pH = ph_0_a_30,
+    sand = sable.0_30,
+    silt = limon.0_30,
+    clay = argile.0_30,
+    C = c_orga_0_a_30,
+    PET = pet_penman_mean
+  )
+
+
+
 climate_col=c()
 for (i in 1:19){
   climate_col=c(climate_col, paste0("bio",i) )
@@ -2028,24 +2027,26 @@ col_graph=c(vdt_col,land_cover_col,topo_col,new_soil_col,climate_col)
 
 
 
-levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Broad-leaved forest"] <- "Mixed forest"
-levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Coniferous forest"] <- "Mixed forest"
+levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Broad-leaved forest"] <- "Forest"
+levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Coniferous forest"] <- "Forest"
+levels(bdd_explo$clcm_lvl3)[levels(bdd_explo$clcm_lvl3) == "Mixed forest"] <- "Forest"
+
 bdd_explo$clcm_lvl3= as.factor(bdd_explo$clcm_lvl3)
 
 cl_original <- levels(bdd_explo$clcm_lvl3)
-new_cl <- c("mf","gua", "ng", "nial", "p", "v")
+new_cl <- c("f","gua", "ng", "nial", "p", "v")
 bdd_explo$clcm_lvl3 <- factor(bdd_explo$clcm_lvl3, levels = cl_original, labels = new_cl)
 
 ```
 
-**Fork (Bifurcation) **
+**Fork (Bifurcation)**
+
 ```{r}
 bdd_all = bdd
 bdd_sp = bdd
 
-write.csv2(x =bdd_all,file = "datas/Non_repeated_data/bdd_all.csv", row.names = FALSE)
+write.csv2(x =bdd,file = "datas/Non_repeated_data/bdd_all.csv", row.names = FALSE)
 ```
-
 
 ## Total abundance distributions
 
@@ -2063,16 +2064,12 @@ AB_tot_sub = paste0("Shapiro-Wilk; W = ",round(AB_tot_test_nor$statistic,2),AB_t
 
 ```
 
-
-
 ::: columns
 ::: {.column width="50%"}
-
-<p>
-  <img src="lamda_boxcox.png">
-</p>
+<p><img src="lamda_boxcox.png"/></p>
 
 <br/>
+
 ```{r}
 # Histogramme
 ggplot(df, aes(x=y)) +
@@ -2084,6 +2081,7 @@ ggplot(df, aes(x=y)) +
 ```
 
 -   Transformation sqrt
+
 ```{r ,fig.dpi=300,fig.align='center',fig.height=4,fig.width=4}
 df_2 <- data.frame(y =sqrt(bdd_explo$AB_tot))
 # Test de Shapiro-Wilk
@@ -2117,18 +2115,21 @@ ggplot(df_2, aes(x=y)) +
 x = as.numeric ( bdd_explo$AB_tot )+1
 
 
-b <- boxcox(lm(x ~ 1),plotit = FALSE) # ou bestNormalize
+b <- MASS::boxcox(lm(x ~ 1),plotit = FALSE) # ou bestNormalize
 
 # Exact lambda
 lambda1 <- b$x[which.max(b$y)]
 
-boxcox(lm(x ~ 1),plotit = TRUE)
+MASS::boxcox(lm(x ~ 1),plotit = TRUE)
 
 
 ```
-    lamda = `r lambda1`
 
-<br/> 
+```         
+lamda = `r lambda1`
+```
+
+<br/>
 
 ```{r}
 # QQ-plot
@@ -2136,15 +2137,14 @@ qqnorm(df$y)
 qqline(df$y)
 ```
 
-<br/> 
-<br/> 
+<br/> <br/>
+
 ```{r}
 
 # QQ-plot
 qqnorm(df_2$y)
 qqline(df_2$y)
 ```
-
 :::
 :::
 
@@ -2164,15 +2164,12 @@ BM_tot_sub = paste0("Shapiro-Wilk; W = ",round(BM_tot_test_nor$statistic,2),BM_t
 
 ```
 
-
 ::: columns
 ::: {.column width="50%"}
-
-<p>
-  <img src="lamda_boxcox.png">
-</p>
+<p><img src="lamda_boxcox.png"/></p>
 
 <br/>
+
 ```{r}
 # Histogramme
 ggplot(df, aes(x=y)) +
@@ -2184,6 +2181,7 @@ ggplot(df, aes(x=y)) +
 ```
 
 -   Transformation sqrt
+
 ```{r ,fig.dpi=300,fig.align='center',fig.height=4,fig.width=4}
 df_2 <- data.frame(y =sqrt(bdd_explo$BM_tot))
 # Test de Shapiro-Wilk
@@ -2217,19 +2215,22 @@ ggplot(df_2, aes(x=y)) +
 x = as.numeric ( bdd_explo$BM_tot )+1
 
 
-b <- boxcox(lm(x ~ 1),plotit = FALSE)
+b <- MASS::boxcox(lm(x ~ 1),plotit = FALSE)
 
 # Exact lambda
 lambda <- b$x[which.max(b$y)]
 
 lambda = round(lambda,3)
-boxcox(lm(x ~ 1),plotit = TRUE)
+MASS::boxcox(lm(x ~ 1),plotit = TRUE)
 
 
 ```
-    lamda = `r lambda`
 
-<br/> 
+```         
+lamda = `r lambda`
+```
+
+<br/>
 
 ```{r}
 # QQ-plot
@@ -2237,19 +2238,16 @@ qqnorm(df$y)
 qqline(df$y)
 ```
 
-<br/> 
-<br/> 
+<br/> <br/>
+
 ```{r}
 
 # QQ-plot
 qqnorm(df_2$y)
 qqline(df_2$y)
 ```
-
 :::
 :::
-
-
 
 ## Total taxonomic richness distributions
 
@@ -2267,16 +2265,12 @@ Richesse_tot_sub = paste0("Shapiro-Wilk; W = ",round(Richesse_tot_test_nor$stati
 
 ```
 
-
-
 ::: columns
 ::: {.column width="50%"}
-
-<p>
-  <img src="lamda_boxcox.png">
-</p>
+<p><img src="lamda_boxcox.png"/></p>
 
 <br/>
+
 ```{r}
 # Histogramme
 ggplot(df, aes(x=y)) +
@@ -2288,6 +2282,7 @@ ggplot(df, aes(x=y)) +
 ```
 
 -   Transformation sqrt
+
 ```{r ,fig.dpi=300,fig.align='center',fig.height=4,fig.width=4}
 df_2 <- data.frame(y =sqrt(bdd_explo$Richesse_tot))
 # Test de Shapiro-Wilk
@@ -2321,18 +2316,21 @@ ggplot(df_2, aes(x=y)) +
 x = as.numeric ( bdd_explo$Richesse_tot )+1
 
 
-b <- boxcox(lm(x ~ 1),plotit = FALSE)
+b <- MASS::boxcox(lm(x ~ 1),plotit = FALSE)
 
 # Exact lambda
 lambda1 <- b$x[which.max(b$y)]
 
-boxcox(lm(x ~ 1),plotit = TRUE)
+MASS::boxcox(lm(x ~ 1),plotit = TRUE)
 
 
 ```
-    lamda = `r lambda1`
 
-<br/> 
+```         
+lamda = `r lambda1`
+```
+
+<br/>
 
 ```{r}
 # QQ-plot
@@ -2340,20 +2338,25 @@ qqnorm(df$y)
 qqline(df$y)
 ```
 
-<br/> 
-<br/> 
+<br/> <br/>
+
 ```{r}
 
 # QQ-plot
 qqnorm(df_2$y)
 qqline(df_2$y)
 ```
-
 :::
 :::
 
 ## Standarization
+
+-   Transformation sqrt des variables de l'abondance et de la biomasse
+
+-   Transformation centrée reduite des prédicteurs
+
 ```{r}
+bdd_explo_non_t = bdd_explo
 bdd_explo$AB_tot = sqrt(bdd_explo$AB_tot)
 bdd_explo$BM_tot = sqrt(bdd_explo$BM_tot)
 # bdd_explo$Richesse_tot = sqrt(bdd_explo$Richesse_tot)
@@ -2367,23 +2370,20 @@ bdd_explo[,predicteurs] = scale(bdd_explo[,predicteurs])
 
 
 
-data_lm = bdd_explo # donnÃ©es pour les models GLM, GAM et polY
-data_deep = bdd_explo # donnÃ©es pour les models RF, GBM et ANN
+data_lm = bdd_explo # données pour les models GLM, GAM et polY
+data_deep = bdd_explo # données pour les models RF, GBM et ANN
 
 ```
--   Transformation sqrt des variables de rÃ©ponses
-
--   Transformation centrÃ©e reduite des prÃ©dicteurs
 
 # Nettoyages des variables pour les GLM, GAM et POLY
 
-## Test de correlation : intra catÃ©gories
+## Test de correlation : intra catégories
 
 -   **Topographie**
 
-Colonnes supprimÃ©e : *gps_x*
+Colonnes supprimée : *gps_x*
 
-```{r,echo=FALSE,fig.align='center'}
+```{r,echo=FALSE,fig.align='center' , eval=FALSE}
 # ggpairs(data_lm[,topo_col])
 correlation_matrix <- cor(data_lm[,topo_col],use = "na.or.complete")
 # 
@@ -2393,9 +2393,7 @@ data_lm <- data_lm[, setdiff(names(data_lm), topo_sup)]
 
 ```
 
-
-<br/>
--   **Soil data**
+<br/> - **Soil data**
 
 ```{r,echo=FALSE}
 # ggpairs(data_lm[,new_soil_col])
@@ -2404,13 +2402,11 @@ soil_sup=c("sand")
 
 ::: columns
 ::: {.column width="25%"}
-<br/>
-Colonnes supprimÃ©e : *`r soil_sup`*
+<br/> Colonnes supprimée : *`r soil_sup`*
 :::
 
 ::: {.column width="75%"}
-
-```{r,echo=FALSE,fig.height=6,fig.width=9,fig.align='right'}
+```{r,echo=FALSE,fig.height=6,fig.width=9,fig.align='right', eval=FALSE}
 correlation_matrix <- cor(data_lm[,new_soil_col],use = "na.or.complete")
 corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 1,number.cex = 0.7)
 
@@ -2419,12 +2415,9 @@ data_lm <- data_lm[, setdiff(names(data_lm), soil_sup)]
 :::
 :::
 
+<br/> - **Climat data**
 
-
-<br/>
--   **Climat data**
-
-```{r,echo=FALSE,out.height="100%",out.width="100%"}
+```{r,echo=FALSE,out.height="100%",out.width="100%" }
 # correlation_matrix <- cor(data_lm[,climate_col],use = "na.or.complete")
 # 
 # chemin="C:/Users/diall/OneDrive/Bureau/M2_MODE/stage_abdou_m2/R_Stage_M2/Results/climat_corrplot.png"
@@ -2443,12 +2436,11 @@ climat_sup=c("bio2","bio4","bio5","bio6","bio7", "bio9", "bio10","bio11","bio13"
 
 ::: columns
 ::: {.column width="25%"}
-<br/>
-Colonnes supprimmÃ©es :*`r climat_sup`*
+<br/> Colonnes supprimmées :*`r climat_sup`*
 :::
 
 ::: {.column width="75%"}
-```{r,echo=FALSE,fig.height=7,fig.width=9,fig.align='right'}
+```{r,echo=FALSE,fig.height=7,fig.width=9,fig.align='right' , eval=FALSE}
 climat_selec = climate_col[!climate_col %in% climat_sup]
 # ggpairs(data_lm[,climat_selec])
 correlation_matrix <- cor(data_lm[,climat_selec],use = "na.or.complete")
@@ -2459,12 +2451,11 @@ data_lm <- data_lm[, setdiff(names(data_lm), climat_sup)]
 :::
 :::
 
+## Test de correlation : inter catégories
 
+Colonnes supprimée : *gps_y*
 
-## Test de correlation : inter catÃ©gories
-
-Colonnes supprimÃ©e : *gps_y*
-```{r,echo=FALSE}
+```{r,echo=FALSE , eval=FALSE}
 # correlation_matrix <- cor(data_lm[,10:31],use = "na.or.complete")
 # corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 0.5,number.cex = 0.5,mar = c(0,0,0,0))
 
@@ -2486,13 +2477,11 @@ data_lm <- data_lm[, setdiff(names(data_lm), c("gps_y"))]
 
 ![](Results/interC_corrplot.png) {width="1200",aligne="center"}
 
-
-
 ## VIF
 
 **Suppression de la variable bio14**
 
-```{r VIF var}
+```{r VIF var , eval=FALSE}
 var_avant=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3",
       "bio8","bio12","bio14","bio15","hurs_mean")
 #usdm::vif(data_lm[,var_avant])
@@ -2504,9 +2493,9 @@ data_lm <- data_lm[, setdiff(names(data_lm), c("bio14"))]
 var=c("elevation","pH","silt","clay","C","P","N","K","CN","CEC","CaCO3","bio1","bio3","bio8","bio12","bio15","hurs_mean")
 ```
 
-
+````{=html}
 <!--
-## CrÃ©ation des variables factices
+## Création des variables factices
 
 ```{r factices var ,echo=TRUE}
 data_lm$clcm_lvl3= as.factor(data_lm$clcm_lvl3)
@@ -2516,24 +2505,24 @@ kable(summary_df,padding = 5)
 ```
 
 -   Merging:
-    *Mixed forest = Broad\_leaved forest +* 
+    *Forest = Broad\_leaved forest +* 
                     *Coniferous forest +* 
                     *Mixed forest*
 
 ```{r clc3 levels, echo=FALSE}
-levels(data_lm$clcm_lvl3)[levels(data_lm$clcm_lvl3) == "Broad-leaved forest"] <- "Mixed forest"
-levels(data_lm$clcm_lvl3)[levels(data_lm$clcm_lvl3) == "Coniferous forest"] <- "Mixed forest"
+levels(data_lm$clcm_lvl3)[levels(data_lm$clcm_lvl3) == "Broad-leaved forest"] <- "Forest"
+levels(data_lm$clcm_lvl3)[levels(data_lm$clcm_lvl3) == "Coniferous forest"] <- "Forest"
 data_lm$clcm_lvl3= as.factor(data_lm$clcm_lvl3)
 # summary_df <- as.data.frame(summary(data_lm$clcm_lvl3))
 # colnames(summary_df) <- c("Numbers")
 # kable(summary_df,padding = 5)
 ```
 
--   AbrÃ©viation des levels
+-   Abréviation des levels
 
 ```{r clc3 names, echo=FALSE}
 cl_original <- levels(data_lm$clcm_lvl3)
-new_cl <- c("mf","gua", "ng", "nial", "p", "v")
+new_cl <- c("f","gua", "ng", "nial", "p", "v")
 data_lm$clcm_lvl3 <- factor(data_lm$clcm_lvl3, levels = cl_original, labels = new_cl)
 
 data_lm <- data_lm %>% 
@@ -2546,7 +2535,7 @@ data_lm <- data_lm %>%
 ```{r head clc var ,echo=FALSE}
 data_lm <- dummy_cols(data_lm, select_columns = c("clc3"))
 clc3_col= c("clc3_mf","clc3_gua", "clc3_ng", "clc3_nial", "clc3_p", "clc3_v")
-head(data_lm[,clc3_col])
+# head(data_lm[,clc3_col])
 # str(data_lm[,clc3_col])
 ```
 
@@ -2559,9 +2548,12 @@ head(data_lm[,clc3_col])
 ```
 
 -->
+````
 
+````{=html}
+<!-- 
 # Selecting variables with regsubsets()
-```{r select var, echo=TRUE}
+```{r select var, echo=TRUE , eval=FALSE}
 # colSums(is.na(data_lm))
 data_lm <- data_lm[apply(data_lm[, !colnames(data_lm) %in% "BM_tot"], 1, function(x) all(!is.na(x))), ]
 # colSums(is.na(data_lm))
@@ -2696,9 +2688,9 @@ best_var_Richesse_tot=names(best_var_Richesse_tot)[-1]
 -   Les `r length(best_var_Richesse_tot)` meilleurs variables sont: **`r best_var_Richesse_tot`**
 
 
-<!--
+
 ## Summary
-```{r synth selection}
+```{r synth selection, eval = FALSE}
 all_var=unique(c(best_var_AB_tot,best_var_BM_tot,best_var_Richesse_tot))
 
 col_max=max(c(length(best_var_AB_tot),length(best_var_BM_tot),length(best_var_Richesse_tot)))
@@ -2735,24 +2727,17 @@ kable(resultat_tableau,padding=10)
 **bio15** = precipitation seasonality
 
 **hurs_mean** = Mean monthly near-surface relative humidity
-
-
 -->
-
-
-
-
-
-
-
+````
 
 # Selection des variables pour RF, GBM et ANN
 
 ## Importance of variables for total abundance
+
 ```{r}
-ForetAlea <- function(var_rep, df_app, df_valid,mtry =9,ntree= 2000,maxnodes = NULL){
+ForetAlea <- function(var_rep, df_app, df_valid,mtry =9,ntree= 1000,maxnodes = NULL){
   
-  set.seed(1234)
+  set.seed(3500)
   col_posi <- which(names(df_app) == var_rep)
   ForeVDT <- randomForest::randomForest(df_app[-col_posi], df_app[[col_posi]], mtry = mtry, ntree = ntree, maxnodes = maxnodes)
   
@@ -2764,13 +2749,13 @@ ForetAlea <- function(var_rep, df_app, df_valid,mtry =9,ntree= 2000,maxnodes = N
   rmse <- sqrt(mean((df_valid[, col_posi] - pred.RF)^2))
   
   
-  # Calcul du RÂ² ajustÃ© pour train
+  # Calcul du RÂ² ajusté pour train
   R_adj_train <- calcule_R2(df_app[,var_rep],  predict(ForeVDT, data=df_app))
   n_train <- nrow(df_app)
   p_train <- ncol(df_app) - 1
   r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
   
-  # Calcul du RÂ² ajustÃ© pour test
+  # Calcul du RÂ² ajusté pour test
   R_adj_test <-calcule_R2(df_valid[,col_posi],pred.RF)
   n_test <- nrow(df_valid)
   p_test <- ncol(df_valid) - 1
@@ -2790,47 +2775,50 @@ ForetAlea <- function(var_rep, df_app, df_valid,mtry =9,ntree= 2000,maxnodes = N
   
   return(results)
 }
+
+Predictors_f = c("CaCO3" ,"gps_x" ,"N" ,"bio3" ,"gps_y" ,"clay" ,
+                 "silt" ,"clcm_lvl3" ,"P" ,"bio12" )
 ```
 
-```{r imp abundance}
+```{r imp abundance , eval=FALSE}
 # names(data_deep)
 df_explo_AB_tot = data_deep[,c("AB_tot","clcm_lvl3",predicteurs )]
 df_explo_AB_tot = drop_na(df_explo_AB_tot)
 # summary(df_explo_AB_tot)
 
-set.seed(1234)  # Pour rendre les rÃ©sultats reproductibles
+set.seed(3500)  # Pour rendre les résultats reproductibles
 index <- createDataPartition(df_explo_AB_tot$clcm_lvl3, p = 0.8, list = FALSE)
 
-# SÃ©parer les donnÃ©es en ensembles d'entraÃ®nement et de test
-df_train_AB_tot <- df_explo_AB_tot[index, ]  # DonnÃ©es d'entraÃ®nement
-df_test_AB_tot <- df_explo_AB_tot[-index, ]  # DonnÃ©es de test
+# Séparer les données en ensembles d'entraÃ®nement et de test
+df_train_AB_tot <- df_explo_AB_tot[index, ]  # Données d'entraÃ®nement
+df_test_AB_tot <- df_explo_AB_tot[-index, ]  # Données de test
 df_train_AB_tot = droplevels(df_train_AB_tot)
 df_test_AB_tot = droplevels(df_test_AB_tot)
 
 
-all_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot, df_valid = df_test_AB_tot,mtry =9,ntree= 2000,maxnodes = NULL)
-
+# all_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot, df_valid = df_test_AB_tot,mtry =9,ntree= 1000,maxnodes = NULL)
+# 
 # all_var_AB_tot$RMSE
 # all_var_AB_tot$R_adj_train
 # all_var_AB_tot$R_adj_test
-AB_tot_fit_rf = all_var_AB_tot$model
+# AB_tot_fit_rf = all_var_AB_tot$model
 # AB_tot_fit_rf #display fitted model
 # which.min(AB_tot_fit_rf$mse) #find number of trees that produce lowest test MSE
 # sqrt(AB_tot_fit_rf$mse[which.min(AB_tot_fit_rf$mse)]) #find RMSE of best model
 # varImpPlot(AB_tot_fit_rf) #produce variable importance plot
-
-# Obtention de l'importance des variables
-importance_rf <- as.data.frame(importance(AB_tot_fit_rf))
-importance_rf$nom=rownames(importance_rf)
-importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
-
-best_20_AB_tot = c(importance_rf$nom[1:20])
-var_a_sup_AB_tot= setdiff(y = best_20_AB_tot,x = importance_rf$nom)
-
-
+# 
+# # Obtention de l'importance des variables
+# importance_rf <- as.data.frame(importance(all_var_AB_tot$model))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# 
+# best_20_AB_tot = c(importance_rf$nom[1:20])
+# var_a_sup_AB_tot= setdiff(y = best_20_AB_tot,x = importance_rf$nom)
 
 
-best20_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot",best_20_AB_tot)], df_valid = df_test_AB_tot [,c("AB_tot",best_20_AB_tot)],mtry =9,ntree= 2000,maxnodes = NULL)
+
+
+best20_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot",Predictors_f)], df_valid = df_test_AB_tot [,c("AB_tot",Predictors_f)],mtry =9,ntree= 1000,maxnodes = NULL)
 
 # best20_var_AB_tot$RMSE # 5.4
 # best20_var_AB_tot$R_adj_train # 0.37
@@ -2840,7 +2828,8 @@ best20_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot
 # rf.model # 36.74, 36.73
 
 
-varImpPlot(best20_var_AB_tot$model, main = "Abundance") #produce variable importance plot
+
+# varImpPlot(best20_var_AB_tot$model, main = "Abundance") #produce variable importance plot
 importance_rf <- as.data.frame(importance(best20_var_AB_tot$model))
 importance_rf$nom=rownames(importance_rf)
 importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
@@ -2856,7 +2845,7 @@ barplot(importance_rf$percent, main = "Importance of variables for total abundan
 ### sans OS
 
 
-best20_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot",best_20_AB_tot[-1])], df_valid = df_test_AB_tot [,c("AB_tot",best_20_AB_tot[-1])],mtry =9,ntree= 2000)
+best20_var_AB_tot=ForetAlea(var_rep ="AB_tot", df_app=df_train_AB_tot[,c("AB_tot",Predictors_f[-8])], df_valid = df_test_AB_tot [,c("AB_tot",Predictors_f[-8])],mtry =9,ntree= 1000)
 
 # varImpPlot(best20_var_AB_tot$model, main = "Abundance") #produce variable importance plot
 
@@ -2869,29 +2858,28 @@ barplot(importance_rf$percent, main = "Importance of variables for total abundan
 
 ```
 
-
-
 ## Importance of variables for total biomass
-```{r imp biomass}
+
+```{r imp biomass , eval=FALSE}
 # names(data_deep)
-df_explo_BM_tot = data_deep[,c("BM_tot","clcm_lvl3",predicteurs )]
+df_explo_BM_tot = data_deep[,c("BM_tot","clcm_lvl3",predicteurs  )]
 df_explo_BM_tot = drop_na(df_explo_BM_tot)
 
 
-set.seed(1234)  # Pour rendre les rÃ©sultats reproductibles
+set.seed(3500)  # Pour rendre les résultats reproductibles
 index <- createDataPartition(df_explo_BM_tot$clcm_lvl3, p = 0.8, list = FALSE)
 
-# SÃ©parer les donnÃ©es en ensembles d'entraÃ®nement et de test
-df_train_BM_tot <- df_explo_BM_tot[index, ]  # DonnÃ©es d'entraÃ®nement
-df_test_BM_tot <- df_explo_BM_tot[-index, ]  # DonnÃ©es de test
+# Séparer les données en ensembles d'entraÃ®nement et de test
+df_train_BM_tot <- df_explo_BM_tot[index, ]  # Données d'entraÃ®nement
+df_test_BM_tot <- df_explo_BM_tot[-index, ]  # Données de test
 df_train_BM_tot = droplevels(df_train_BM_tot)
 df_test_BM_tot = droplevels(df_test_BM_tot)
 
 
-all_var_BM_tot= ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot, df_valid = df_test_BM_tot,mtry =9,ntree= 2000)
-BM_tot_fit_rf = all_var_BM_tot$model
-
-
+# all_var_BM_tot= ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot, df_valid = df_test_BM_tot,mtry =9,ntree= 1000)
+# BM_tot_fit_rf = all_var_BM_tot$model
+# 
+# 
 # # Etape 5 importance des variables
 # BM_tot_fit_rf #display fitted model
 # which.min(BM_tot_fit_rf$mse) #find number of trees that produce lowest test MSE
@@ -2899,19 +2887,26 @@ BM_tot_fit_rf = all_var_BM_tot$model
 # sqrt(mean(BM_tot_fit_rf$mse))
 # mean(100*BM_tot_fit_rf$rsq)
 # varImpPlot(BM_tot_fit_rf) #produce variable importance plot
+# 
+# # Obtention de l'importance des variables
+# importance_rf <- as.data.frame(importance(BM_tot_fit_rf))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# best_20_BM_tot = c(importance_rf$nom[1:20])
+# 
+# 
+# 
+# var_a_sup_BM_tot= setdiff(y = best_20_BM_tot,x = importance_rf$nom)
 
-# Obtention de l'importance des variables
-importance_rf <- as.data.frame(importance(BM_tot_fit_rf))
-importance_rf$nom=rownames(importance_rf)
-importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
-best_20_BM_tot = c(importance_rf$nom[1:20])
-
-
-
-var_a_sup_BM_tot= setdiff(y = best_20_BM_tot,x = importance_rf$nom)
-
-best20_var_BM_tot= ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot[, c("BM_tot",best_20_BM_tot)], df_valid = df_test_BM_tot [, c("BM_tot",best_20_BM_tot)],mtry =9,ntree= 2000)
+best20_var_BM_tot= ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot[, c("BM_tot",Predictors_f)], df_valid = df_test_BM_tot [, c("BM_tot",Predictors_f)],mtry =9,ntree= 1000)
 # varImpPlot(best20_var_BM_tot$model, main = "Biomass") #produce variable importance plot
+
+
+# library(rms) 
+# test_metric = lrm(df_test_BM_tot$BM_tot  ~ best20_var_BM_tot$predit, x= TRUE, y = TRUE)
+# test_metric$stats
+
+# partialPlot(best20_var_BM_tot$model,  df_train_BM_tot[, c("BM_tot",Predictors_f)], "gps_x", plot = TRUE)
 
 
 importance_rf <- as.data.frame(importance(best20_var_BM_tot$model))
@@ -2925,7 +2920,7 @@ barplot(importance_rf$percent, main = "Importance of variables for total biomass
 
 
 ### sans OS
-best20_var_BM_tot= ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot[, c("BM_tot",best_20_BM_tot[-1])], df_valid = df_test_BM_tot [, c("BM_tot",best_20_BM_tot[-1])],mtry =9,ntree= 2000)
+best20_var_BM_tot= ForetAlea(var_rep ="BM_tot", df_app=df_train_BM_tot[, c("BM_tot",Predictors_f[-8])], df_valid = df_test_BM_tot [, c("BM_tot",Predictors_f[-8])],mtry =9,ntree= 1000)
 # varImpPlot(best20_var_BM_tot$model, main = "Biomass") #produce variable importance plot
 
 
@@ -2939,48 +2934,47 @@ barplot(importance_rf$percent, main = "Importance of variables for total biomass
 
 ```
 
-
 ## Importance of variables for total taxonomic richness
 
-```{r imp richness}
+```{r imp richness , eval=FALSE}
 # names(data_mod)
-df_explo_Richesse_tot = data_deep[,c("Richesse_tot","clcm_lvl3",predicteurs )]
+df_explo_Richesse_tot = data_deep[,c("Richesse_tot","clcm_lvl3",predicteurs  )]
 df_explo_Richesse_tot = drop_na(df_explo_Richesse_tot)
 
 
-set.seed(1234)  # Pour rendre les rÃ©sultats reproductibles
+set.seed(3500)  # Pour rendre les résultats reproductibles
 index <- createDataPartition(df_explo_Richesse_tot$clcm_lvl3, p = 0.8, list = FALSE)
 
-# SÃ©parer les donnÃ©es en ensembles d'entraÃ®nement et de test
-df_train_Richesse_tot <- df_explo_Richesse_tot[index, ]  # DonnÃ©es d'entraÃ®nement
-df_test_Richesse_tot <- df_explo_Richesse_tot[-index, ]  # DonnÃ©es de test
+# Séparer les données en ensembles d'entraÃ®nement et de test
+df_train_Richesse_tot <- df_explo_Richesse_tot[index, ]  # Données d'entraÃ®nement
+df_test_Richesse_tot <- df_explo_Richesse_tot[-index, ]  # Données de test
 df_train_Richesse_tot = droplevels(df_train_Richesse_tot)
 df_test_Richesse_tot = droplevels(df_test_Richesse_tot)
 
 
 
-all_var_Richesse_tot= ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot, df_valid = df_test_Richesse_tot,mtry =9,ntree= 2000)
-Richesse_tot_fit_rf = all_var_Richesse_tot$model
-
-
-
+# all_var_Richesse_tot= ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot, df_valid = df_test_Richesse_tot,mtry =9,ntree= 1000)
+# Richesse_tot_fit_rf = all_var_Richesse_tot$model
+# 
+# 
+# 
 # Richesse_tot_fit_rf #display fitted model
 # which.min(Richesse_tot_fit_rf$mse) #find number of trees that produce lowest test MSE
 # sqrt(Richesse_tot_fit_rf$mse[which.min(Richesse_tot_fit_rf$mse)]) #find RMSE of best model
 # sqrt(mean(Richesse_tot_fit_rf$mse))
 # mean(100*Richesse_tot_fit_rf$rsq)
 # varImpPlot(Richesse_tot_fit_rf) #produce variable importance plot
+# 
+# # Obtention de l'importance des variables
+# importance_rf <- as.data.frame(importance(Richesse_tot_fit_rf))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# 
+# best_20_Richesse_tot = c(importance_rf$nom[1:20])
+# var_a_sup_Richesse_tot= setdiff(y = best_20_Richesse_tot,x = importance_rf$nom)
 
-# Obtention de l'importance des variables
-importance_rf <- as.data.frame(importance(Richesse_tot_fit_rf))
-importance_rf$nom=rownames(importance_rf)
-importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
 
-best_20_Richesse_tot = c(importance_rf$nom[1:20])
-var_a_sup_Richesse_tot= setdiff(y = best_20_Richesse_tot,x = importance_rf$nom)
-
-
-best20_var_Richesse_tot= ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot[, c("Richesse_tot",best_20_Richesse_tot)], df_valid = df_test_Richesse_tot [, c("Richesse_tot",best_20_Richesse_tot)],mtry =9,ntree= 2000)
+best20_var_Richesse_tot= ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot[, c("Richesse_tot",Predictors_f)], df_valid = df_test_Richesse_tot [, c("Richesse_tot",Predictors_f)],mtry =9,ntree= 1000)
 
 
 # varImpPlot(best20_var_Richesse_tot$model,main = "Richness") #produce variable importance plot
@@ -2995,7 +2989,7 @@ barplot(importance_rf$percent, main = "Importance of variables for richness", na
 
 ### sans OS
 
-best20_var_Richesse_tot= ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot[, c("Richesse_tot",best_20_Richesse_tot[-1])], df_valid = df_test_Richesse_tot [, c("Richesse_tot",best_20_Richesse_tot[-1])],mtry =9,ntree= 2000)
+best20_var_Richesse_tot= ForetAlea(var_rep ="Richesse_tot", df_app=df_train_Richesse_tot[, c("Richesse_tot",Predictors_f[-8])], df_valid = df_test_Richesse_tot [, c("Richesse_tot",Predictors_f[-8])],mtry =9,ntree= 1000)
 
 
 # varImpPlot(best20_var_Richesse_tot$model,main = "Richness") #produce variable importance plot
@@ -3009,12 +3003,24 @@ barplot(importance_rf$percent, main = "Importance of variables for richness \n W
 
 ```
 
+```{r}
+correlation_matrix <- cor(data_deep[,Predictors_f[-8]],use = "na.or.complete")
+corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 1,number.cex = 1)
+
+
+# usdm::vif(data_deep[,Predictors_f[-8]])
+# usdm::vifcor(data_deep[,Predictors_f[-8]], th = 0.7, keep = NULL, method = 'pearson')
+usdm::vifstep(data_deep[,Predictors_f[-8]], th = 10, keep = NULL, method = 'pearson')
+```
+
 # Relationship between variables
-[Explanatory power of variables]
+
+\[Explanatory power of variables\]
 
 ## Abundance
-```{r re AB_tot,fig.align='center',fig.show='animate'}
-df_re_AB_tot= data_deep[,c("AB_tot",best_20_AB_tot)]
+
+```{r re AB_tot,fig.align='center',fig.show='animate' , eval=FALSE}
+df_re_AB_tot= data_deep[,c("AB_tot",Predictors_f)]
 for (i in names(df_re_AB_tot[,-1])){
   plot(df_re_AB_tot[,i],df_re_AB_tot[,1], main = paste("AB_tot &",i), xlab = i,ylab="Abundance" )
    # col_posi <- which(names(df_re_AB_tot) == i)
@@ -3022,9 +3028,11 @@ for (i in names(df_re_AB_tot[,-1])){
    # print(g)
 }
 ```
+
 -   Plots
-```{r re AB_tot2,fig.align='center'}
-df_re_AB_tot= data_deep[,c("AB_tot",best_20_AB_tot)]
+
+```{r re AB_tot2,fig.align='center' , eval=FALSE}
+df_re_AB_tot= data_deep[,c("AB_tot",Predictors_f)]
 for (i in names(df_re_AB_tot[,-1])){
   # plot(df_re_AB_tot[,i],df_re_AB_tot[,1], main = paste("AB_tot &",i), xlab = i,ylab="Abundance" )
   cat(paste("- Abundance &",i,"\n"))
@@ -3036,8 +3044,9 @@ for (i in names(df_re_AB_tot[,-1])){
 ```
 
 ## Biomass
-```{r re BM_tot,fig.align='center',fig.show='animate'}
-df_re_BM_tot= data_deep[,c("BM_tot",best_20_BM_tot)]
+
+```{r re BM_tot,fig.align='center',fig.show='animate' , eval=FALSE}
+df_re_BM_tot= data_deep[,c("BM_tot",Predictors_f)]
 for (i in names(df_re_BM_tot[,-1])){
   plot(df_re_BM_tot[,i],df_re_BM_tot[,1], main = paste("BM_tot &",i), xlab = i,ylab="Biomass" )
    # col_posi <- which(names(df_re_BM_tot) == i)
@@ -3045,9 +3054,11 @@ for (i in names(df_re_BM_tot[,-1])){
    # print(g)
 }
 ```
+
 -   Plots
-```{r re BM_tot2,fig.align='center'}
-df_re_BM_tot= data_deep[,c("BM_tot",best_20_BM_tot)]
+
+```{r re BM_tot2,fig.align='center' , eval=FALSE}
+df_re_BM_tot= data_deep[,c("BM_tot",Predictors_f)]
 for (i in names(df_re_BM_tot[,-1])){
   # plot(df_re_BM_tot[,i],df_re_BM_tot[,1], main = paste("BM_tot &",i), xlab = i,ylab="Biomass" )
   cat(paste("- Biomass &",i,"\n"))
@@ -3059,8 +3070,9 @@ for (i in names(df_re_BM_tot[,-1])){
 ```
 
 ## Richness
-```{r re Richesse_tot,fig.align='center',fig.show='animate'}
-df_re_Richesse_tot= data_deep[,c("Richesse_tot",best_20_Richesse_tot)]
+
+```{r re Richesse_tot,fig.align='center',fig.show='animate' , eval=FALSE}
+df_re_Richesse_tot= data_deep[,c("Richesse_tot",Predictors_f)]
 for (i in names(df_re_Richesse_tot[,-1])){
   plot(df_re_Richesse_tot[,i],df_re_Richesse_tot[,1], main = paste("Richesse_tot &",i), xlab = i,ylab="Richness" )
    # col_posi <- which(names(df_re_Richesse_tot) == i)
@@ -3068,9 +3080,11 @@ for (i in names(df_re_Richesse_tot[,-1])){
    # print(g)
 }
 ```
+
 -   Plots
-```{r re Richesse_tot2,fig.align='center'}
-df_re_Richesse_tot= data_deep[,c("Richesse_tot",best_20_Richesse_tot)]
+
+```{r re Richesse_tot2,fig.align='center' , eval=FALSE}
+df_re_Richesse_tot= data_deep[,c("Richesse_tot",Predictors_f)]
 for (i in names(df_re_Richesse_tot[,-1])){
   # plot(df_re_Richesse_tot[,i],df_re_Richesse_tot[,1], main = paste("Richesse_tot &",i), xlab = i,ylab="Richness" )
   cat(paste("- Richness &",i,"\n"))
@@ -3083,29 +3097,27 @@ for (i in names(df_re_Richesse_tot[,-1])){
 
 # Species
 
-Plan:
-
-Explorations de l'occurence des espÃ¨ces
-
-Exploration des relations entre les espÃ¨ces et les predicteurs
-
-ACP sur les predicteurs de l'abondance, la biomasse et la richesse
-
-Resultats
-
-Dicussion
-
-
 See [species explorations](https://posit.cloud/content/7997063){target="_blank"}
-
 
 # ACP
 
+[Plan]
+
 ## Abundance
 
-```{r ACP abundance, echo=TRUE, fig.align='center'}
+```{r ACP abundance, echo=TRUE, fig.align='center' , eval=FALSE}
 
-df_acp_AB_tot = data_deep[,c("AB_tot",best_20_AB_tot)]
+df_acp_AB_tot = data_deep[,c("AB_tot",Predictors_f)]
+
+idf = c("OPVT_IDF","TRAMBIOSOIL")
+bzh = c("Dephy Bio","Dephy", "Breizh Sukr", "Sols de Bretagne","Kerguéhennec")
+bfc=c("TIGA")
+df_region = data_deep
+df_region$regions <- ifelse(df_region$Programme %in% idf, "idf",
+                            ifelse(df_region$Programme %in% bzh, "bzh",
+                                   ifelse(df_region$Programme %in% bfc, "bfc",
+                                          "autres")))
+df_acp_AB_tot = df_region[,c("AB_tot",Predictors_f,"regions")]
 # # # colnames(df_acp_AB_tot)[colnames(df_acp_AB_tot) == "clcm_lvl3"] <- "clc3"
 # dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_acp_AB_tot)
 # df_acp_AB_tot <- cbind(df_acp_AB_tot, dummy_vars)
@@ -3115,7 +3127,7 @@ df_acp_AB_tot = drop_na(df_acp_AB_tot)
 df_acp_AB_tot = droplevels(df_acp_AB_tot)
 
 
-acp_AB_tot <- PCA(df_acp_AB_tot, graph = FALSE,quanti.sup=1,quali.sup=2)
+acp_AB_tot <- PCA(df_acp_AB_tot, graph = FALSE,quanti.sup=1,quali.sup=c(9,12))
 
 ## Choix du nombre d'axes
 # acp_AB_tot$eig
@@ -3152,7 +3164,7 @@ names(df_acp_AB_tot[,-c(1:2)]) [! names(df_acp_AB_tot[,-c(1:2)]) %in% lignes_sup
 coul = c("yellow", "green", "violet", "blue", "black", "red")
 coul <- c("077255000", "255166255", "204242077", "255255168", "230230077", "230128000")
 
-# Convertir les codes de couleur hexadÃ©cimaux en couleurs RGB
+# Convertir les codes de couleur hexadécimaux en couleurs RGB
 colors <- sapply(coul, function(hex) {
   r <- as.numeric(substr(hex, 1, 3)) / 255
   g <- as.numeric(substr(hex, 4, 6)) / 255
@@ -3203,10 +3215,23 @@ fviz_pca_biplot(
   )
 
 
+
+
+# Tracez les individus avec les variables qualitatives supplémentaires
+fviz_pca_ind(acp_AB_tot, 
+            habillage = 12, 
+             geom.ind = "point",
+              palette = "jco",        # Choisissez une palette de couleurs
+              addEllipses = TRUE,     # Ajoutez des ellipses de confiance
+              ellipse.type = "t",     # Type d'ellipse
+              legend.title = "~ Regions"
+              )
+
+
+
 ```
 
-
-```{r hcp abundance}
+```{r hcp abundance, eval=FALSE}
 #Classification
 # class1 = HCPC(acp_AB_tot)
 # plot(class1$call$t$inert.gain, type = "s")
@@ -3217,13 +3242,11 @@ class1 = HCPC(acp_AB_tot, nb.clust = 3)
 # fviz_cluster(class1, ellipse.type = "norm", ellipse.level = 0.8)    #Groupes
 ```
 
-
-
 ## Biomass
 
-```{r ACP Biomass, echo=TRUE, fig.align='center'}
+```{r ACP Biomass, echo=TRUE, fig.align='center' , eval=FALSE}
 
-df_acp_BM_tot = data_deep[,c("BM_tot",best_20_BM_tot)]
+df_acp_BM_tot = data_deep[,c("BM_tot",Predictors_f)]
 # # # colnames(df_acp_BM_tot)[colnames(df_acp_BM_tot) == "clcm_lvl3"] <- "clc3"
 # dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_acp_BM_tot)
 # df_acp_BM_tot <- cbind(df_acp_BM_tot, dummy_vars)
@@ -3233,7 +3256,7 @@ df_acp_BM_tot = drop_na(df_acp_BM_tot)
 df_acp_BM_tot = droplevels(df_acp_BM_tot)
 
 
-acp_BM_tot <- PCA(df_acp_BM_tot, graph = FALSE,quanti.sup=1,quali.sup=2)
+acp_BM_tot <- PCA(df_acp_BM_tot, graph = FALSE,quanti.sup=1,quali.sup=9)
 
 ## Choix du nombre d'axes
 # acp_BM_tot$eig
@@ -3270,7 +3293,7 @@ names(df_acp_BM_tot[,-c(1:2)]) [! names(df_acp_BM_tot[,-c(1:2)]) %in% lignes_sup
 coul = c("yellow", "green", "violet", "blue", "black", "red")
 coul <- c("077255000", "255166255", "204242077", "255255168", "230230077", "230128000")
 
-# Convertir les codes de couleur hexadÃ©cimaux en couleurs RGB
+# Convertir les codes de couleur hexadécimaux en couleurs RGB
 colors <- sapply(coul, function(hex) {
   r <- as.numeric(substr(hex, 1, 3)) / 255
   g <- as.numeric(substr(hex, 4, 6)) / 255
@@ -3323,8 +3346,7 @@ fviz_pca_biplot(
 
 ```
 
-
-```{r hcp biomass}
+```{r hcp biomass , eval=FALSE}
 #Classification
 # class1 = HCPC(acp_BM_tot)
 # plot(class1$call$t$inert.gain, type = "s")
@@ -3335,15 +3357,11 @@ class1 = HCPC(acp_BM_tot, nb.clust = 3)
 # fviz_cluster(class1, ellipse.type = "norm", ellipse.level = 0.8)    #Groupes
 ```
 
-
-
-
-
 ## Richness
 
-```{r ACP Richness, echo=TRUE, fig.align='center'}
+```{r ACP Richness, echo=TRUE, fig.align='center' , eval=FALSE}
 
-df_acp_Richesse_tot = data_deep[,c("Richesse_tot",best_20_Richesse_tot)]
+df_acp_Richesse_tot = data_deep[,c("Richesse_tot",Predictors_f)]
 # # # colnames(df_acp_Richesse_tot)[colnames(df_acp_Richesse_tot) == "clcm_lvl3"] <- "clc3"
 # dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_acp_Richesse_tot)
 # df_acp_Richesse_tot <- cbind(df_acp_Richesse_tot, dummy_vars)
@@ -3391,7 +3409,7 @@ names(df_acp_Richesse_tot[,-c(1,posi_co)]) [! names(df_acp_Richesse_tot[,-c(1:2)
 coul = c("yellow", "green", "violet", "blue", "black", "red")
 coul <- c("077255000", "255166255", "204242077", "255255168", "230230077", "230128000")
 
-# Convertir les codes de couleur hexadÃ©cimaux en couleurs RGB
+# Convertir les codes de couleur hexadécimaux en couleurs RGB
 colors <- sapply(coul, function(hex) {
   r <- as.numeric(substr(hex, 1, 3)) / 255
   g <- as.numeric(substr(hex, 4, 6)) / 255
@@ -3444,8 +3462,7 @@ fviz_pca_biplot(
 
 ```
 
-
-```{r hcp richness}
+```{r hcp richness , eval=FALSE}
 #Classification
 # class1 = HCPC(acp_Richesse_tot)
 # plot(class1$call$t$inert.gain, type = "s")
@@ -3456,93 +3473,93 @@ class1 = HCPC(acp_Richesse_tot, nb.clust = 4)
 # fviz_cluster(class1, ellipse.type = "norm", ellipse.level = 0.8)    #Groupes
 ```
 
-
-
 # Modeling
+
 ## Data preparation
+
 ```{r modeling AB_tot, echo=TRUE}
 # AB_tot --------------------------------------------------------------------------
-# df_mod_AB_tot = data_deep[,c("AB_tot",best_20_AB_tot)]
-# # # # colnames(df_mod_AB_tot)[colnames(df_mod_AB_tot) == "clcm_lvl3"] <- "clc3"
-# dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_mod_AB_tot)
-# df_mod_AB_tot <- cbind(df_mod_AB_tot, dummy_vars)
-# df_mod_AB_tot <- df_mod_AB_tot[, -which(names(df_mod_AB_tot) == "clcm_lvl3")]
-# 
-# df_mod_AB_tot = drop_na(df_mod_AB_tot)
-# df_mod_AB_tot = droplevels(df_mod_AB_tot)
-# 
-# 
-# # Partition
-# set.seed(1234)
-# ind <- sample(2, nrow(df_mod_AB_tot), replace = T, prob = c(.8, .2))
-# AB_tot_train <- df_mod_AB_tot[ind==1,]
-# AB_tot_test <- df_mod_AB_tot[ind==2,]
-# 
-# write.csv2(x =AB_tot_train,file = "datas/AB_tot_train.csv", row.names = FALSE)
-# write.csv2(x =AB_tot_test,file = "datas/AB_tot_test.csv", row.names = FALSE)
+df_mod_AB_tot = data_deep[,c("AB_tot",Predictors_f)]
+# # # colnames(df_mod_AB_tot)[colnames(df_mod_AB_tot) == "clcm_lvl3"] <- "clc3"
+dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_mod_AB_tot)
+df_mod_AB_tot <- cbind(df_mod_AB_tot, dummy_vars)
+df_mod_AB_tot <- df_mod_AB_tot[, -which(names(df_mod_AB_tot) == "clcm_lvl3")]
 
-AB_tot_train = read.csv2("datas/AB_tot_train.csv")
-AB_tot_test = read.csv2("datas/AB_tot_test.csv")
-df_mod_AB_tot = rbind(AB_tot_train,AB_tot_test)
+df_mod_AB_tot = drop_na(df_mod_AB_tot)
+df_mod_AB_tot = droplevels(df_mod_AB_tot)
+
+
+# Partition
+set.seed(3500)
+ind <- sample(2, nrow(df_mod_AB_tot), replace = T, prob = c(.8, .2))
+AB_tot_train <- df_mod_AB_tot[ind==1,]
+AB_tot_test <- df_mod_AB_tot[ind==2,]
+
+write.csv2(x =AB_tot_train,file = "datas/AB_tot_train.csv", row.names = FALSE)
+write.csv2(x =AB_tot_test,file = "datas/AB_tot_test.csv", row.names = FALSE)
+
+# AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+# AB_tot_test = read.csv2("datas/AB_tot_test.csv")
+# df_mod_AB_tot = rbind(AB_tot_train,AB_tot_test)
 
 AB_tot_train = as.data.frame(AB_tot_train)
 AB_tot_test = as.data.frame(AB_tot_test)
 
-# df <- data.frame(y =AB_tot_train[,"AB_tot"])
-# abundance_dist_train = ggplot(df, aes(x=y)) +
-#   geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
-#   geom_density(fill="black", alpha=0.2) +
-#   theme_gray() +
-#   labs(title="Abundance: Train", x="Value", y="Density") +
-#   theme(plot.title = element_text(hjust = 0.5))
+df <- data.frame(y =AB_tot_train[,"AB_tot"])
+abundance_dist_train = ggplot(df, aes(x=y)) +
+  geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Abundance: Train", x="Value", y="Density") +
+  theme(plot.title = element_text(hjust = 0.5))
 # ggsave("Results/abundance_dist_train.png", plot = abundance_dist_train, dpi = 300,width = 3,height = 2)
-# 
-# df <- data.frame(y =AB_tot_test[,"AB_tot"])
-# abundance_dist_test = ggplot(df, aes(x=y)) +
-#   geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
-#   geom_density(fill="black", alpha=0.2) +
-#   theme_gray() +
-#   labs(title="Abundance: Test", x="Value", y="Density") +
-#   theme(plot.title = element_text(hjust = 0.5))
+
+df <- data.frame(y =AB_tot_test[,"AB_tot"])
+abundance_dist_test = ggplot(df, aes(x=y)) +
+  geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Abundance: Test", x="Value", y="Density") +
+  theme(plot.title = element_text(hjust = 0.5))
 # ggsave("Results/abundance_dist_test.png", plot = abundance_dist_test, dpi = 300,width = 3,height = 2)
-# 
-# # Distrvitbution de var rep dans train et de test: est ce homogene ?
-# abundance_dist_train_and_test = ggarrange(abundance_dist_train, abundance_dist_test,
-#                           labels = c('(a)', '(b)'),
-#                           common.legend = TRUE,
-#                           legend = 'right'
-# )
-# 
-# ggsave("Results/abundance_dist_train_and_test.png", plot = abundance_dist_train_and_test, dpi = 300,height = 2,width = 4)
+
+# Distrvitbution de var rep dans train et de test: est ce homogene ?
+abundance_dist_train_and_test = ggarrange(abundance_dist_train, abundance_dist_test,
+                          labels = c('(a)', '(b)'),
+                          common.legend = TRUE,
+                          legend = 'right'
+)
+
+
+ggsave("Results/abundance_dist_train_and_test.png", plot = abundance_dist_train_and_test, dpi = 300,height = 2,width = 4)
 
 ```
 
-
 ```{r modeling BM_tot}
 # BM_tot --------------------------------------------------------------------------
-# df_mod_BM_tot = data_deep[,c("BM_tot",best_20_BM_tot)]
-# # # # colnames(df_mod_BM_tot)[colnames(df_mod_BM_tot) == "clcm_lvl3"] <- "clc3"
-# dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_mod_BM_tot)
-# df_mod_BM_tot <- cbind(df_mod_BM_tot, dummy_vars)
-# df_mod_BM_tot <- df_mod_BM_tot[, -which(names(df_mod_BM_tot) == "clcm_lvl3")]
-# 
-# df_mod_BM_tot = drop_na(df_mod_BM_tot)
-# df_mod_BM_tot = droplevels(df_mod_BM_tot)
-# 
-# # Partition
-# set.seed(1234)
-# ind <- sample(2, nrow(df_mod_BM_tot), replace = T, prob = c(.8, .2))
-# BM_tot_train <- df_mod_BM_tot[ind==1,]
-# BM_tot_test <- df_mod_BM_tot[ind==2,]
-# 
-# 
-# write.csv2(x =BM_tot_train,file = "datas/BM_tot_train.csv", row.names = FALSE)
-# write.csv2(x =BM_tot_test,file = "datas/BM_tot_test.csv", row.names = FALSE)
+df_mod_BM_tot = data_deep[,c("BM_tot",Predictors_f)]
+# # # colnames(df_mod_BM_tot)[colnames(df_mod_BM_tot) == "clcm_lvl3"] <- "clc3"
+dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_mod_BM_tot)
+df_mod_BM_tot <- cbind(df_mod_BM_tot, dummy_vars)
+df_mod_BM_tot <- df_mod_BM_tot[, -which(names(df_mod_BM_tot) == "clcm_lvl3")]
+
+df_mod_BM_tot = drop_na(df_mod_BM_tot)
+df_mod_BM_tot = droplevels(df_mod_BM_tot)
+
+# Partition
+set.seed(3500)
+ind <- sample(2, nrow(df_mod_BM_tot), replace = T, prob = c(.8, .2))
+BM_tot_train <- df_mod_BM_tot[ind==1,]
+BM_tot_test <- df_mod_BM_tot[ind==2,]
 
 
-BM_tot_train = read.csv2("datas/BM_tot_train.csv")
-BM_tot_test = read.csv2("datas/BM_tot_test.csv")
-df_mod_BM_tot = rbind(BM_tot_train,BM_tot_test)
+write.csv2(x =BM_tot_train,file = "datas/BM_tot_train.csv", row.names = FALSE)
+write.csv2(x =BM_tot_test,file = "datas/BM_tot_test.csv", row.names = FALSE)
+
+
+# BM_tot_train = read.csv2("datas/BM_tot_train.csv")
+# BM_tot_test = read.csv2("datas/BM_tot_test.csv")
+# df_mod_BM_tot = rbind(BM_tot_train,BM_tot_test)
 
 
 BM_tot_train = as.data.frame(BM_tot_train)
@@ -3551,59 +3568,58 @@ BM_tot_test = as.data.frame(BM_tot_test)
 
 
 # # Distribution de var rep
-# df <- data.frame(y =BM_tot_train[,"BM_tot"])
-# biomass_dist_train = ggplot(df, aes(x=y)) +
-#   geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
-#   geom_density(fill="black", alpha=0.2) +
-#   theme_gray() +
-#   labs(title="Biomass: Train", x="Value", y="Density") +
-#   theme(plot.title = element_text(hjust = 0.5))
+df <- data.frame(y =BM_tot_train[,"BM_tot"])
+biomass_dist_train = ggplot(df, aes(x=y)) +
+  geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Biomass: Train", x="Value", y="Density") +
+  theme(plot.title = element_text(hjust = 0.5))
 # ggsave("Results/biomass_dist_train.png", plot = biomass_dist_train, dpi = 300,width = 3,height = 2)
-# 
-# df <- data.frame(y =BM_tot_test[,"BM_tot"])
-# biomass_dist_test = ggplot(df, aes(x=y)) +
-#   geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
-#   geom_density(fill="black", alpha=0.2) +
-#   theme_gray() +
-#   labs(title="Biomass: Test", x="Value", y="Density") +
-#   theme(plot.title = element_text(hjust = 0.5))
-# ggsave("Results/biomass_dist_test.png", plot = biomass_dist_test, dpi = 300,width = 3,height = 2)
-# 
-# 
-# # Distrvitbution de var rep dans train et de test: est ce homogene ?
-# biomass_dist_train_and_test = ggarrange(biomass_dist_train, biomass_dist_test,
-#                                           labels = c('(a)', '(b)'),
-#                                           common.legend = TRUE,
-#                                           legend = 'right')
-# 
-# ggsave("Results/biomass_dist_train_and_test.png", plot = biomass_dist_train_and_test, dpi = 300 ,height = 2,width = 4)
-```
 
+df <- data.frame(y =BM_tot_test[,"BM_tot"])
+biomass_dist_test = ggplot(df, aes(x=y)) +
+  geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Biomass: Test", x="Value", y="Density") +
+  theme(plot.title = element_text(hjust = 0.5))
+# ggsave("Results/biomass_dist_test.png", plot = biomass_dist_test, dpi = 300,width = 3,height = 2)
+
+
+# Distrvitbution de var rep dans train et de test: est ce homogene ?
+biomass_dist_train_and_test = ggarrange(biomass_dist_train, biomass_dist_test,
+                                          labels = c('(a)', '(b)'),
+                                          common.legend = TRUE,
+                                          legend = 'right')
+
+ggsave("Results/biomass_dist_train_and_test.png", plot = biomass_dist_train_and_test, dpi = 300 ,height = 2,width = 4)
+```
 
 ```{r modeling Richesse_tot}
 # Richesse_tot --------------------------------------------------------------------------
-# df_mod_Richesse_tot = data_deep[,c("Richesse_tot",best_20_Richesse_tot)]
-# # # # colnames(df_mod_Richesse_tot)[colnames(df_mod_Richesse_tot) == "clcm_lvl3"] <- "clc3"
-# dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_mod_Richesse_tot)
-# df_mod_Richesse_tot <- cbind(df_mod_Richesse_tot, dummy_vars)
-# df_mod_Richesse_tot <- df_mod_Richesse_tot[, -which(names(df_mod_Richesse_tot) == "clcm_lvl3")]
-# 
-# df_mod_Richesse_tot = drop_na(df_mod_Richesse_tot)
-# df_mod_Richesse_tot = droplevels(df_mod_Richesse_tot)
-# 
-# 
-# # Partition
-# set.seed(1234)
-# ind <- sample(2, nrow(df_mod_Richesse_tot), replace = T, prob = c(.8, .2))
-# Richesse_tot_train <- df_mod_Richesse_tot[ind==1,]
-# Richesse_tot_test <- df_mod_Richesse_tot[ind==2,]
-# 
-# write.csv2(x =Richesse_tot_train,file = "datas/Richesse_tot_train.csv", row.names = FALSE)
-# write.csv2(x =Richesse_tot_test,file = "datas/Richesse_tot_test.csv", row.names = FALSE)
+df_mod_Richesse_tot = data_deep[,c("Richesse_tot",Predictors_f)]
+# # # colnames(df_mod_Richesse_tot)[colnames(df_mod_Richesse_tot) == "clcm_lvl3"] <- "clc3"
+dummy_vars <- model.matrix(~ clcm_lvl3 - 1, data = df_mod_Richesse_tot)
+df_mod_Richesse_tot <- cbind(df_mod_Richesse_tot, dummy_vars)
+df_mod_Richesse_tot <- df_mod_Richesse_tot[, -which(names(df_mod_Richesse_tot) == "clcm_lvl3")]
 
-Richesse_tot_train = read.csv2("datas/Richesse_tot_train.csv")
-Richesse_tot_test = read.csv2("datas/Richesse_tot_test.csv")
-df_mod_Richesse_tot = rbind(Richesse_tot_train,Richesse_tot_test)
+df_mod_Richesse_tot = drop_na(df_mod_Richesse_tot)
+df_mod_Richesse_tot = droplevels(df_mod_Richesse_tot)
+
+
+# Partition
+set.seed(3500)
+ind <- sample(2, nrow(df_mod_Richesse_tot), replace = T, prob = c(.8, .2))
+Richesse_tot_train <- df_mod_Richesse_tot[ind==1,]
+Richesse_tot_test <- df_mod_Richesse_tot[ind==2,]
+
+write.csv2(x =Richesse_tot_train,file = "datas/Richesse_tot_train.csv", row.names = FALSE)
+write.csv2(x =Richesse_tot_test,file = "datas/Richesse_tot_test.csv", row.names = FALSE)
+
+# Richesse_tot_train = read.csv2("datas/Richesse_tot_train.csv")
+# Richesse_tot_test = read.csv2("datas/Richesse_tot_test.csv")
+# df_mod_Richesse_tot = rbind(Richesse_tot_train,Richesse_tot_test)
 
 
 Richesse_tot_train = as.data.frame(Richesse_tot_train)
@@ -3612,87 +3628,69 @@ Richesse_tot_test = as.data.frame(Richesse_tot_test)
 
 
 # Distribution de var rep
-# df <- data.frame(y =Richesse_tot_train[,"Richesse_tot"])
-# richness_dist_train = ggplot(df, aes(x=y)) +
-#   geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
-#   geom_density(fill="black", alpha=0.2) +
-#   theme_gray() +
-#   labs(title="Richness: Train", x="Value", y="Density") +
-#   theme(plot.title = element_text(hjust = 0.5))
+df <- data.frame(y =Richesse_tot_train[,"Richesse_tot"])
+richness_dist_train = ggplot(df, aes(x=y)) +
+  geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Richness: Train", x="Value", y="Density") +
+  theme(plot.title = element_text(hjust = 0.5))
 # ggsave("Results/richness_dist_train.png", plot = richness_dist_train, dpi = 300 ,width = 3,height = 2)
-# 
-# df <- data.frame(y =Richesse_tot_test[,"Richesse_tot"])
-# richness_dist_test = ggplot(df, aes(x=y)) +
-#   geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
-#   geom_density(fill="black", alpha=0.2) +
-#   theme_gray() +
-#   labs(title="Richness: Test", x="Value", y="Density") +
-#   theme(plot.title = element_text(hjust = 0.5))
+
+df <- data.frame(y =Richesse_tot_test[,"Richesse_tot"])
+richness_dist_test = ggplot(df, aes(x=y)) +
+  geom_histogram(aes(y=..density..), fill="#69b3a2", color="#e9ecef", bins=30, alpha=2) +
+  geom_density(fill="black", alpha=0.2) +
+  theme_gray() +
+  labs(title="Richness: Test", x="Value", y="Density") +
+  theme(plot.title = element_text(hjust = 0.5))
 # ggsave("Results/richness_dist_test.png", plot = richness_dist_test, dpi = 300 ,width = 3,height = 2)
-# 
-# # Distrvitbution de var rep dans train et de test: est ce homogene ?
-# richness_dist_train_and_test = ggarrange(richness_dist_train, richness_dist_test,
-#                                           labels = c('(a)', '(b)'),
-#                                           common.legend = TRUE,
-#                                           legend = 'right')
-# 
-# ggsave("Results/richness_dist_train_and_test.png", plot = richness_dist_train_and_test, dpi = 300 ,height = 2,width = 4)
+
+# Distrvitbution de var rep dans train et de test: est ce homogene ?
+richness_dist_train_and_test = ggarrange(richness_dist_train, richness_dist_test,
+                                          labels = c('(a)', '(b)'),
+                                          common.legend = TRUE,
+                                          legend = 'right')
+
+ggsave("Results/richness_dist_train_and_test.png", plot = richness_dist_train_and_test, dpi = 300 ,height = 2,width = 4)
 
 ```
 
-
-    
 ::: columns
 ::: {.column width="50%"}
-
-**Abundance **
+**Abundance**
 
 -   Data partition (`r dim(df_mod_AB_tot)`):
 
-    -   train data (80 %) = `r dim(AB_tot_train) `
-    
-    -   test data (20 %) = `r dim(AB_tot_test) `
-    
+    -   train data (80 %) = `r dim(AB_tot_train)`
 
+    -   test data (20 %) = `r dim(AB_tot_test)`
 
-**Biomasse **
+**Biomasse**
 
 -   Data partition (`r dim(df_mod_BM_tot)`):
 
-    -   train data (80 %) = `r dim(BM_tot_train) `
-    
-    -   test data (20 %) = `r dim(BM_tot_test) `
-    
+    -   train data (80 %) = `r dim(BM_tot_train)`
 
+    -   test data (20 %) = `r dim(BM_tot_test)`
 
-**Richness **
+**Richness**
 
 -   Data partition (`r dim(df_mod_Richesse_tot)`):
 
-    -   train data (80 %) = `r dim(Richesse_tot_train) `
-    
-    -   test data (20 %) = `r dim(Richesse_tot_test) ` 
+    -   train data (80 %) = `r dim(Richesse_tot_train)`
 
+    -   test data (20 %) = `r dim(Richesse_tot_test)`
 :::
 
 ::: {.column width="50%"}
-<p>
-  <img src="Results/abundance_dist_train_and_test.png">
-</p>
+<p><img src="Results/abundance_dist_train_and_test.png"/></p>
 
-<p>
-  <img src="Results/biomass_dist_train_and_test.png">
-</p>
+<p><img src="Results/biomass_dist_train_and_test.png"/></p>
 
-<p>
-  <img src="Results/richness_dist_train_and_test.png">
-</p>
+<p><img src="Results/richness_dist_train_and_test.png"/></p>
 :::
 :::
-
-
-
-    
 
 ```{r interaction, eval=FALSE}
 # AB_tot ------------------------------------------------------------------
@@ -3785,8 +3783,6 @@ best_inte_Richesse_tot = inter_Richesse_tot[1:20, "variables"]
 # names(Richesse_tot_inter_test)
 ```
 
-
-
 ```{r}
 # correlation_matrix <- cor(df_mod_AB_tot[,c(2,5:8,11:16,20)],use = "na.or.complete")
 # corrplot::corrplot(correlation_matrix, method = "color", type = "lower", order = "hclust", addCoef.col = "black",diag = FALSE,cl.cex = 1,number.cex = 1)
@@ -3811,9 +3807,9 @@ best_inte_Richesse_tot = inter_Richesse_tot[1:20, "variables"]
 # for(i in names(df_mod_Richesse_tot)){cat( paste0("s(",i,") + "))}
 # for(i in names(Richesse_tot_inter_train)) {cat( paste0("s(",i,") + "))}
 ```
- 
 
 ## GLM
+
 ```{r function GLM, echo=TRUE}
 GLM <- function(var_rep, df_app, df_valid,family = 'gaussian'){
   
@@ -3832,22 +3828,25 @@ GLM <- function(var_rep, df_app, df_valid,family = 'gaussian'){
   # Prediction sur le jeu de validation
   pred.GLM<-predict(modelglm,newdata=as.data.frame(df_valid[,var_predicteurs]))
   
-  # Calcul du RMSE pour Ã©valuer la qualite du modele
+  # Calcul du RMSE pour évaluer la qualite du modele
   rmse <- round (sqrt(mean((df_valid[,var_rep] - pred.GLM)^2,na.rm=TRUE)),2)
   
   
- # Calcul du RÂ² ajustÃ© pour train
-  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(modelglm, data=df_app))
+ # Calcul du RÂ² ajusté pour train
+  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(modelglm, newdata=df_app))
   n_train <- nrow(df_app)
   p_train <- ncol(df_app) - 1
   r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
   
-  # Calcul du RÂ² ajustÃ© pour test
-  R_adj_test <-calcule_R2(df_valid[,var_rep],pred.GLM)
-  n_test <- nrow(df_valid)
-  p_test <- ncol(df_valid) - 1
-  r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
-
+  # Calcul du RÂ² 
+  # R_adj_test <-calcule_R2(df_valid[,var_rep],pred.GLM)
+  # n_test <- nrow(df_valid)
+  # p_test <- ncol(df_valid) - 1
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  
+  res <- rms::lrm(df_valid[,var_rep]  ~ pred.GLM, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
   
   MAE <- mean(abs(pred.GLM - df_valid[,var_rep]),na.rm=TRUE)
   
@@ -3857,8 +3856,16 @@ GLM <- function(var_rep, df_app, df_valid,family = 'gaussian'){
   r_adj_test <- round(r_adj_test, 2)
   MAE <- round(MAE, 2)
   
+  # output
+  results_df <- data.frame(Algorithms = "GLM",
+                         Response_variables = var_rep,
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = rmse,
+                         MAE = MAE)
+    
   
-  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = modelglm,predit = pred.GLM)
+  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = modelglm,predit = pred.GLM, df = results_df)
   return(results)
 }
 
@@ -3867,72 +3874,63 @@ GLM <- function(var_rep, df_app, df_valid,family = 'gaussian'){
 -   Gaussian distribution
 
 ## GAM
+
 ```{r function GAM, echo=TRUE}
 GAM <- function(var_rep, df_app, df_valid, family = 'gaussian',method = "REML", interaction = FALSE){
   
   var_predicteurs = names(df_app[,-1])
   
   
-  
   if (var_rep == "AB_tot"){ 
-  if (interaction == FALSE){ 
-  modelgam<-gam(AB_tot ~ s(CaCO3) + s(gps_x) + s(bio7) + s(bio4) + s(N) + s(bio3) + s(gps_y) + s(bio18) + s(bio15) + s(P) + s(gdd0) + s(clay) + s(elevation) + s(CEC) + s(silt) + s(hurs_mean) + s(sand) + s(CN) + s(bio6) + clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v,
+
+  modelgam<-gam(AB_tot ~ s(CaCO3) + s(gps_x) + s(N) + s(bio3) + s(gps_y) + s(clay) + s(silt) + s(P) + s(bio12) + clcm_lvl3f + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v,
         family=family,method = method,data = df_app)
-  } else {
-    
-   modelgam<-gam(AB_tot ~ s(CaCO3) + s(bio4) + s(N) + s(bio3) + s(elevation) + s(bio18) + s(CN) + s(P) + s(gdd0) + s(bio6) + s(sand) + s(bio8) + clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v + s(CaCO3.inter.gps_x) + s(CaCO3.inter.bio4) + s(CaCO3.inter.bio18) + s(CaCO3.inter.bio3) + s(CaCO3.inter.bio7) + s(CaCO3.inter.elevation) + s(CaCO3.inter.bio6) + s(CaCO3.inter.N) + s(gps_x.inter.N) + s(CaCO3.inter.CEC) + s(gps_x.inter.bio6) + s(gps_x.inter.silt) + s(CaCO3.inter.silt) + s(CaCO3.inter.bio15) + s(CaCO3.inter.clay) + s(CaCO3.inter.CN) + s(gps_x.inter.bio15) + s(gps_x.inter.sand) + s(gps_x.inter.gdd0) + s(gps_x.inter.bio8),
-        family=family,method = method,data = df_app) 
-  }
   
   }
-  
   
   
   
   
   if (var_rep == "BM_tot"){ 
-     if (interaction == FALSE){ 
-  modelgam<-gam(BM_tot ~ s(gps_x) + s(CaCO3) + s(P) + s(clay) + s(gps_y) + s(bio4) + s(sand) + s(N) + s(CEC) + s(gdd10) + s(PET) + s(CN) + s(pH) + s(hurs_mean) + s(silt) + s(bio12) + s(K) + s(bio3) + s(bio7) + clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v,
+
+  modelgam<-gam(BM_tot ~ s(CaCO3) + s(gps_x) + s(N) + s(bio3) + s(gps_y) + s(clay) + s(silt) + s(P) + s(bio12) + clcm_lvl3f + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v,
         family=family,method = method,data = df_app)
   
-     } else {
-    modelgam<-gam(BM_tot ~ s(P) + s(CEC) + s(gps_y) + s(CN) + s(pH) + s(gdd10) + s(silt) + s(bio4) + s(clay) + s(bio3) + s(K) + s(gdd0) + clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v + s(CaCO3.inter.CEC) + s(pH.inter.bio3) + s(gps_x.inter.pH) + s(CN.inter.pH) + s(pH.inter.bio4) + s(pH.inter.bio7) + s(CaCO3.inter.pH) + s(gps_x.inter.N) + s(CaCO3.inter.bio3) + s(gps_x.inter.bio4) + s(gps_x.inter.CN) + s(CaCO3.inter.clay) + s(P.inter.pH) + s(gps_x.inter.bio7) + s(hurs_mean.inter.pH) + s(gps_y.inter.hurs_mean) + s(pH.inter.bio12) + s(pH.inter.N) + s(CEC.inter.pH) + s(gps_x.inter.hurs_mean),
-        family=family,method = method,data = df_app)
-     }
     
   }
   
   
   
   if(var_rep == "Richesse_tot"){ 
-    if (interaction == FALSE){
-  modelgam<-gam(Richesse_tot ~ s(gps_x) + s(bio4) + s(bio7) + s(gps_y) + s(pH) + s(CaCO3) + s(bio18) + s(P) + s(CEC) + s(bio13) + s(N) + s(bio16) + s(hurs_mean) + s(bio10) + s(PET) + s(bio15) + s(elevation) + s(gdd10) + s(bio9) + clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v ,
+    
+  modelgam<-gam(Richesse_tot ~ s(CaCO3) + s(gps_x) + s(N) + s(bio3) + s(gps_y) + s(clay) + s(silt) + s(P) + s(bio12) + clcm_lvl3f + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v ,
         family=family,method = method,data = df_app)
-    } else { 
-          modelgam<-gam(Richesse_tot ~ s(gps_x) + s(bio4) + s(bio7) + s(gps_y) + s(pH) + s(CaCO3) + s(bio18) + s(P) + s(CEC) + s(bio13) + s(N) + s(bio16) + s(hurs_mean) + s(bio10) + s(PET) + s(bio15) + s(elevation) + s(gdd10) + s(bio9) + clcm_lvl3mf + clcm_lvl3gua + clcm_lvl3ng + clcm_lvl3nial + clcm_lvl3p + clcm_lvl3v + s(bio4.inter.pH) + s(gps_x.inter.PET) + s(gps_x.inter.hurs_mean) + s(gps_x.inter.gdd10) + s(gps_x.inter.pH) + s(pH.inter.elevation) + s(CEC.inter.hurs_mean) + s(gps_x.inter.bio10) + s(bio7.inter.pH) + s(gps_x.inter.gps_y) + s(bio4.inter.P) + s(CEC.inter.bio10) + s(bio4.inter.CaCO3) + s(pH.inter.bio18) + s(gps_x.inter.bio5) + s(gps_x.inter.CaCO3) + s(bio18.inter.hurs_mean) + s(bio4.inter.PET) + s(bio18.inter.bio10) + s(bio4.inter.CEC),
-        family=family,method = method,data = df_app)
-    }
+   
   }
   
   
   # Prediction sur le jeu de validation
   pred.GAM <- predict(modelgam,newdata=as.data.frame(df_valid[,var_predicteurs]))
   
-  # Calcul du RMSE pour Ã©valuer la qualite du modele
+  # Calcul du RMSE pour évaluer la qualite du modele
   rmse <- sqrt(mean((df_valid[,var_rep] - pred.GAM)^2,na.rm=TRUE))
 
   
-# Calcul du RÂ² ajustÃ© pour train
-  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(modelgam, data=df_app))
+# Calcul du RÂ² ajusté pour train
+  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(modelgam, newdata=df_app))
   n_train <- nrow(df_app)
   p_train <- ncol(df_app) - 1
   r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
   
-  # Calcul du RÂ² ajustÃ© pour test
-  R_adj_test <-calcule_R2(df_valid[,var_rep],pred.GAM)
-  n_test <- nrow(df_valid)
-  p_test <- ncol(df_valid) - 1
-  r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  # Calcul du RÂ² ajusté pour test
+  # R_adj_test <-calcule_R2(df_valid[,var_rep],pred.GAM)
+  # n_test <- nrow(df_valid)
+  # p_test <- ncol(df_valid) - 1
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+    res <- rms::lrm(df_valid[,var_rep]  ~ pred.GAM, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
+  
 
   # Calcule le MAE
   MAE <- mean(abs(pred.GAM - df_valid[,var_rep]))
@@ -3944,22 +3942,29 @@ GAM <- function(var_rep, df_app, df_valid, family = 'gaussian',method = "REML", 
   MAE <- round(MAE, 2)
   
   
-  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = modelgam, predit = pred.GAM)
+  # output
+  results_df <- data.frame(Algorithms = "GAM",
+                         Response_variables = var_rep,
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = rmse,
+                         MAE = MAE)
+  
+  
+  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = modelgam, predit = pred.GAM, df = results_df)
   
   return(results)
 }
 
 ```
 
--   Family = gaussian 
+-   Family = gaussian
 
--   Link function = identity 
+-   Link function = identity
 
 -   Method = REML
 
 -   Tuning
-
-
 
 ## RF
 
@@ -3969,26 +3974,26 @@ GAM <- function(var_rep, df_app, df_valid, family = 'gaussian',method = "REML", 
 # Grille de hyperparametisation
 RF_df_grid <- expand.grid(ntree = c(100,300,500,700,900,1000,1300,1500,1700,2000),
                        mtry = c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24),
-                       nodesize = c(10 , 20,  30,  40,  50,  60,  70,  80))
+                       maxnodes = c(10 , 20,  30,  40,  50,  60,  70,  80))
 ```
 
 -   RF model tuning by grid
 
-  -   ntree = $100,300,500,700,900,1000,1300,1500,1700,2000$
-  
-  -   mtry = $2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24$
-  
-  -   maxnodes = $10 , 20,  30,  40,  50,  60,  70,  80,  90, 100$
-  
- **Total number of models = $ntree * mtry * maxnode = `r nrow(RF_df_grid)`$ **
-  
- -    Validation of models on test data
-  
+-   ntree = $100,300,500,700,900,1000,1300,1500,1700,2000$
+
+-   mtry = $2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24$
+
+-   maxnodes = $10 , 20, 30, 40, 50, 60, 70, 80, 90, 100$
+
+**Total number of models =** $ntree * mtry * maxnode = `r nrow(RF_df_grid)`$
+
+-   Validation of models on test data
 
 ```{r function RF, echo=TRUE,fig.align='center'}
 
 ForetAlea <- function(var_rep, df_app, df_valid, mtry, ntree, maxnodes) {
-  set.seed(1234)
+  
+  set.seed(1863)
   col_posi <- which(names(df_app) == var_rep)
   ForeVDT <- randomForest::randomForest(df_app[-col_posi], df_app[[col_posi]], mtry = mtry, ntree = ntree, maxnodes = maxnodes)
   
@@ -4000,18 +4005,20 @@ ForetAlea <- function(var_rep, df_app, df_valid, mtry, ntree, maxnodes) {
   rmse <- sqrt(mean((df_valid[, col_posi] - pred.RF)^2))
   
   
-  # Calcul du RÂ² ajustÃ© pour train
-  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(ForeVDT, data=df_app))
+  # Calcul du RÂ² ajusté pour train
+  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(ForeVDT, newdata=df_app))
   n_train <- nrow(df_app)
   p_train <- ncol(df_app) - 1
   r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
   
-  # Calcul du RÂ² ajustÃ© pour test
-  R_adj_test <-calcule_R2(df_valid[,col_posi],pred.RF)
-  n_test <- nrow(df_valid)
-  p_test <- ncol(df_valid) - 1
-  r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
-  
+  # Calcul du RÂ² ajusté pour test
+  # R_adj_test <-calcule_R2(df_valid[,col_posi],pred.RF)
+  # n_test <- nrow(df_valid)
+  # p_test <- ncol(df_valid) - 1
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  res <- rms::lrm(df_valid[,var_rep]  ~ pred.RF, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
   
   # Calculate MAE
   MAE <- mean(abs(pred.RF - df_valid[, col_posi]))
@@ -4022,7 +4029,16 @@ ForetAlea <- function(var_rep, df_app, df_valid, mtry, ntree, maxnodes) {
   r_adj_test <- round(r_adj_test, 2)
   MAE <- round(MAE, 2)
   
-  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = ForeVDT, predit = pred.RF)
+    # output
+  results_df <- data.frame(Algorithms = "RF",
+                         Response_variables = var_rep,
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = rmse,
+                         MAE = MAE)
+  
+  
+  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = ForeVDT, predit = pred.RF, df = results_df)
   
   return(results)
 }
@@ -4055,11 +4071,7 @@ RF_tuning = ggplot(df, aes(x = x, y = y)) +
 
 ```
 
-<p>
-  <img src="results_tuning/RF_tuning.png">
-</p>
-
-
+<p><img src="results_tuning/RF_tuning.png"/></p>
 
 ## GBM
 
@@ -4075,18 +4087,17 @@ GBM_df_grid <- expand.grid(n.trees = c(1000,1500,1700,2000,3000),
 
 -   GBM model tuning by grid
 
-  -   n.trees = $1000, 1500, 1700, 2000, 3000$
-  
-  -   shrinkage = $0.01, 0.02, 0.05, 0.001, 0.002, 0.005$
-  
-  -   interaction.depth = $3,  5,  6,  8, 10$
-  
-  -   n.minobsinnode = $2, 5,  10,  30,  50,  70$
-  
-  **Total number of models = $n.trees * shrinkage * interaction.depth * n.minobsinnode = `r nrow(GBM_df_grid)`$ **
-  
+-   n.trees = $1000, 1500, 1700, 2000, 3000$
+
+-   shrinkage = $0.01, 0.02, 0.05, 0.001, 0.002, 0.005$
+
+-   interaction.depth = $3, 5, 6, 8, 10$
+
+-   n.minobsinnode = $2, 5, 10, 30, 50, 70$
+
+**Total number of models =** $n.trees * shrinkage * interaction.depth * n.minobsinnode = `r nrow(GBM_df_grid)`$
+
 -   Validation of models on test data
-  
 
 ```{r function GBM, echo=TRUE}
 
@@ -4105,21 +4116,25 @@ GBM <- function(var_rep, df_app, df_valid,distribution = 'gaussian',n.trees ,shr
    col_posi <- which(names(df_valid) == var_rep)
   prev.GBM<-predict(Gradboost,newdata=as.data.frame(df_valid[,-col_posi]))
  
-  # Calcul du RMSE pour Ã©valuer la qualitÃ© du modele
+  # Calcul du RMSE pour évaluer la qualité du modele
   rmse <- sqrt(mean((df_valid[,var_rep] - prev.GBM)^2))
 
 
-# Calcul du RÂ² ajustÃ© pour train
-  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(Gradboost, data=df_app))
+# Calcul du RÂ² ajusté pour train
+  R_adj_train <- calcule_R2(df_app[,var_rep],  predict(Gradboost, newdata=df_app))
   n_train <- nrow(df_app)
   p_train <- ncol(df_app) - 1
   r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
   
-  # Calcul du RÂ² ajustÃ© pour test
-  R_adj_test <-calcule_R2(df_valid[,col_posi],prev.GBM)
-  n_test <- nrow(df_valid)
-  p_test <- ncol(df_valid) - 1
-  r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  # Calcul du RÂ² ajusté pour test
+  # R_adj_test <-calcule_R2(df_valid[,col_posi],prev.GBM)
+  # n_test <- nrow(df_valid)
+  # p_test <- ncol(df_valid) - 1
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+    res <- rms::lrm(df_valid[,var_rep]  ~ prev.GBM, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
+  
 
   # calcule MAE
   MAE <- mean(abs(prev.GBM - df_valid[,col_posi])) 
@@ -4132,8 +4147,16 @@ GBM <- function(var_rep, df_app, df_valid,distribution = 'gaussian',n.trees ,shr
   MAE <- round(MAE, 2)
   
   
+      # output
+  results_df <- data.frame(Algorithms = "GBM",
+                         Response_variables = var_rep,
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = rmse,
+                         MAE = MAE)
   
-  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = Gradboost, predit = prev.GBM)
+  
+  results <- list(RMSE = rmse, R_adj_train = r_adj_train, R_adj_test = r_adj_test, MAE = MAE, model = Gradboost, predit = prev.GBM, df = results_df)
   
   
   return(results)
@@ -4161,19 +4184,35 @@ GBM_tuning = ggplot(df, aes(x = x, y = y)) +
 
 ```
 
-<p>
-  <img src="results_tuning/GBM_tuning.png">
-</p>
-
+<p><img src="results_tuning/GBM_tuning.png"/></p>
 
 ## ANN
+
 -   Default model
 
 ```{r,include=TRUE}
 # for(i in names(df_mod_AB_tot)){ cat(i,"+")}
+df = AB_tot_train
+names(df) = c("Res.var",
+              "CaCO3",
+              "Long",
+              "N",
+              "Isot",
+              "Lat",
+              "Clay",
+              "Silt",         
+              "P",
+              "Prec",
+              "For",
+              "Gua",
+              "Nag",
+              "Nial",
+              "Pmo",
+              "Viny")
 
-n <- neuralnet(AB_tot~ clcm_lvl3mf +clcm_lvl3gua +clcm_lvl3ng +clcm_lvl3nial +clcm_lvl3p +clcm_lvl3v + CaCO3 +gps_x +bio7 +bio4 +N +bio3 +gps_y +bio18 +bio15 +P +gdd0 +clay +elevation +CEC +silt +hurs_mean +sand +CN +bio6,
-               data = AB_tot_train,
+n <- neuralnet(Res.var~ For +Gua +Nag +Nial +Pmo +Viny + Long +Lat + 
+                 Prec + Isot+ CaCO3 +N+ P+ Clay + Silt,
+               data = df,
                # hidden = c(1),
                linear.output = F,
                lifesign = 'full',
@@ -4191,11 +4230,11 @@ plot(n,
 
 ANN_1 <- keras_model_sequential()
 ANN_1 %>% 
-  layer_dense(units = 1, activation = 'relu', input_shape = c(25)) %>%
+  layer_dense(units = 1, activation = 'relu', input_shape = c(15)) %>%
   layer_dense(units = 1)
 
 # Compile
-ANN_1 %>% compile(loss = 'mse',
+ANN_1 %>% keras::compile(loss = 'mse',
                   optimizer = 'rmsprop',
                   metrics = 'mae')
 summary(ANN_1)
@@ -4213,37 +4252,20 @@ summary(ANN_1)
 
 ```
 
+<p><img src="models/ANN_default_model.png"/></p>
 
-<p>
-  <img src="models/ANN_default_model.png">
-</p>
-
-
-
-<p>
-  <img src="models/plot_ANN_default_model.png">
-</p>
-
-
+<p><img src="models/plot_ANN_default_model.png"/></p>
 
 -   Tunning
 
-runs <- tuning_run("Experiment.R",
-                    flags = list(dense_units1 = c(32, 64),
-                                 dense_units2 = c(16, 32),
-                                 dense_units3 = c(8, 16),
-                                 dense_units4 = c(4, 8),
-                                 dropout1 = c(0.4, 0.5),
-                                 dropout1 = c(0.3, 0.4),
-                                 dropout1 = c(0.2, 0.3),
-                                 dropout1 = c(0.1, 0.2),
-                                 batch_size = c(32, 64)))
+runs \<- tuning_run("Experiment.R", flags = list(dense_units1 = c(32, 64), dense_units2 = c(16, 32), dense_units3 = c(8, 16), dense_units4 = c(4, 8), dropout1 = c(0.4, 0.5), dropout1 = c(0.3, 0.4), dropout1 = c(0.2, 0.3), dropout1 = c(0.1, 0.2), batch_size = c(32, 64)))
 
--   hidden = c(32,32,16,8) 
+-   hidden = c(32,32,16,8)
 
 ```{r,include=TRUE}
-n <- neuralnet(AB_tot~ clcm_lvl3mf +clcm_lvl3gua +clcm_lvl3ng +clcm_lvl3nial +clcm_lvl3p +clcm_lvl3v + CaCO3 +gps_x +bio7 +bio4 +N +bio3 +gps_y +bio18 +bio15 +P +gdd0 +clay +elevation +CEC +silt +hurs_mean +sand +CN +bio6,
-               data = AB_tot_train,
+n <- neuralnet(Res.var~ For +Gua +Nag +Nial +Pmo +Viny + Long +Lat + 
+                 Prec + Isot+ CaCO3 +N+ P+ Clay + Silt,
+               data = df,
                hidden = c(32,32,16,8),
                linear.output = F,
                lifesign = 'full',
@@ -4284,7 +4306,7 @@ batch_size =as.numeric(best_param$flag_batch_size)
 # AB_tot TUNE MODEL
 ANN_tune_AB_tot <- keras_model_sequential()
 ANN_tune_AB_tot %>% 
-  layer_dense(units = dense_units1, activation = 'relu', input_shape = c(25)) %>%
+  layer_dense(units = dense_units1, activation = 'relu', input_shape = c(15)) %>%
   layer_dropout(rate = dropout1)  %>%
   layer_dense(units = dense_units2, activation = 'relu') %>%
   layer_dropout(rate = dropout2)  %>%
@@ -4296,7 +4318,7 @@ ANN_tune_AB_tot %>%
 
 
 # Compile
-ANN_tune_AB_tot %>% compile(loss = 'mse',
+ANN_tune_AB_tot %>% keras::compile(loss = 'mse',
                   optimizer = 'rmsprop',
                   metrics = 'mae')
 
@@ -4304,7 +4326,7 @@ summary(ANN_tune_AB_tot)
 # #  callback EarlyStopping
 # mon_callback <- callback_early_stopping(
 #   monitor = "val_mae",  # Surveille la perte sur l'ensemble de validation
-#   patience = 10,         # Nombre d'Ã©poques sans amÃ©lioration avant l'arrÃªt
+#   patience = 10,         # Nombre d'époques sans amélioration avant l'arrÃªt
 #   restore_best_weights = TRUE  # Restaure les poids du meilleur modÃ¨le
 # )
 # 
@@ -4322,20 +4344,14 @@ summary(ANN_tune_AB_tot)
 
 ```
 
-<p>
-  <img src="models/ANN_tuning_model.png">
-</p>
+<p><img src="models/ANN_tuning_model.png"/></p>
 
-
-<p>
-  <img src="Results/fig_ANN_tune_BM_tot.png">
-</p>
-
-
+<p><img src="Results/fig_ANN_tune_BM_tot.png"/></p>
 
 ## Compilation pour chaque algoritme
 
 -   GLM
+
 ```{r Compile.GLM}
 # # Pour AB_tot ------------------------------------------------------------------
 
@@ -4402,8 +4418,8 @@ summary(ANN_tune_AB_tot)
 
 ```
 
-
 -   GAM
+
 ```{r Compile.GAM}
 # # Pour AB_tot ------------------------------------------------------------------
 
@@ -4468,8 +4484,8 @@ summary(ANN_tune_AB_tot)
 
 ```
 
-
 -   RF
+
 ```{r Compile.RF}
 # # Pour AB_tot  -----------------------------------------------------------------
 
@@ -4538,8 +4554,8 @@ summary(ANN_tune_AB_tot)
 
 ```
 
-
 -   GBM
+
 ```{r Compile.GBM}
 # Pour AB_tot  ------------------------------------------------------------------
 
@@ -4622,8 +4638,8 @@ summary(ANN_tune_AB_tot)
 
 ```
 
-
 -   ANN AB_tot
+
 ```{r ANN AB_tot}
 # Pour AB_tot  ------------------------------------------------------------------
 var_rep="AB_tot"
@@ -4672,7 +4688,7 @@ dimnames(test) <- NULL
 # AB_tot TUNE MODEL
 ANN_tune_AB_tot <- keras_model_sequential()
 ANN_tune_AB_tot %>% 
-  layer_dense(units = dense_units1, activation = 'relu', input_shape = c(25)) %>%
+  layer_dense(units = dense_units1, activation = 'relu', input_shape = c(15)) %>%
   layer_dropout(rate = dropout1)  %>%
   layer_dense(units = dense_units2, activation = 'relu') %>%
   layer_dropout(rate = dropout2)  %>%
@@ -4684,14 +4700,14 @@ ANN_tune_AB_tot %>%
 
 
 # Compile
-ANN_tune_AB_tot %>% compile(loss = 'mse',
+ANN_tune_AB_tot %>% keras::compile(loss = 'mse',
                   optimizer = 'rmsprop',
                   metrics = 'mae')
 
 #  callback EarlyStopping
 mon_callback <- callback_early_stopping(
   monitor = "val_mae",  # Surveille la perte sur l'ensemble de validation
-  patience = 10,         # Nombre d'Ã©poques sans amÃ©lioration avant l'arrÃªt
+  patience = 10,         # Nombre d'époques sans amélioration avant l'arrÃªt
   restore_best_weights = TRUE  # Restaure les poids du meilleur modÃ¨le
 )
 
@@ -4703,7 +4719,7 @@ myANN_tune_AB_tot <- ANN_tune_AB_tot %>%
       epochs = 100,
       batch_size = batch_size,
       validation_split = 0.2,
-      #callbacks = list(mon_callback)
+      callbacks = list(mon_callback)
       )
 
 
@@ -4720,18 +4736,20 @@ ANN_tune_AB_tot_cor = cor(testtarget,ANN_tune_AB_tot_pred)^2 # RÂ²
 
 
 
-# Calcul du RÂ² ajustÃ© pour train
+# Calcul du RÂ² ajusté pour train
   R_adj_train <- calcule_R2(trainingtarget,  ANN_tune_AB_tot %>% predict(training))
   n_train <- nrow(training)
   p_train <- ncol(training)
   r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
   
-  # Calcul du RÂ² ajustÃ© pour test
-  R_adj_test <-calcule_R2(testtarget,ANN_tune_AB_tot_pred)
-  n_test <- nrow(test)
-  p_test <- ncol(test)
-  r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
-  
+  # Calcul du RÂ² ajusté pour test
+  # R_adj_test <-calcule_R2(testtarget,ANN_tune_AB_tot_pred)
+  # n_test <- nrow(test)
+  # p_test <- ncol(test)
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+    res <- rms::lrm(testtarget  ~ ANN_tune_AB_tot_pred, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
   
   
   
@@ -4745,10 +4763,18 @@ ANN_tune_AB_tot_results = data.frame(model = "ANN_tune_AB_tot",
 
 # ANN_tune_AB_tot_results
 
+      # output
+ANN_tune_AB_tot_results_df <- data.frame(Algorithms = "ANN",
+                         Response_variables = "AB_tot",
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = ANN_tune_AB_tot_rmse,
+                         MAE = ANN_tune_AB_tot_mae)
+
 ```
 
-
 -   ANN BM_tot
+
 ```{r ANN BM_tot}
 # Pour BM_tot  ------------------------------------------------------------------
 var_rep="BM_tot"
@@ -4796,7 +4822,7 @@ dimnames(test) <- NULL
 # BM_tot TUNE MODEL
 ANN_tune_BM_tot <- keras_model_sequential()
 ANN_tune_BM_tot %>% 
-  layer_dense(units = dense_units1, activation = 'relu', input_shape = c(25)) %>%
+  layer_dense(units = dense_units1, activation = 'relu', input_shape = c(15)) %>%
   layer_dropout(rate = dropout1)  %>%
   layer_dense(units = dense_units2, activation = 'relu') %>%
   layer_dropout(rate = dropout2)  %>%
@@ -4808,14 +4834,14 @@ ANN_tune_BM_tot %>%
 
 
 # Compile
-ANN_tune_BM_tot %>% compile(loss = 'mse',
+ANN_tune_BM_tot %>% keras::compile(loss = 'mse',
                   optimizer = 'rmsprop',
                   metrics = 'mae')
 
 #  callback EarlyStopping
 mon_callback <- callback_early_stopping(
   monitor = "val_mae",  # Surveille la perte sur l'ensemble de validation
-  patience = 10,         # Nombre d'Ã©poques sans amÃ©lioration avant l'arrÃªt
+  patience = 10,         # Nombre d'époques sans amélioration avant l'arrÃªt
   restore_best_weights = TRUE  # Restaure les poids du meilleur modÃ¨le
 )
 
@@ -4844,18 +4870,20 @@ ANN_tune_BM_tot_cor = cor(testtarget,ANN_tune_BM_tot_pred)^2 # RÂ²
 
 
 
-# Calcul du RÂ² ajustÃ© pour train
+# Calcul du RÂ² ajusté pour train
   R_adj_train <- calcule_R2(trainingtarget,  ANN_tune_BM_tot %>% predict(training))
   n_train <- nrow(training)
   p_train <- ncol(training)
   r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
   
-  # Calcul du RÂ² ajustÃ© pour test
-  R_adj_test <-calcule_R2(testtarget,ANN_tune_BM_tot_pred)
-  n_test <- nrow(test)
-  p_test <- ncol(test)
-  r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
-  
+  # Calcul du RÂ² ajusté pour test
+  # R_adj_test <-calcule_R2(testtarget,ANN_tune_BM_tot_pred)
+  # n_test <- nrow(test)
+  # p_test <- ncol(test)
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  res <- rms::lrm(testtarget  ~ ANN_tune_BM_tot_pred, x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
   
   
   
@@ -4867,9 +4895,18 @@ ANN_tune_BM_tot_results = data.frame(model = "ANN_tune_BM_tot",
                                      R_adj_test= round(r_adj_test,2))
 # ANN_tune_BM_tot_results
 
+
+      # output
+ANN_tune_BM_tot_results_df <- data.frame(Algorithms = "ANN",
+                         Response_variables = "BM_tot",
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = ANN_tune_BM_tot_rmse,
+                         MAE = ANN_tune_BM_tot_mae)
 ```
 
 -   ANN Richesse_tot
+
 ```{r ANN Richesse_tot}
 # Pour Richesse_tot  ------------------------------------------------------------------
 var_rep="Richesse_tot"
@@ -4917,7 +4954,7 @@ dimnames(test) <- NULL
 # Richesse_tot TUNE MODEL
 ANN_tune_Richesse_tot <- keras_model_sequential()
 ANN_tune_Richesse_tot %>% 
-  layer_dense(units = dense_units1, activation = 'relu', input_shape = c(25)) %>%
+  layer_dense(units = dense_units1, activation = 'relu', input_shape = c(15)) %>%
   layer_dropout(rate = dropout1+0.2)  %>%
   layer_dense(units = dense_units2, activation = 'relu') %>%
   layer_dropout(rate = dropout2+0.2)  %>%
@@ -4929,14 +4966,14 @@ ANN_tune_Richesse_tot %>%
 
 
 # Compile
-ANN_tune_Richesse_tot %>% compile(loss = 'mse',
+ANN_tune_Richesse_tot %>% keras::compile(loss = 'mse',
                   optimizer = 'rmsprop',
                   metrics = 'mae')
 
 #  callback EarlyStopping
 mon_callback <- callback_early_stopping(
   monitor = "val_mae",  # Surveille la perte sur l'ensemble de validation
-  patience = 10,         # Nombre d'Ã©poques sans amÃ©lioration avant l'arrÃªt
+  patience = 10,         # Nombre d'époques sans amélioration avant l'arrÃªt
   restore_best_weights = TRUE  # Restaure les poids du meilleur modÃ¨le
 )
 
@@ -4965,18 +5002,20 @@ ANN_tune_Richesse_tot_cor = cor(testtarget,ANN_tune_Richesse_tot_pred)^2 # RÂ²
 
 
 
-# Calcul du RÂ² ajustÃ© pour train
+# Calcul du RÂ² ajusté pour train
   R_adj_train <- calcule_R2(trainingtarget,  ANN_tune_Richesse_tot %>% predict(training))
   n_train <- nrow(training)
   p_train <- ncol(training)
   r_adj_train <- 1 - ((1 - R_adj_train) * (n_train - 1) / (n_train - p_train - 1))
   
-  # Calcul du RÂ² ajustÃ© pour test
-  R_adj_test <-calcule_R2(testtarget,ANN_tune_Richesse_tot_pred)
-  n_test <- nrow(test)
-  p_test <- ncol(test)
-  r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
-  
+  # Calcul du RÂ² ajusté pour test
+  # R_adj_test <-calcule_R2(testtarget,ANN_tune_Richesse_tot_pred)
+  # n_test <- nrow(test)
+  # p_test <- ncol(test)
+  # r_adj_test <- 1 - ((1 - R_adj_test) * (n_test - 1) / (n_test - p_test - 1))
+  res <- rms::lrm(testtarget  ~ ANN_tune_Richesse_tot_pred , x= TRUE, y = TRUE)
+  res = res$stats
+  r_adj_test = round (res[["R2"]],2)
   
   
   
@@ -4988,11 +5027,18 @@ ANN_tune_Richesse_tot_results = data.frame(model = "ANN_tune_Richesse_tot",
                                      R_adj_test= round(r_adj_test,2))
 # ANN_tune_Richesse_tot_results
 
+
+# output
+ANN_tune_Richesse_tot_results_df <- data.frame(Algorithms = "ANN",
+                         Response_variables = "Richesse_tot",
+                         R2_adjusted_train = r_adj_train,
+                         R2_adjusted_test = r_adj_test,
+                         RMSE = ANN_tune_Richesse_tot_rmse,
+                         MAE = ANN_tune_Richesse_tot_mae)
 ```
 
+# Results: Case 1 -\> repeated data
 
-
-# Results: Case 1 -> repeated data
 ```{r}
 # coul = c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")
 # coul2 = c("#E69F00", "#1F77B4", "#009E73", "#F0E442", "#9467BD")
@@ -5000,16 +5046,13 @@ ANN_tune_Richesse_tot_results = data.frame(model = "ANN_tune_Richesse_tot",
 couleurs = c("#2CA02C","#E69F00", "#1F77B4","#7F7F7F", "#D62728","#9467BD")
 ```
 
-
-
 ## Prediction of total abundance
 
 ```{r}
 subtitle <- sprintf("Abundance : %.2f Â± %.2f ind/mÂ²", mean(data_deep$AB_tot, na.rm = TRUE), sd(data_deep$AB_tot, na.rm = TRUE))
 ```
 
-
-```{r predit AB_tot, fig.align='center',}
+```{r predit AB_tot, fig.align='center'}
 # Prediction avec GLM -----------------------------------------
 GLM_result_AB_tot = GLM(var_rep ="AB_tot", 
                              df_app=AB_tot_train, 
@@ -5035,9 +5078,9 @@ GLM_AB_tot <- ggplot(GLM_df_AB_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GLM: RÂ² adj (train) = ", round(GLM_result_AB_tot$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(GLM_result_AB_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GLM_result_AB_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(GLM_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GLM_result_AB_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic() 
 
@@ -5083,9 +5126,9 @@ GAM_AB_tot <- ggplot(GAM_df_AB_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GAM: RÂ² adj (train) = ", round(GAM_result_AB_tot$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(GAM_result_AB_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GAM_result_AB_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(GAM_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GAM_result_AB_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic() 
 
@@ -5105,13 +5148,12 @@ AB_tot_best_mtry = AB_tot_best_param$mtry
 AB_tot_best_ntree = AB_tot_best_param$ntree
 AB_tot_best_maxnodes = AB_tot_best_param$maxnode
 
-
 RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
-                             df_app=AB_tot_train, 
-                             df_valid = AB_tot_test,
-                             mtry = AB_tot_best_mtry,
+                              df_app=AB_tot_train, 
+                              df_valid = AB_tot_test,
+                             mtry = 3,
                              ntree= AB_tot_best_ntree,
-                             maxnodes = AB_tot_best_maxnodes)
+                             maxnodes = NULL)
 
 # RF_result_AB_tot$RMSE
 # RF_result_AB_tot$MAE
@@ -5133,13 +5175,13 @@ RF_AB_tot <- ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_AB_tot$R_adj_train,2), 
-                           "; \n RÂ² adj (test) = ", round(RF_result_AB_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(RF_result_AB_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(RF_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_AB_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") + 
       theme_classic() 
 best_algo_AB_tot = RF_AB_tot
-
+saveRDS(RF_result_AB_tot$model, "cartographie/RF_mod_AB_tot.RDS")
 
 # Prediction avec GBM -----------------------------------------
 AB_tot_GBM_tuning = read.csv2("results_tuning/AB_tot_GBM_tuning.csv")
@@ -5193,9 +5235,9 @@ GBM_AB_tot <- ggplot(GBM_df_AB_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GBM: RÂ² adj (train) = ", round(GBM_result_AB_tot$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(GBM_result_AB_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GBM_result_AB_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(GBM_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GBM_result_AB_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic() 
 
@@ -5222,9 +5264,9 @@ ANN_AB_tot <- ggplot(ANN_df_AB_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") +
 labs(subtitle =paste0(" ANN: RÂ² adj (train) = ", round(ANN_tune_AB_tot_results$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(ANN_tune_AB_tot_results$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(ANN_tune_AB_tot_results$rmse^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(ANN_tune_AB_tot_results$R_adj_test,2),
+                           "; RMSE = ",  round(ANN_tune_AB_tot_results$rmse^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic()
 
@@ -5235,45 +5277,45 @@ graphe_AB_tot = ggarrange(GLM_AB_tot, GAM_AB_tot, RF_AB_tot, GBM_AB_tot, ANN_AB_
   legend = 'right'
 )
 ggsave("Results/graphe_AB_tot.png", plot = graphe_AB_tot, dpi = 300,height = 6,width = 7)
+# graphe_AB_tot
 
 
 
-
-df_tot = RF_df_AB_tot
-df_tot$observation = seq(1,nrow(df_tot))
-
-
-
-# Calcul des quartiles
-q1 <- quantile(df_tot$Observed, 0.25)
-median <- quantile(df_tot$Observed, 0.50)
-q3 <- quantile(df_tot$Observed, 0.75)
-max_value <- max(df_tot$Observed)
-
-# CrÃ©ation des DataFrames en fonction des quartiles
-df1 <- df_tot[df_tot$Observed <= q1,]
-df2 <- df_tot[df_tot$Observed > q1 & df_tot$Observed <= median,]
-df3 <- df_tot[df_tot$Observed > median & df_tot$Observed <= q3,]
-df4 <- df_tot[df_tot$Observed > q3,]
-
-
-
-
-AB_tot_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "RF: Abundance predicted and observed values \n for different quartiles")
-
-AB_tot_p2 = plot_comp(df = df2,ylabel = "" ,title_class = "Q1 to median",legende = FALSE,xlabel = "")
-AB_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legende = FALSE,xlabel = "")
-AB_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
-
-
-RF_AB_tot_fig = ggarrange(AB_tot_p1, AB_tot_p2, AB_tot_p3, AB_tot_p4,
-  # labels = c('(a)', '(b)','(c)', '(d)'),
-  ncol = 1,vjust = 0.5,
-  common.legend = TRUE,
-  legend = 'right'
-)
-
-ggsave("Results/RF_AB_tot_fig.png", plot = RF_AB_tot_fig, dpi = 300,height = 8)
+# df_tot = RF_df_AB_tot
+# df_tot$observation = seq(1,nrow(df_tot))
+# 
+# 
+# 
+# # Calcul des quartiles
+# q1 <- quantile(df_tot$Observed, 0.25)
+# median <- quantile(df_tot$Observed, 0.50)
+# q3 <- quantile(df_tot$Observed, 0.75)
+# max_value <- max(df_tot$Observed)
+# 
+# # Création des DataFrames en fonction des quartiles
+# df1 <- df_tot[df_tot$Observed <= q1,]
+# df2 <- df_tot[df_tot$Observed > q1 & df_tot$Observed <= median,]
+# df3 <- df_tot[df_tot$Observed > median & df_tot$Observed <= q3,]
+# df4 <- df_tot[df_tot$Observed > q3,]
+# 
+# 
+# 
+# 
+# AB_tot_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "RF: Abundance predicted and Observed valuesss \n for different quartiles")
+# 
+# AB_tot_p2 = plot_comp(df = df2,ylabel = "" ,title_class = "Q1 to median",legende = FALSE,xlabel = "")
+# AB_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legende = FALSE,xlabel = "")
+# AB_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
+# 
+# 
+# RF_AB_tot_fig = ggarrange(AB_tot_p1, AB_tot_p2, AB_tot_p3, AB_tot_p4,
+#   # labels = c('(a)', '(b)','(c)', '(d)'),
+#   ncol = 1,vjust = 0.5,
+#   common.legend = TRUE,
+#   legend = 'right'
+# )
+# 
+# ggsave("Results/RF_AB_tot_fig.png", plot = RF_AB_tot_fig, dpi = 300,height = 8)
 
 
 # df_tot$diff = abs(df_tot$Observed - df_tot$Predicted)
@@ -5285,24 +5327,25 @@ ggsave("Results/RF_AB_tot_fig.png", plot = RF_AB_tot_fig, dpi = 300,height = 8)
 
 ```
 
-
 <p align="center">
-  <img src="Results/graphe_AB_tot.png">
-</p>
 
+<img src="Results/graphe_AB_tot.png"/>
+
+</p>
 
 **The best algorithm for total abundance is: RF**
 
 <!-- <p align="center"> -->
+
 <!--   <img src="Results/RF_AB_tot_fig.png"> -->
+
 <!-- </p> -->
 
-
 ## Prediction of total biomass
+
 ```{r}
 subtitle <- sprintf("Biomass : %.2f Â± %.2f g/mÂ²", mean(data_deep$BM_tot, na.rm = TRUE), sd(data_deep$BM_tot, na.rm = TRUE))
 ```
-
 
 ```{r predit BM_tot , fig.align='center' ,}
 # Prediction avec GLM -----------------------------------------
@@ -5330,9 +5373,9 @@ GLM_BM_tot <- ggplot(GLM_df_BM_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GLM: RÂ² adj (train) = ", round(GLM_result_BM_tot$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(GLM_result_BM_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GLM_result_BM_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(GLM_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GLM_result_BM_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic() 
 
@@ -5378,9 +5421,9 @@ GAM_BM_tot <- ggplot(GAM_df_BM_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GAM: RÂ² adj (train) = ", round(GAM_result_BM_tot$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(GAM_result_BM_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GAM_result_BM_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(GAM_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GAM_result_BM_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic() 
 
@@ -5402,11 +5445,11 @@ BM_tot_best_maxnodes = BM_tot_best_param$maxnode
 
 
 RF_result_BM_tot = ForetAlea(var_rep ="BM_tot", 
-                             df_app=BM_tot_train, 
+                             df_app=BM_tot_train,
                              df_valid = BM_tot_test,
-                             mtry = BM_tot_best_mtry,
+                             mtry = 3,
                              ntree= BM_tot_best_ntree,
-                             maxnodes = BM_tot_best_maxnodes)
+                             maxnodes = NULL)
 
 # RF_result_BM_tot$RMSE
 # RF_result_BM_tot$MAE
@@ -5427,12 +5470,14 @@ RF_BM_tot <- ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_BM_tot$R_adj_train,2), 
-                           "; \n RÂ² adj (test) = ", round(RF_result_BM_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(RF_result_BM_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(RF_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_BM_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") + 
       theme_classic() 
 best_algo_BM_tot = RF_BM_tot
+saveRDS(RF_result_BM_tot$model, "cartographie/RF_mod_BM_tot.RDS")
+
 # Prediction avec GBM -----------------------------------------
 BM_tot_GBM_tuning = read.csv2("results_tuning/BM_tot_GBM_tuning.csv")
 
@@ -5485,9 +5530,9 @@ GBM_BM_tot <- ggplot(GBM_df_BM_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GBM: RÂ² adj (train) = ", round(GBM_result_BM_tot$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(GBM_result_BM_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GBM_result_BM_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(GBM_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GBM_result_BM_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic() 
 
@@ -5514,9 +5559,9 @@ ANN_BM_tot <- ggplot(ANN_df_BM_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") +
 labs(subtitle =paste0(" ANN: RÂ² adj (train) = ", round(ANN_tune_BM_tot_results$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(ANN_tune_BM_tot_results$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(ANN_tune_BM_tot_results$rmse^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(ANN_tune_BM_tot_results$R_adj_test,2),
+                           "; RMSE = ",  round(ANN_tune_BM_tot_results$rmse^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic()
 
@@ -5531,68 +5576,68 @@ ggsave("Results/graphe_BM_tot.png", plot = graphe_BM_tot, dpi = 300, height = 6,
 
 
 
-df_tot = RF_df_BM_tot
-df_tot$observation = seq(1,nrow(df_tot))
-
-# Calcul des quartiles
-q1 <- quantile(df_tot$Observed, 0.25)
-median <- quantile(df_tot$Observed, 0.50)
-q3 <- quantile(df_tot$Observed, 0.75)
-max_value <- max(df_tot$Observed)
-
-# CrÃ©ation des DataFrames en fonction des quartiles
-df1 <- df_tot[df_tot$Observed <= q1,]
-df2 <- df_tot[df_tot$Observed > q1 & df_tot$Observed <= median,]
-df3 <- df_tot[df_tot$Observed > median & df_tot$Observed <= q3,]
-df4 <- df_tot[df_tot$Observed > q3,]
-
-
-
-
-BM_tot_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "RF: Biomass predicted and observed values \n for different quartiles")
-
-BM_tot_p2 = plot_comp(df = df2,ylabel = "" ,title_class = "Q1 to median",legende = FALSE,xlabel = "")
-BM_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legende = FALSE,xlabel = "")
-BM_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
-
-
-RF_BM_tot_fig = ggarrange(BM_tot_p1, BM_tot_p2, BM_tot_p3, BM_tot_p4,
-  # labels = c('(a)', '(b)','(c)', '(d)'),
-  ncol = 1,vjust = 0.5,
-  common.legend = TRUE,
-  legend = 'right'
-)
-
-
-ggsave("Results/RF_BM_tot_fig.png", plot = RF_BM_tot_fig, dpi = 300,height = 8)
-
-
-
+# df_tot = RF_df_BM_tot
+# df_tot$observation = seq(1,nrow(df_tot))
+# 
+# # Calcul des quartiles
+# q1 <- quantile(df_tot$Observed, 0.25)
+# median <- quantile(df_tot$Observed, 0.50)
+# q3 <- quantile(df_tot$Observed, 0.75)
+# max_value <- max(df_tot$Observed)
+# 
+# # Création des DataFrames en fonction des quartiles
+# df1 <- df_tot[df_tot$Observed <= q1,]
+# df2 <- df_tot[df_tot$Observed > q1 & df_tot$Observed <= median,]
+# df3 <- df_tot[df_tot$Observed > median & df_tot$Observed <= q3,]
+# df4 <- df_tot[df_tot$Observed > q3,]
+# 
+# 
+# 
+# 
+# BM_tot_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "RF: Biomass predicted and Observed valuesss \n for different quartiles")
+# 
+# BM_tot_p2 = plot_comp(df = df2,ylabel = "" ,title_class = "Q1 to median",legende = FALSE,xlabel = "")
+# BM_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legende = FALSE,xlabel = "")
+# BM_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
+# 
+# 
+# RF_BM_tot_fig = ggarrange(BM_tot_p1, BM_tot_p2, BM_tot_p3, BM_tot_p4,
+#   # labels = c('(a)', '(b)','(c)', '(d)'),
+#   ncol = 1,vjust = 0.5,
+#   common.legend = TRUE,
+#   legend = 'right'
+# )
+# 
+# 
+# ggsave("Results/RF_BM_tot_fig.png", plot = RF_BM_tot_fig, dpi = 300,height = 8)
+# 
+# 
+# 
 # df_tot$diff = abs(df_tot$Observed - df_tot$Predicted)
 # df_best = df_tot[df_tot$diff<=15,]
 # 
 # plot_comp(df = df_best,ylabel = "Biomass" ,title_class = "     Best prediction",legende = TRUE,plotly = TRUE)
 ```
 
-
 <p align="center">
-  <img src="Results/graphe_BM_tot.png">
-</p>
 
+<img src="Results/graphe_BM_tot.png"/>
+
+</p>
 
 **The best algorithm for total Biomass is: RF**
 
 <!-- <p align="center"> -->
-<!--   <img src="Results/RF_BM_tot_fig.png"> -->
-<!-- </p> -->
 
+<!--   <img src="Results/RF_BM_tot_fig.png"> -->
+
+<!-- </p> -->
 
 ## Prediction of total taxonomic richness
 
 ```{r}
 subtitle <- sprintf("Richness : %.2f Â± %.2f", round(mean(data_deep$Richesse_tot, na.rm = TRUE)), round(sd(data_deep$Richesse_tot, na.rm = TRUE)))
 ```
-
 
 ```{r predit Richesse_tot , fig.align='center', }
 # Prediction avec GLM -----------------------------------------
@@ -5620,9 +5665,9 @@ GLM_Richesse_tot <- ggplot(GLM_df_Richesse_tot, aes(x = Observed, y = Predicted)
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GLM: RÂ² adj (train) = ", round(GLM_result_Richesse_tot$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(GLM_result_Richesse_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GLM_result_Richesse_tot$RMSE,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(GLM_result_Richesse_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GLM_result_Richesse_tot$RMSE,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic() 
 
@@ -5668,9 +5713,9 @@ GAM_Richesse_tot <- ggplot(GAM_df_Richesse_tot, aes(x = Observed, y = Predicted)
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GAM: RÂ² adj (train) = ", round(GAM_result_Richesse_tot$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(GAM_result_Richesse_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GAM_result_Richesse_tot$RMSE,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(GAM_result_Richesse_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GAM_result_Richesse_tot$RMSE,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic() 
 
@@ -5694,9 +5739,9 @@ Richesse_tot_best_maxnodes = Richesse_tot_best_param$maxnode
 RF_result_Richesse_tot = ForetAlea(var_rep ="Richesse_tot", 
                              df_app=Richesse_tot_train, 
                              df_valid = Richesse_tot_test,
-                             mtry = Richesse_tot_best_mtry,
+                             mtry = 3,
                              ntree= Richesse_tot_best_ntree,
-                             maxnodes = Richesse_tot_best_maxnodes)
+                             maxnodes = NULL)
 
 # RF_result_Richesse_tot$RMSE
 # RF_result_Richesse_tot$MAE
@@ -5717,12 +5762,16 @@ RF_Richesse_tot <- ggplot(RF_df_Richesse_tot, aes(x = Observed, y = Predicted)) 
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_Richesse_tot$R_adj_train,2), 
-                           "; \n RÂ² adj (test) = ", round(RF_result_Richesse_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(RF_result_Richesse_tot$RMSE,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(RF_result_Richesse_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_Richesse_tot$RMSE,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") + 
       theme_classic() 
 best_algo_Richesse_tot = RF_Richesse_tot
+
+# save model
+saveRDS(RF_result_Richesse_tot$model, "cartographie/RF_mod_Richesse_tot.RDS")
+# identical(RF_result_Richesse_tot$model, test_s_mod, ignore.environment = TRUE)
 
 # Prediction avec GBM -----------------------------------------
 Richesse_tot_GBM_tuning = read.csv2("results_tuning/Richesse_tot_GBM_tuning.csv")
@@ -5776,9 +5825,9 @@ GBM_Richesse_tot <- ggplot(GBM_df_Richesse_tot, aes(x = Observed, y = Predicted)
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" GBM: RÂ² adj (train) = ", round(GBM_result_Richesse_tot$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(GBM_result_Richesse_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(GBM_result_Richesse_tot$RMSE,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(GBM_result_Richesse_tot$R_adj_test,2),
+                           "; RMSE = ",  round(GBM_result_Richesse_tot$RMSE,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic() 
 
@@ -5805,9 +5854,9 @@ ANN_Richesse_tot <- ggplot(ANN_df_Richesse_tot, aes(x = Observed, y = Predicted)
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") +
 labs(subtitle =paste0(" ANN: RÂ² adj (train) = ", round(ANN_tune_Richesse_tot_results$R_adj_train,2),
-                           "; \n RÂ² adj (test) = ", round(ANN_tune_Richesse_tot_results$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(ANN_tune_Richesse_tot_results$rmse,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(ANN_tune_Richesse_tot_results$R_adj_test,2),
+                           "; RMSE = ",  round(ANN_tune_Richesse_tot_results$rmse,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") +
       theme_classic()
 
@@ -5822,42 +5871,42 @@ ggsave("Results/graphe_Richesse_tot.png", plot = graphe_Richesse_tot, dpi = 300,
 
 
 
-df_tot = RF_df_Richesse_tot
-df_tot$observation = seq(1,nrow(df_tot))
-
-df_tot$Predicted = round(df_tot$Predicted)
-# Calcul des quartiles
-q1 <- quantile(df_tot$Observed, 0.25)
-median <- quantile(df_tot$Observed, 0.50)
-q3 <- quantile(df_tot$Observed, 0.75)
-max_value <- max(df_tot$Observed)
-
-# CrÃ©ation des DataFrames en fonction des quartiles
-df1 <- df_tot[df_tot$Observed <= q1,]
-df2 <- df_tot[df_tot$Observed > q1 & df_tot$Observed <= median,]
-df3 <- df_tot[df_tot$Observed > median & df_tot$Observed <= q3,]
-df4 <- df_tot[df_tot$Observed > q3,]
-
-
-
-
-Richesse_tot_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "RF: Richness predicted and observed values \n for different quartiles")
-
-Richesse_tot_p2 = plot_comp(df = df2,ylabel = "" ,title_class = "Q1 to median",legende = FALSE,xlabel = "")
-Richesse_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legende = FALSE,xlabel = "")
-Richesse_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
-
-
-GBM_Richesse_tot_fig = ggarrange(Richesse_tot_p1, Richesse_tot_p2, Richesse_tot_p3, Richesse_tot_p4,
-  # labels = c('(a)', '(b)','(c)', '(d)'),
-  ncol = 1,vjust = 0.5,
-  common.legend = TRUE,
-  legend = 'right'
-)
-
-ggsave("Results/RF_Richesse_tot_fig.png", plot = GBM_Richesse_tot_fig, dpi = 300,height = 8)
-
-
+# df_tot = RF_df_Richesse_tot
+# df_tot$observation = seq(1,nrow(df_tot))
+# 
+# df_tot$Predicted = round(df_tot$Predicted)
+# # Calcul des quartiles
+# q1 <- quantile(df_tot$Observed, 0.25)
+# median <- quantile(df_tot$Observed, 0.50)
+# q3 <- quantile(df_tot$Observed, 0.75)
+# max_value <- max(df_tot$Observed)
+# 
+# # Création des DataFrames en fonction des quartiles
+# df1 <- df_tot[df_tot$Observed <= q1,]
+# df2 <- df_tot[df_tot$Observed > q1 & df_tot$Observed <= median,]
+# df3 <- df_tot[df_tot$Observed > median & df_tot$Observed <= q3,]
+# df4 <- df_tot[df_tot$Observed > q3,]
+# 
+# 
+# 
+# 
+# Richesse_tot_p1 = plot_comp(df = df1,ylabel = "",title_class = "  min to Q1",legende = TRUE,xlabel = "",title = "RF: Richness predicted and Observed valuesss \n for different quartiles")
+# 
+# Richesse_tot_p2 = plot_comp(df = df2,ylabel = "" ,title_class = "Q1 to median",legende = FALSE,xlabel = "")
+# Richesse_tot_p3 = plot_comp(df = df3,ylabel = "" ,title_class = "median to Q3" ,legende = FALSE,xlabel = "")
+# Richesse_tot_p4 = plot_comp(df = df4,ylabel = "" ,title_class = " Q3 to max" ,legende = FALSE)
+# 
+# 
+# GBM_Richesse_tot_fig = ggarrange(Richesse_tot_p1, Richesse_tot_p2, Richesse_tot_p3, Richesse_tot_p4,
+#   # labels = c('(a)', '(b)','(c)', '(d)'),
+#   ncol = 1,vjust = 0.5,
+#   common.legend = TRUE,
+#   legend = 'right'
+# )
+# 
+# ggsave("Results/RF_Richesse_tot_fig.png", plot = GBM_Richesse_tot_fig, dpi = 300,height = 8)
+# 
+# 
 # df_tot$diff = abs(df_tot$Observed - df_tot$Predicted)
 # df_best = df_tot[df_tot$diff<=0.5,]
 # 
@@ -5865,22 +5914,24 @@ ggsave("Results/RF_Richesse_tot_fig.png", plot = GBM_Richesse_tot_fig, dpi = 300
 # plot_comp(df = df_best,ylabel = "Richness" ,title_class = "     Best prediction",legende = TRUE,plotly = FALSE)
 ```
 
-
 <p align="center">
-  <img src="Results/graphe_Richesse_tot.png">
+
+<img src="Results/graphe_Richesse_tot.png"/>
+
 </p>
 
-
-**The best algorithm for total Richness is: RF **
+**The best algorithm for total Richness is: RF**
 
 <!-- <p align="center"> -->
+
 <!--   <img src="Results/RF_Richesse_tot_fig.png"> -->
+
 <!-- </p> -->
 
 ## Best algo: RF
 
-**-   Summary: ** *Results Case 1 -> repeated data*
-<br/> 
+**- Summary:** *Results Case 1 -\> repeated data* <br/>
+
 ```{r saving best algo1,fig.align='center'}
 best_algo_RF_1 = ggpubr::ggarrange(best_algo_AB_tot, best_algo_BM_tot, best_algo_Richesse_tot,
                           labels = c('(a)', '(b)','(c)'),ncol = 3,
@@ -5891,69 +5942,81 @@ ggsave("Results/best_algo_RF_1.png", plot = best_algo_RF_1, dpi = 300,height = 3
 ```
 
 <p align="center">
-  <img src="Results/best_algo_RF_1.png">
+
+<img src="Results/best_algo_RF_1.png"/>
+
 </p>
-
-
 
 ## Transformations effect
 
-- ata without transformations
-<p align="center">
-  <img src="Results/non_transformation/all_fig_RF.png">
-</p>
+-   Data without transformations
 
-- Data transformed with *sqrt()*
-<p align="center">
-  <img src="Results/best_algo_RF_1.png">
-</p>
+    <p align="center">
 
+    <img src="Results/non_transformation/all_fig_RF.png"/>
 
+    </p>
 
+-   Data transformed with *sqrt()*
 
+    <p align="center">
 
+    <img src="Results/best_algo_RF_1.png"/>
+
+    </p>
 
 ## Comparaison data partition
+
 ```{r}
 # voir scrip select_var.R
 ```
 
 **Abundance partition**
-<p align="center">
-  <img src="Results/kenSton_partition/AB_tot_sample_fig.png">
-</p>
-
-- Comparison with kenStone method
 
 <p align="center">
-  <img src="Results/kenSton_partition/AB_tot_kenStone_fig.png">
+
+<img src="Results/kenSton_partition/AB_tot_sample_fig.png"/>
+
 </p>
 
+-   Comparison with kenStone method
+
+<p align="center">
+
+<img src="Results/kenSton_partition/AB_tot_kenStone_fig.png"/>
+
+</p>
 
 **CaCO3 partition**
+
 <p align="center">
-  <img src="Results/kenSton_partition/CaCO3_sample_fig.png">
+
+<img src="Results/kenSton_partition/CaCO3_sample_fig.png"/>
+
 </p>
 
-- Comparison with kenStone method
+-   Comparison with kenStone method
 
 <p align="center">
-  <img src="Results/kenSton_partition/CaCO3_kenStone_fig.png">
+
+<img src="Results/kenSton_partition/CaCO3_kenStone_fig.png"/>
+
 </p>
 
 **Kolmogorov-Smirnov test**
 
 -   sample methode
+
 ```{r}
 ### model **RÂ² adj RF abundance (train, test)**
-AB_tot_train = read.csv2("datas/AB_tot_train.csv")
-AB_tot_test = read.csv2("datas/AB_tot_test.csv")
+# AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+# AB_tot_test = read.csv2("datas/AB_tot_test.csv")
 RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
                              df_app=AB_tot_train, 
                              df_valid = AB_tot_test,
-                             mtry = AB_tot_best_mtry,
+                             mtry = 3,
                              ntree= AB_tot_best_ntree,
-                             maxnodes = AB_tot_best_maxnodes)
+                             maxnodes = NULL)
 # RF_result_AB_tot$R_adj_train
 # RF_result_AB_tot$R_adj_test
 
@@ -5964,20 +6027,21 @@ ks.test(AB_tot_train$AB_tot, AB_tot_test$AB_tot)
 ```
 
 -   kenStone methode
+
 ```{r}
 #   **RÂ² adj RF kenStone abundance (train, test)**
-AB_tot_train = read.csv2("datas/AB_tot_train.csv")
-AB_tot_test = read.csv2("datas/AB_tot_test.csv")
-df_AB_tot = rbind(AB_tot_train,AB_tot_test)
-partition = kenStone(df_AB_tot,k= round (nrow(AB_tot_train)))
-AB_tot_train = df_AB_tot[partition$model,]
-AB_tot_test = df_AB_tot[partition$test,]
-RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
-                             df_app=AB_tot_train, 
-                             df_valid = AB_tot_test,
-                             mtry = AB_tot_best_mtry,
-                             ntree= AB_tot_best_ntree,
-                             maxnodes = AB_tot_best_maxnodes)
+# AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+# AB_tot_test = read.csv2("datas/AB_tot_test.csv")
+# df_AB_tot = rbind(AB_tot_train,AB_tot_test)
+# partition = kenStone(df_AB_tot,k= round (nrow(AB_tot_train)))
+# AB_tot_train = df_AB_tot[partition$model,]
+# AB_tot_test = df_AB_tot[partition$test,]
+# RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
+#                              df_app=AB_tot_train, 
+#                              df_valid = AB_tot_test,
+#                              mtry = 3,
+#                              ntree= AB_tot_best_ntree,
+#                              maxnodes = NULL)
 # RF_result_AB_tot$R_adj_train
 # RF_result_AB_tot$R_adj_test
 # plot(RF_result_AB_tot$predit)
@@ -5989,39 +6053,39 @@ RF_result_AB_tot = ForetAlea(var_rep ="AB_tot",
 ks.test(AB_tot_train$AB_tot, AB_tot_test$AB_tot)
 ```
 
-
-
 ## Polynomial model results
 
 <p align="center">
-  <img src="Results/POLY/all_graphe_poly.png">
+
+<img src="Results/POLY/all_graphe_poly.png"/>
+
 </p>
 
-- Comparison with the best algorithms
+-   Comparison with the best algorithms
 
 <p align="center">
-  <img src="Results/best_algo_RF_1.png">
+
+<img src="Results/best_algo_RF_1.png"/>
+
 </p>
-
-
 
 ## Improved prediction of extreme values
 
 ```{r increase prediction}
 ### model AB_tot
-AB_tot_train = read.csv2("datas/AB_tot_train.csv")
-AB_tot_test = read.csv2("datas/AB_tot_test.csv")
+# AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+# AB_tot_test = read.csv2("datas/AB_tot_test.csv")
 RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
-                             df_app=AB_tot_train, 
-                             df_valid = AB_tot_test,
-                             mtry = AB_tot_best_mtry,
+                              df_app=AB_tot_train, 
+                              df_valid = AB_tot_test,
+                             mtry = 3,
                              ntree= AB_tot_best_ntree,
                              maxnodes = NULL)
 # RF_result_AB_tot$RMSE
 # RF_result_AB_tot$MAE
 # RF_result_AB_tot$R_adj_train
 # RF_result_AB_tot$R_adj_test
-# # RF_result_AB_tot$predit
+# RF_result_AB_tot$predit
 # RF_result_AB_tot$model
 
 RF_AB_tot_pred <- RF_result_AB_tot$predit^2
@@ -6034,21 +6098,24 @@ RF_AB_tot <- ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_AB_tot$R_adj_train,2), 
-                           "; \n RÂ² adj (test) = ", round(RF_result_AB_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(RF_result_AB_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(RF_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_AB_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") + 
-      theme_classic() 
+      theme_classic()+ 
+    scale_x_continuous(limits = c(0,1000),breaks = seq(0, 800, by = 200)) +
+  scale_y_continuous(limits = c(0,800),breaks = seq(0, 800, by = 200)) 
 
+RF_AB_tot_best2 = RF_AB_tot
 
 
 ### model BM_tot
-BM_tot_train = read.csv2("datas/BM_tot_train.csv")
-BM_tot_test = read.csv2("datas/BM_tot_test.csv")
+# BM_tot_train = read.csv2("datas/BM_tot_train.csv")
+# BM_tot_test = read.csv2("datas/BM_tot_test.csv")
 RF_result_BM_tot = ForetAlea(var_rep ="BM_tot", 
-                             df_app=BM_tot_train, 
+                             df_app=BM_tot_train,
                              df_valid = BM_tot_test,
-                             mtry = BM_tot_best_mtry,
+                             mtry = 3,
                              ntree= BM_tot_best_ntree,
                              maxnodes = NULL)
 # RF_result_BM_tot$RMSE
@@ -6068,21 +6135,23 @@ RF_BM_tot <- ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_BM_tot$R_adj_train,2), 
-                           "; \n RÂ² adj (test) = ", round(RF_result_BM_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(RF_result_BM_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(RF_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_BM_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") + 
-      theme_classic()
+      theme_classic()+ 
+    scale_x_continuous(limits = c(0,300),breaks = seq(0, 300, by = 50)) +
+  scale_y_continuous(limits = c(0,300),breaks = seq(0, 300, by = 50))
 
-
+RF_BM_tot_best2 =RF_BM_tot
 
 ### model Richesse_tot
-Richesse_tot_train = read.csv2("datas/Richesse_tot_train.csv")
-Richesse_tot_test = read.csv2("datas/Richesse_tot_test.csv")
+# Richesse_tot_train = read.csv2("datas/Richesse_tot_train.csv")
+# Richesse_tot_test = read.csv2("datas/Richesse_tot_test.csv")
 RF_result_Richesse_tot = ForetAlea(var_rep ="Richesse_tot", 
                              df_app=Richesse_tot_train, 
                              df_valid = Richesse_tot_test,
-                             mtry = Richesse_tot_best_mtry,
+                             mtry = 3,
                              ntree= Richesse_tot_best_ntree,
                              maxnodes = NULL)
 # RF_result_Richesse_tot$RMSE
@@ -6102,13 +6171,15 @@ RF_Richesse_tot <- ggplot(RF_df_Richesse_tot, aes(x = Observed, y = Predicted)) 
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_Richesse_tot$R_adj_train,2), 
-                           "; \n RÂ² adj (test) = ", round(RF_result_Richesse_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(RF_result_Richesse_tot$RMSE,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(RF_result_Richesse_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_Richesse_tot$RMSE,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") + 
-      theme_classic()
+      theme_classic() + 
+  scale_x_continuous(breaks = seq(0, 12, by = 3)) +
+  scale_y_continuous(breaks = seq(0, 12, by = 3))
 
-
+RF_Richesse_tot_best2 = RF_Richesse_tot
 
 best_algo_RF_2 = ggarrange(RF_AB_tot, RF_BM_tot, RF_Richesse_tot,
                           labels = c('(a)', '(b)','(c)'),ncol = 3,
@@ -6119,34 +6190,40 @@ ggsave("Results/best_algo_RF_2.png", plot = best_algo_RF_2, dpi = 300,height = 3
 
 ```
 
-- best 1
+-   best 1
 
 <p align="center">
-  <img src="Results/best_algo_RF_1.png">
+
+<img src="Results/best_algo_RF_1.png"/>
+
 </p>
 
-
-- best 2
+-   best 2
 
 <p align="center">
-  <img src="Results/best_algo_RF_2.png">
+
+<img src="Results/best_algo_RF_2.png"/>
+
 </p>
 
-
+````{=html}
+<!-- -
 ## Model without Elevation
-<!-- -   Suppression Elevation -->
-<!-- -   Remplacement de CaCO3 par le pH -->
+   Suppression Elevation 
+-   Remplacement de CaCO3 par le pH
 
 ```{r delete vars}
 ### model AB_tot
 AB_tot_train = read.csv2("datas/AB_tot_train.csv")
 AB_tot_test = read.csv2("datas/AB_tot_test.csv")
-AB_tot_train <- AB_tot_train %>%
-  select(-elevation) 
+AB_tot_train$elevation = NULL
+# AB_tot_train <- AB_tot_train %>%
+#   dplyr::select(-elevation) 
 # %>%  
-#   rename(pH = CaCO3)  
-AB_tot_test <- AB_tot_test %>%
-  select( -elevation) 
+#   rename(pH = CaCO3)
+AB_tot_test$elevation = NULL
+# AB_tot_test <- AB_tot_test %>%
+#   dplyr::select( -elevation) 
 # %>%
 #   rename(pH = CaCO3)
 RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
@@ -6172,9 +6249,9 @@ RF_AB_tot <- ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_AB_tot$R_adj_train,2), 
-                           "; \n RÂ² adj (test) = ", round(RF_result_AB_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(RF_result_AB_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(RF_result_AB_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_AB_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") + 
       theme_classic() 
 
@@ -6184,10 +6261,10 @@ RF_AB_tot <- ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
 BM_tot_train = read.csv2("datas/BM_tot_train.csv")
 BM_tot_test = read.csv2("datas/BM_tot_test.csv")
 # BM_tot_train <- BM_tot_train %>%
-#   select(-CEC, -pH) %>%  
+#   dplyr::select(-CEC, -pH) %>%  
 #   rename(pH = CaCO3)  
 # BM_tot_test <- BM_tot_test %>%
-#   select(-CEC, -pH) %>%  
+#   dplyr::select(-CEC, -pH) %>%  
 #   rename(pH = CaCO3)
 RF_result_BM_tot = ForetAlea(var_rep ="BM_tot", 
                              df_app=BM_tot_train, 
@@ -6212,9 +6289,9 @@ RF_BM_tot <- ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_BM_tot$R_adj_train,2), 
-                           "; \n RÂ² adj (test) = ", round(RF_result_BM_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(RF_result_BM_tot$RMSE^2,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(RF_result_BM_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_BM_tot$RMSE^2,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") + 
       theme_classic()
 
@@ -6223,12 +6300,14 @@ RF_BM_tot <- ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
 ### model Richesse_tot
 Richesse_tot_train = read.csv2("datas/Richesse_tot_train.csv")
 Richesse_tot_test = read.csv2("datas/Richesse_tot_test.csv")
-Richesse_tot_train <- Richesse_tot_train %>%
-  select(-elevation) 
+Richesse_tot_train$elevation=NULL
+# Richesse_tot_train <- Richesse_tot_train %>%
+#   dplyr::select(-elevation) 
 # %>%  
-#   rename(pH = CaCO3)  
-Richesse_tot_test <- Richesse_tot_test %>%
-  select(-elevation) 
+#   rename(pH = CaCO3) 
+Richesse_tot_test$elevation=NULL
+# Richesse_tot_test <- Richesse_tot_test %>%
+#   dplyr::select(-elevation) 
 # %>%  
 #   rename(pH = CaCO3)
 RF_result_Richesse_tot = ForetAlea(var_rep ="Richesse_tot", 
@@ -6254,9 +6333,9 @@ RF_Richesse_tot <- ggplot(RF_df_Richesse_tot, aes(x = Observed, y = Predicted)) 
       geom_point() + # Ajout des points
       geom_smooth(method = "lm", se = TRUE, color = "red") + 
       labs(subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_Richesse_tot$R_adj_train,2), 
-                           "; \n RÂ² adj (test) = ", round(RF_result_Richesse_tot$R_adj_test,2),
-                           "; \n RMSE (test) = ",  round(RF_result_Richesse_tot$RMSE,2)),
-                            x = "Real values", 
+                           "; \n RÂ² = ", round(RF_result_Richesse_tot$R_adj_test,2),
+                           "; RMSE = ",  round(RF_result_Richesse_tot$RMSE,2)),
+                            x = "Observed valuess", 
                             y = "Predicted values") + 
       theme_classic()
 
@@ -6284,6 +6363,593 @@ ggsave("Results/RF_fig_delete_var.png", plot = RF_fig_delete_var, dpi = 300,heig
   <img src="Results/best_algo_RF_2.png">
 </p>
 
+-->
+````
+
+## Results EcoBioSoil
+
+```{r LandWorm output}
+library(tidyverse)
+library(DT)
+AB_tot_results = rbind(GLM_result_AB_tot$df,
+                        GAM_result_AB_tot$df,
+                        RF_result_AB_tot$df,
+                        GBM_result_AB_tot$df,
+                        ANN_tune_AB_tot_results_df
+                         )
+
+BM_tot_results = rbind(GLM_result_BM_tot$df,
+                        GAM_result_BM_tot$df,
+                        RF_result_BM_tot$df,
+                        GBM_result_BM_tot$df,
+                        ANN_tune_BM_tot_results_df
+                         )
+
+Richesse_tot_results = rbind(GLM_result_Richesse_tot$df,
+                        GAM_result_Richesse_tot$df,
+                        RF_result_Richesse_tot$df,
+                        GBM_result_Richesse_tot$df,
+                        ANN_tune_Richesse_tot_results_df
+                         )
+
+all_result = rbind(AB_tot_results,BM_tot_results,Richesse_tot_results)
+
+ecobiosoil_results = data.frame(Datas = rep("EcoBioSoil", 15))
+ecobiosoil_results = cbind(ecobiosoil_results, all_result)
+
+
+ecobiosoil_results <- ecobiosoil_results %>%
+  dplyr::mutate_if(is.numeric, ~ round(., 2))
+
+#
+
+colnames(ecobiosoil_results) = c("Datas","Algorithms","Response \n variables",
+                               "R2_adj \ntrain","R2_ad \ntest","RMSE","MAE")
+
+write.csv(x =ecobiosoil_results,file = "Results/ecobiosoil_results.csv", row.names = FALSE)
+
+
+df = read.csv("Results/ecobiosoil_results.csv")
+
+ecobiosoil_results = df
+colnames(ecobiosoil_results) = c("Datas","Algorithms","Response \n variables",
+                               "R2_adj \ntrain","R2_ad \ntest","RMSE","MAE")
+
+ecobiosoil_results %>% datatable(options = list(pageLength = 5))
+
+```
+
+## Comparaison entre EcoBiosoil et LandWorm
+
+```{r comp landW and EcoB, cache = FALSE , eval=FALSE}
+library(tidyverse)
+library(DT)
+# ecobiosoil_results
+
+landworm_results = read.csv("Results/landW/landworm_results.csv")
+colnames(landworm_results) = c("Datas","Algorithms","Response \n variables",
+                               "R2_adj \ntrain","R2_ad \ntest","RMSE","MAE")
+
+
+landworm_ecobisoil = rbind(landworm_results,ecobiosoil_results)
+
+colnames(landworm_ecobisoil) = c("Datas","Algorithms","Response \n variables",
+"R2_adj \ntrain","R2_ad \ntest","RMSE","MAE")
+
+
+
+write.csv(x =landworm_ecobisoil,file = "Results/landworm_ecobisoil2.csv", row.names = FALSE)
+
+landworm_ecobisoil %>% datatable(options = list(pageLength = 5))
+
+```
+
+## Fig comp
+
+-   LandWorm
+
+<p align="center">
+
+<img src="Results/landW/best_algo_RF_1.png"/>
+
+</p>
+
+-   EcoBioSoil
+
+<p align="center">
+
+<img src="Results/best_algo_RF_1.png"/>
+
+</p>
+
+# Réduction et effets des variables {#rãduction-et-effets-des-variables}
+
+```{r Predictors_f}
+Predictors_f = c("CaCO3" ,"gps_x" ,"N" ,"bio3" ,"gps_y" ,"clay" ,
+                 "silt" ,"clcm_lvl3" ,"P" ,"bio12" )
+```
+
+## Abundance
+
+[Plan]
+
+```{r}
+# # AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+# # AB_tot_test = read.csv2("datas/AB_tot_test.csv")
+# 
+# # on supprime: 
+# AB_tot_var_sup=c("bio7","bio6", "bio4", "elevation","sand","hurs_mean", "bio15", "CEC","P", "gdd0")
+# 
+# RF_result_AB_tot = ForetAlea(var_rep ="AB_tot", 
+#                               df_app=AB_tot_train, 
+#                               df_valid = AB_tot_test,
+#                              mtry = 3,
+#                              ntree= AB_tot_best_ntree,
+#                              maxnodes = NULL)
+# # RF_result_AB_tot$RMSE^2
+# # RF_result_AB_tot$R_adj_train
+# # RF_result_AB_tot$R_adj_test
+# # RF_result_AB_tot$model
+# 
+# # var_importance <- data.frame(RF_result_AB_tot$model$importance)
+# # row.names(var_importance)[which.min(var_importance$IncNodePurity)]
+# # var_importance$nom=rownames(var_importance)
+# # var_importance <- var_importance[order(var_importance$IncNodePurity,decreasing = TRUE), ]
+# # var_importance
+# 
+# 
+# RF_AB_tot_pred <- RF_result_AB_tot$predit^2
+# RF_df_AB_tot = data.frame(Observed=AB_tot_test[,1]^2,Predicted = RF_AB_tot_pred)
+# cor_RF_AB_tot <- cor(RF_df_AB_tot$Observed, RF_df_AB_tot$Predicted)
+# 
+# # summary(RF_df_AB_tot)
+#   # graphique avec ggplot
+# RF_AB_tot <- ggplot(RF_df_AB_tot, aes(x = Observed, y = Predicted)) +
+#       geom_point() + # Ajout des points
+#       geom_smooth(method = "lm", se = TRUE, color = "red") + 
+#       labs(title = "After",subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_AB_tot$R_adj_train,2), 
+#                            "; \n RÂ² = ", round(RF_result_AB_tot$R_adj_test,2),
+#                            "; RMSE = ",  round(RF_result_AB_tot$RMSE^2,2)),
+#                             x = "Observed valuess", 
+#                             y = "Predicted values") + 
+#       theme_classic()+ 
+#     scale_x_continuous(limits = c(0,1000),breaks = seq(0, 800, by = 200)) +
+#   scale_y_continuous(limits = c(0,800),breaks = seq(0, 800, by = 200)) 
+# 
+# # RF_AB_tot_best2
+# # RF_AB_tot
+# graphe = ggarrange(RF_AB_tot_best2, RF_AB_tot,
+#                           labels = c('(a)', '(b)'),ncol = 2,widths = 4.666667, heights = 3,common.legend = TRUE,legend = 'right')
+# graphe
+
+
+# mod_AB_tot = RF_result_AB_tot$model
+# varImpPlot(mod_AB_tot, main = "Abundance") #produce variable importance plot
+# importance_rf <- as.data.frame(importance(mod_AB_tot))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# row.names(importance_rf)=NULL
+# importance_rf$percent <- importance_rf$IncNodePurity / sum(importance_rf$IncNodePurity)*100
+# os = c("clcm_lvl3v","clcm_lvl3nial","clcm_lvl3p","clcm_lvl3gua","clcm_lvl3f","clcm_lvl3ng")
+# 
+# barplot(importance_rf$percent, main = "Importance of variables for total abundance", names.arg = importance_rf$nom, ylab = "Importance (%)", las = 2)
+```
+
+```{r abundance response, fig.align='center'}
+#_______________
+# AB_tot_train = read.csv2("datas/AB_tot_train.csv")
+AB_tot_var = names(AB_tot_train)
+
+AB_tot_var_sup=c("bio7","bio6", "bio4", "elevation","sand","hurs_mean", "bio15", "CEC","P", "gdd0")
+
+# AB_tot_var[!AB_tot_var %in% AB_tot_var_sup]
+
+AB_tot_predictors = c("AB_tot","CaCO3","gps_x","N","bio3","gps_y","bio18","clay",
+                      "silt","CN","clcm_lvl3")
+
+AB_tot_predictors = c("AB_tot","CaCO3","gps_x","N","bio3","gps_y","bio18","argile.0_30",
+                      "limon.0_30","CN","clcm_lvl3")
+
+
+bdd2 = bdd
+bdd2$clay = NULL
+bdd2$silt = NULL
+bdd2 <- bdd2 %>% 
+  dplyr::rename(clay = argile.0_30)
+bdd2 <- bdd2 %>% 
+  dplyr::rename(silt =limon.0_30 )
+
+
+# Predictors_f[!Predictors_f %in% names(bdd2)]
+AB_tot_df = bdd2[,c("AB_tot",Predictors_f)]
+
+# colSums(is.na(AB_tot_df))
+AB_tot_df = drop_na(AB_tot_df)
+AB_tot_df$clcm_lvl3 = as.factor(AB_tot_df$clcm_lvl3)
+# summary(AB_tot_df$clcm_lvl3)
+levels(AB_tot_df$clcm_lvl3)[levels(AB_tot_df$clcm_lvl3) == "Broad-leaved forest"] <- "Forest"
+levels(AB_tot_df$clcm_lvl3)[levels(AB_tot_df$clcm_lvl3) == "Coniferous forest"] <- "Forest"
+levels(AB_tot_df$clcm_lvl3)[levels(AB_tot_df$clcm_lvl3) == "Mixed forest"] <- "Forest"
+AB_tot_df$clcm_lvl3= as.factor(AB_tot_df$clcm_lvl3)
+cl_original <- levels(AB_tot_df$clcm_lvl3)
+new_cl <- c("f","gua", "ng", "nial", "p", "v")
+AB_tot_df$clcm_lvl3 <- factor(AB_tot_df$clcm_lvl3, levels = cl_original, labels = new_cl)
+
+
+
+rf <- randomForest(AB_tot ~ ., data = AB_tot_df, ntree = 500)
+
+# Utilisation du conteneur iml Predictor()
+X <- AB_tot_df[which(names(AB_tot_df) != "AB_tot")]
+predictor <- Predictor$new(rf, data = X, y = AB_tot_df$AB_tot)
+
+
+
+
+cat("Importance of predictors")
+# Importance des fonctionnalités
+# On calcule l'importance de chaque caractéristique pour les prédictions avec FeatureImp. La mesure de l'importance des fonctionnalités fonctionne en mélangeant chaque fonctionnalité et en mesurant l'ampleur de la baisse des performances. Pour cette tÃ¢che de régression, nous choisissons de mesurer la perte de performance avec l'erreur absolue moyenne (Â« mae Â»), un autre choix serait l'erreur quadratique moyenne (Â« mse Â»).
+
+imp <- FeatureImp$new(predictor, loss = "mae") # mean absolute error
+# imp <- FeatureImp$new(predictor, loss = "mse") # mean squared error  
+plot(imp)
+# imp$results
+# importance_rf <- as.data.frame(importance(rf))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# row.names(importance_rf)=NULL
+# importance_rf$percent <- importance_rf$IncNodePurity / sum(importance_rf$IncNodePurity)*100
+# barplot(importance_rf$percent, main = "Importance of variables for total abundance", names.arg = importance_rf$nom, ylab = "Importance (%)", las = 2)
+
+
+
+
+
+cat("Predictor effects")
+# Effets de fonctionnalités
+# Les effets locaux accumulés décrivent comment les predicteurs influencent en moyenne la prédiction d'un modÃ¨le d'apprentissage automatique: ALE montre comment la prédiction change localement, lorsque les predicteurs varie. Les marques sur l'axe des x indiquent la distribution des predicteurs, montrant la pertinence d'une région pour l'interprétation (peu ou pas de points signifie que nous ne devons pas surinterpréter cette région).
+
+# ale <- FeatureEffect$new(predictor, feature = "gps_x") # uniquement lstat
+# ale$plot()
+# ale$set.feature("rm")
+# ale$plot()
+effs <- FeatureEffects$new(predictor) # toutes les variables
+plot(effs)
+
+
+
+
+
+
+cat("Predictor interactions")
+# Mesurer les interactions
+# Nous pouvons également mesurer la force avec laquelle les fonctionnalités interagissent les unes avec les autres. La mesure d'interaction concerne la part de la variance de F(X) sâ€™explique par lâ€™interaction. La mesure est comprise entre 0 (pas d'interaction) et 1 (= 100 % de variance deF(X) en raison des interactions). Pour chaque fonctionnalité, nous mesurons dans quelle mesure elles interagissent avec toute autre fonctionnalité.
+
+
+interact <- Interaction$new(predictor)
+plot(interact)
+cat("Predictor interactions: Land use")
+interact <- Interaction$new(predictor, feature = "clcm_lvl3")
+plot(interact)
+
+```
+
+[Plan]
+
+## Biomass
+
+[Plan]
+
+```{r}
+# # BM_tot_train = read.csv2("datas/BM_tot_train.csv")
+# # BM_tot_test = read.csv2("datas/BM_tot_test.csv")
+# # names(BM_tot_train)
+# 
+# BM_tot_var_sup=c("bio7","pH","hurs_mean","bio3","bio4","sand","N","CN","gdd10","PET","K")
+# 
+# RF_result_BM_tot = ForetAlea(var_rep ="BM_tot", 
+#                              df_app=BM_tot_train,
+#                              df_valid = BM_tot_test,
+#                              mtry = 3,
+#                              ntree= BM_tot_best_ntree,
+#                              maxnodes = NULL)
+# # RF_result_BM_tot$RMSE^2
+# # RF_result_BM_tot$R_adj_train
+# # RF_result_BM_tot$R_adj_test
+# # RF_result_BM_tot$model
+# # var_importance <- data.frame(RF_result_BM_tot$model$importance)
+# # var_importance$nom=rownames(var_importance)
+# # var_importance <- var_importance[order(var_importance$IncNodePurity,decreasing = TRUE), ]
+# # var_importance
+# 
+# 
+# RF_BM_tot_pred <- RF_result_BM_tot$predit^2
+# RF_df_BM_tot = data.frame(Observed=BM_tot_test[,1]^2,Predicted = RF_BM_tot_pred)
+# cor_RF_BM_tot <- cor(RF_df_BM_tot$Observed, RF_df_BM_tot$Predicted)
+# 
+# # summary(RF_df_BM_tot)
+#   # graphique avec ggplot
+# RF_BM_tot <- ggplot(RF_df_BM_tot, aes(x = Observed, y = Predicted)) +
+#   geom_point() + # Ajout des points
+#   geom_smooth(method = "lm", se = TRUE, color = "red") +
+#   labs(title = "After",subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_BM_tot$R_adj_train,2), 
+#                            "; \n RÂ² = ", round(RF_result_BM_tot$R_adj_test,2),
+#                            "; RMSE = ",  round(RF_result_BM_tot$RMSE^2,2)),
+#                             x = "Observed valuess", 
+#                             y = "Predicted values") + 
+#       theme_classic()  
+#   # scale_x_continuous(breaks = seq(0, 800, by = 200)) +
+#   # scale_y_continuous(breaks = seq(0, 750, by = 100)) 
+# 
+# # RF_BM_tot_best2
+# # RF_BM_tot
+# graphe = ggarrange(RF_BM_tot_best2, RF_BM_tot,
+#                           labels = c('(a)', '(b)'),ncol = 2,widths = 4.666667, heights = 3,common.legend = TRUE,legend = 'right')
+# graphe
+
+
+# mod_BM_tot = RF_result_BM_tot$model
+# varImpPlot(mod_BM_tot, main = "Biomass") #produce variable importance plot
+# importance_rf <- as.data.frame(importance(mod_BM_tot))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# row.names(importance_rf)=NULL
+# importance_rf$percent <- importance_rf$IncNodePurity / sum(importance_rf$IncNodePurity)*100
+# os = c("clcm_lvl3v","clcm_lvl3nial","clcm_lvl3p","clcm_lvl3gua","clcm_lvl3f","clcm_lvl3ng")
+# 
+# barplot(importance_rf$percent, main = "Importance of variables for total Biomass", names.arg = importance_rf$nom, ylab = "Importance (%)", las = 2)
+```
+
+```{r Biomass response, fig.align='center'}
+#_______________
+# BM_tot_train = read.csv2("datas/BM_tot_train.csv")
+BM_tot_var = names(BM_tot_train)
+
+
+BM_tot_var_sup=c("bio7","pH","hurs_mean","bio3","bio4","sand","N","CN","gdd10","PET","K")
+
+# BM_tot_var[!BM_tot_var %in% BM_tot_var_sup]
+
+
+BM_tot_predictors = c("BM_tot","gps_x","CaCO3","P","argile.0_30","gps_y","CEC",
+                      "limon.0_30","bio12","clcm_lvl3")
+
+BM_tot_df = bdd2[,c("BM_tot",Predictors_f)]
+# colSums(is.na(BM_tot_df))
+
+
+
+BM_tot_df = drop_na(BM_tot_df)
+BM_tot_df$clcm_lvl3 = as.factor(BM_tot_df$clcm_lvl3)
+# summary(BM_tot_df$clcm_lvl3)
+levels(BM_tot_df$clcm_lvl3)[levels(BM_tot_df$clcm_lvl3) == "Broad-leaved forest"] <- "Forest"
+levels(BM_tot_df$clcm_lvl3)[levels(BM_tot_df$clcm_lvl3) == "Coniferous forest"] <- "Forest"
+levels(BM_tot_df$clcm_lvl3)[levels(BM_tot_df$clcm_lvl3) == "Mixed forest"] <- "Forest"
+BM_tot_df$clcm_lvl3= as.factor(BM_tot_df$clcm_lvl3)
+cl_original <- levels(BM_tot_df$clcm_lvl3)
+new_cl <- c("f","gua", "ng", "nial", "p", "v")
+BM_tot_df$clcm_lvl3 <- factor(BM_tot_df$clcm_lvl3, levels = cl_original, labels = new_cl)
+
+
+
+rf <- randomForest(BM_tot ~ ., data = BM_tot_df, ntree = 500)
+
+# Utilisation du conteneur iml Predictor()
+X <- BM_tot_df[which(names(BM_tot_df) != "BM_tot")]
+predictor <- Predictor$new(rf, data = X, y = BM_tot_df$BM_tot)
+
+
+
+
+cat("Importance of predictors")
+# Importance des fonctionnalités
+# On calcule l'importance de chaque caractéristique pour les prédictions avec FeatureImp. La mesure de l'importance des fonctionnalités fonctionne en mélangeant chaque fonctionnalité et en mesurant l'ampleur de la baisse des performances. Pour cette tÃ¢che de régression, nous choisissons de mesurer la perte de performance avec l'erreur absolue moyenne (Â« mae Â»), un autre choix serait l'erreur quadratique moyenne (Â« mse Â»).
+
+imp <- FeatureImp$new(predictor, loss = "mae") # mean absolute error
+# imp <- FeatureImp$new(predictor, loss = "mse") # mean squared error  
+plot(imp)
+# imp$results
+# importance_rf <- as.data.frame(importance(rf))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# row.names(importance_rf)=NULL
+# importance_rf$percent <- importance_rf$IncNodePurity / sum(importance_rf$IncNodePurity)*100
+# barplot(importance_rf$percent, main = "Importance of variables for total Biomass", names.arg = importance_rf$nom, ylab = "Importance (%)", las = 2)
+
+
+
+
+
+cat("Predictor effects")
+# Effets de fonctionnalités
+# Les effets locaux accumulés décrivent comment les predicteurs influencent en moyenne la prédiction d'un modÃ¨le d'apprentissage automatique: ALE montre comment la prédiction change localement, lorsque les predicteurs varie. Les marques sur l'axe des x indiquent la distribution des predicteurs, montrant la pertinence d'une région pour l'interprétation (peu ou pas de points signifie que nous ne devons pas surinterpréter cette région).
+
+# ale <- FeatureEffect$new(predictor, feature = "gps_x") # uniquement lstat
+# ale$plot()
+# ale$set.feature("rm")
+# ale$plot()
+effs <- FeatureEffects$new(predictor) # toutes les variables
+plot(effs)
+
+
+
+
+
+
+cat("Predictor interactions")
+# Mesurer les interactions
+# Nous pouvons également mesurer la force avec laquelle les fonctionnalités interagissent les unes avec les autres. La mesure d'interaction concerne la part de la variance de F(X) sâ€™explique par lâ€™interaction. La mesure est comprise entre 0 (pas d'interaction) et 1 (= 100 % de variance deF(X) en raison des interactions). Pour chaque fonctionnalité, nous mesurons dans quelle mesure elles interagissent avec toute autre fonctionnalité.
+
+
+interact <- Interaction$new(predictor)
+plot(interact)
+cat("Predictor interactions: Land use")
+interact <- Interaction$new(predictor, feature = "clcm_lvl3")
+plot(interact)
+
+```
+
+[Plan]
+
+## Richness
+
+[Plan]
+
+```{r}
+# # Richesse_tot_train = read.csv2("datas/Richesse_tot_train.csv")
+# # Richesse_tot_test = read.csv2("datas/Richesse_tot_test.csv")
+# 
+# Richesse_tot_var_sup=c("bio10","bio9","elevation","hurs_mean","bio15","bio7","gdd10","CEC","bio13","bio18","pH")
+# 
+# RF_result_Richesse_tot = ForetAlea(var_rep ="Richesse_tot", 
+#                              df_app=Richesse_tot_train, 
+#                              df_valid = Richesse_tot_test,
+#                              mtry = 3,
+#                              ntree= Richesse_tot_best_ntree,
+#                              maxnodes = NULL)
+# # RF_result_Richesse_tot$RMSE 
+# # RF_result_Richesse_tot$R_adj_train 
+# # RF_result_Richesse_tot$R_adj_test 
+# # RF_result_Richesse_tot$model
+# 
+# # var_importance <- data.frame(RF_result_Richesse_tot$model$importance)
+# # row.names(var_importance)[which.min(var_importance$IncNodePurity)]
+# # var_importance$nom=rownames(var_importance)
+# # var_importance <- var_importance[order(var_importance$IncNodePurity,decreasing = TRUE), ]
+# # var_importance
+# 
+# 
+# 
+# RF_Richesse_tot_pred <- RF_result_Richesse_tot$predit
+# RF_df_Richesse_tot = data.frame(Observed=Richesse_tot_test[,1],Predicted = RF_Richesse_tot_pred)
+# cor_RF_Richesse_tot <- cor(RF_df_Richesse_tot$Observed, RF_df_Richesse_tot$Predicted)
+# 
+# # summary(RF_df_Richesse_tot)
+#   # graphique avec ggplot
+# RF_Richesse_tot <- ggplot(RF_df_Richesse_tot, aes(x = Observed, y = Predicted)) +
+#   geom_point() + # Ajout des points
+#   geom_smooth(method = "lm", se = TRUE, color = "red") +
+#   labs(title = "After",subtitle =paste0(" RF: RÂ² adj (train) = ", round(RF_result_Richesse_tot$R_adj_train,2), 
+#                            "; \n RÂ² = ", round(RF_result_Richesse_tot$R_adj_test,2),
+#                            "; RMSE = ",  round(RF_result_Richesse_tot$RMSE,2)),
+#                             x = "Observed valuess", 
+#                             y = "Predicted values") + 
+#       theme_classic() + 
+#   scale_x_continuous(breaks = seq(0, 12, by = 3)) +
+#   scale_y_continuous(breaks = seq(0, 12, by = 3))
+# 
+# # RF_Richesse_tot_best2
+# # RF_Richesse_tot
+# graphe = ggarrange(RF_Richesse_tot_best2, RF_Richesse_tot,
+#                           labels = c('(a)', '(b)'),ncol = 2,widths = 4.666667, heights = 3,common.legend = TRUE,legend = 'right')
+# graphe
+
+
+# mod_Richesse_tot = RF_result_Richesse_tot$model
+# varImpPlot(mod_Richesse_tot, main = "Richness") #produce variable importance plot
+# importance_rf <- as.data.frame(importance(mod_Richesse_tot))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# row.names(importance_rf)=NULL
+# importance_rf$percent <- importance_rf$IncNodePurity / sum(importance_rf$IncNodePurity)*100
+# os = c("clcm_lvl3v","clcm_lvl3nial","clcm_lvl3p","clcm_lvl3gua","clcm_lvl3f","clcm_lvl3ng")
+# 
+# barplot(importance_rf$percent, main = "Importance of variables for total Richness", names.arg = importance_rf$nom, ylab = "Importance (%)", las = 2)
+```
+
+```{r Richness response, fig.align='center'}
+#_______________
+# Richesse_tot_train = read.csv2("datas/Richesse_tot_train.csv")
+Richesse_tot_var = names(Richesse_tot_train)
+
+Richesse_tot_var_sup=c("bio10","bio9","elevation","hurs_mean","bio15","bio7","gdd10","CEC","bio13","bio18","pH")
+
+# Richesse_tot_var[!Richesse_tot_var %in% Richesse_tot_var_sup]
+
+
+
+
+Richesse_tot_predictors = c("Richesse_tot","bio4", "CaCO3","gps_x","N","bio16","gps_y","PET", "P",
+                      "clcm_lvl3")
+
+Richesse_tot_df = bdd2[,c("Richesse_tot",Predictors_f)]
+
+
+# colSums(is.na(Richesse_tot_df))
+Richesse_tot_df = drop_na(Richesse_tot_df)
+Richesse_tot_df$clcm_lvl3 = as.factor(Richesse_tot_df$clcm_lvl3)
+# summary(Richesse_tot_df$clcm_lvl3)
+levels(Richesse_tot_df$clcm_lvl3)[levels(Richesse_tot_df$clcm_lvl3) == "Broad-leaved forest"] <- "Forest"
+levels(Richesse_tot_df$clcm_lvl3)[levels(Richesse_tot_df$clcm_lvl3) == "Coniferous forest"] <- "Forest"
+levels(Richesse_tot_df$clcm_lvl3)[levels(Richesse_tot_df$clcm_lvl3) == "Mixed forest"] <- "Forest"
+Richesse_tot_df$clcm_lvl3= as.factor(Richesse_tot_df$clcm_lvl3)
+cl_original <- levels(Richesse_tot_df$clcm_lvl3)
+new_cl <- c("f","gua", "ng", "nial", "p", "v")
+Richesse_tot_df$clcm_lvl3 <- factor(Richesse_tot_df$clcm_lvl3, levels = cl_original, labels = new_cl)
+
+
+
+rf <- randomForest(Richesse_tot ~ ., data = Richesse_tot_df, ntree = 500)
+
+# Utilisation du conteneur iml Predictor()
+X <- Richesse_tot_df[which(names(Richesse_tot_df) != "Richesse_tot")]
+predictor <- Predictor$new(rf, data = X, y = Richesse_tot_df$Richesse_tot)
+
+
+
+
+cat("Importance of predictors")
+# Importance des fonctionnalités
+# On calcule l'importance de chaque caractéristique pour les prédictions avec FeatureImp. La mesure de l'importance des fonctionnalités fonctionne en mélangeant chaque fonctionnalité et en mesurant l'ampleur de la baisse des performances. Pour cette tÃ¢che de régression, nous choisissons de mesurer la perte de performance avec l'erreur absolue moyenne (Â« mae Â»), un autre choix serait l'erreur quadratique moyenne (Â« mse Â»).
+
+imp <- FeatureImp$new(predictor, loss = "mae") # mean absolute error
+# imp <- FeatureImp$new(predictor, loss = "mse") # mean squared error  
+plot(imp)
+# imp$results
+# importance_rf <- as.data.frame(importance(rf))
+# importance_rf$nom=rownames(importance_rf)
+# importance_rf <- importance_rf[order(importance_rf$IncNodePurity,decreasing = TRUE), ]
+# row.names(importance_rf)=NULL
+# importance_rf$percent <- importance_rf$IncNodePurity / sum(importance_rf$IncNodePurity)*100
+# barplot(importance_rf$percent, main = "Importance of variables for total Richness", names.arg = importance_rf$nom, ylab = "Importance (%)", las = 2)
+
+
+
+
+
+cat("Predictor effects")
+# Effets de fonctionnalités
+# Les effets locaux accumulés décrivent comment les predicteurs influencent en moyenne la prédiction d'un modÃ¨le d'apprentissage automatique: ALE montre comment la prédiction change localement, lorsque les predicteurs varie. Les marques sur l'axe des x indiquent la distribution des predicteurs, montrant la pertinence d'une région pour l'interprétation (peu ou pas de points signifie que nous ne devons pas surinterpréter cette région).
+
+# ale <- FeatureEffect$new(predictor, feature = "gps_x") # uniquement lstat
+# ale$plot()
+# ale$set.feature("rm")
+# ale$plot()
+effs <- FeatureEffects$new(predictor) # toutes les variables
+plot(effs)
+
+
+
+
+
+
+cat("Predictor interactions")
+# Mesurer les interactions
+# Nous pouvons également mesurer la force avec laquelle les fonctionnalités interagissent les unes avec les autres. La mesure d'interaction concerne la part de la variance de F(X) sâ€™explique par lâ€™interaction. La mesure est comprise entre 0 (pas d'interaction) et 1 (= 100 % de variance deF(X) en raison des interactions). Pour chaque fonctionnalité, nous mesurons dans quelle mesure elles interagissent avec toute autre fonctionnalité.
+
+
+interact <- Interaction$new(predictor)
+plot(interact)
+cat("Predictor interactions: Land use")
+interact <- Interaction$new(predictor, feature = "clcm_lvl3")
+plot(interact)
+
+```
+
+[Plan]
+
+````{=html}
+<!-- 
 ## Explanatory power of variables 
 
 -   Abundance (X1 = LC, soil, climate; X2 = Spatial)
@@ -6297,11 +6963,11 @@ test = read.csv2(paste0("datas/",VAR_REP,"_test.csv"))
 
 df= rbind(training,test)
 df_=drop_na(df)
-df_response = df %>% select(all_of(VAR_REP))
+df_response = df %>% dplyr::select(all_of(VAR_REP))
 
-df_predictors = df %>% select(-AB_tot, -gps_x,-gps_y)
+df_predictors = df %>% dplyr::select(-AB_tot, -gps_x,-gps_y)
 
-df_space = df %>% select(gps_x,gps_y)
+df_space = df %>% dplyr::select(gps_x,gps_y)
 
 #Partition of the Variation of Community with env and space (xy)
 mod <- varpart(df_response,df_predictors,df_space)
@@ -6321,11 +6987,11 @@ test = read.csv2(paste0("datas/",VAR_REP,"_test.csv"))
 
 df= rbind(training,test)
 df_=drop_na(df)
-df_response = df %>% select(all_of(VAR_REP))
+df_response = df %>% dplyr::select(all_of(VAR_REP))
 
-df_predictors = df %>% select(- BM_tot, - gps_x,- gps_y)
+df_predictors = df %>% dplyr::select(- BM_tot, - gps_x,- gps_y)
 
-df_space = df %>% select(gps_x,gps_y)
+df_space = df %>% dplyr::select(gps_x,gps_y)
 
 #Partition of the Variation of Community with env and space (xy)
 mod <- varpart(df_response,df_predictors,df_space)
@@ -6344,11 +7010,11 @@ test = read.csv2(paste0("datas/",VAR_REP,"_test.csv"))
 
 df= rbind(training,test)
 df_=drop_na(df)
-df_response = df %>% select(all_of(VAR_REP))
+df_response = df %>% dplyr::select(all_of(VAR_REP))
 
-df_predictors = df %>% select(-Richesse_tot, -gps_x,-gps_y)
+df_predictors = df %>% dplyr::select(-Richesse_tot, -gps_x,-gps_y)
 
-df_space = df %>% select(gps_x,gps_y)
+df_space = df %>% dplyr::select(gps_x,gps_y)
 
 #Partition of the Variation of Community with env and space (xy)
 mod <- varpart(df_response,df_predictors,df_space)
@@ -6361,53 +7027,69 @@ plot(mod, bg=2:5)
 [Relationship between variables]
 
 
-# Results: Case 2 -> non-repeated data
+-->
+````
 
-## 100 % clean
+# Results: Case 2 -\> non-repeated data
 
-Zero duplicates in GPS and ID_Site
+## Comparison
 
-
-<p align="center">
-  <img src="Results/100_clean/all_graphe_clean100.png">
-</p>
-
-- Comparison with the best algorithms
+-   Zero duplicates in Programme, ID_Site and GPS (see [Script.R](script_non_rep.R){target="_blank"} )
 
 <p align="center">
-  <img src="Results/best_algo_RF_2.png">
+
+<img src="Results/100_clean/all_graphe_clean100.png"/>
+
 </p>
 
+-   Dataset clean (see [Script.R](script_non_rep.R){target="_blank"} )
 
-# Results: Case 3 -> original data
+<p align="center">
+
+<img src="Results/100_clean/all_graphe_clean.png"/>
+
+</p>
+
+-   Comparison with the best algorithms (best 2)
+
+<p align="center">
+
+<img src="Results/best_algo_RF_2.png"/>
+
+</p>
+
+# Results: Case 3 -\> original data
 
 ## Inputs
 
 <br/>
 
-Predicteurs =  c("gps_x", "gps_y", "clay", "fine_sand", "coarse_sand", "fine_silt", "coarse_silt", "ph_eau", "om", "n_tot")
+Predicteurs = c("gps_x", "gps_y", "clay", "fine_sand", "coarse_sand", "fine_silt", "coarse_silt", "ph_eau", "om", "n_tot")
 
 <br/>
 
-OS = c("Arable land", "Artificial, non-agricultural vegetated areas", "Forests"                         "Pastures", "Permanent crops"  )
-
+OS = c("Arable land", "Artificial, non-agricultural vegetated areas", "Forests" "Pastures", "Permanent crops" )
 
 ## Results with measured data (BDD1.9)
 
 <p align="center">
-  <img src="Results/original_data/all_graphe_ori.png">
+
+<img src="Results/original_data/all_graphe_ori.png"/>
+
 </p>
 
-- Comparison with the best algorithms
+-   Comparison with the best algorithms
 
 <p align="center">
-  <img src="Results/best_algo_RF_2.png">
-</p>
 
+<img src="Results/best_algo_RF_2.png"/>
+
+</p>
 
 # Dicussion
 
 ## Comparison
+
 ```{r comp}
 chemin_fichier_excel <- "C:/Users/diall/Downloads/datas/ODMAP.xlsx"
 df <- read.xlsx(chemin_fichier_excel, sheet = "comp")
@@ -6415,42 +7097,62 @@ kable(df)
 ```
 
 -   Fig S3 of phillip et al., 2019
-<p align="center">
-  <img src="Results/phillips_et_al_2019_results.png">
-</p>
+
+    <p align="center">
+
+    <img src="Results/phillips_et_al_2019_results.png"/>
+
+    </p>
 
 <p align="center">
-  <img src="Results/best_algo_RF_2.png">
-</p>
 
+<img src="Results/best_algo_RF_2.png"/>
+
+</p>
 
 # Question {.unnumbered}
--   Retransformation des donnÃ©es vdt
+
+-   Retransformation des données vdt
 -   Overfitting
 
+```{r}
+cat("****************************************** end ****************************")
+```
 
 # To do next {.unnumbered}
 
 -   
 
-    1.  RÃ©daction, protocol ODMAP;
+    1.  Rédaction, protocol ODMAP;
 
 -   
 
-    2.  Case 2: models without temporal data repetition;
+    2.  Models avec LandWorm
 
 -   
 
-    3.  IdÃ©es amÃ©liorations models:
+    3.  Réduction des variables
 
-    -   Augmentation des donnÃ©es;
+-   
 
-    -   CrÃ©ation des models par OS ou equilibree les levels des OS;
+    3.  Effets des variables
 
-    -   Tester une classification pour la richesse totale taxonomique
+-   
 
-# {.unnumbered}
+    4.  Prédiction et cartographie
 
+[Plan] <!-- -   Augmentation des données; -->
 
- **THANK YOU FOR LISTENING**
+<!-- -   Création des models par OS ou equilibree les levels des OS; -->
 
+<!-- -   Tester une classification pour la richesse totale taxonomique -->
+
+## Additional information
+
+<br/> <br/> <br/> See [species explorations](https://posit.cloud/content/7997063){target="_blank"} <br/> <br/> All the material from my internship, including scripts and datasets, is available on my [GitHub.](https://github.com/diallo-abdou/stage_abdou_m2){target="_blank"}
+
+#  {.unnumbered}
+
+::: {style="text-align: center; font-size: larger"}
+<strong>Thank you for your attention</strong>
+:::

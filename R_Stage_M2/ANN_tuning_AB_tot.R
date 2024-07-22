@@ -1,9 +1,4 @@
 
-# LIMITE : qualité des données inputs, desequilibre des os
-
-# IDEE d'amelioration des model: divisé par 25 ind; model par OS; plus de nettoyage de var, selection par impo toutes les var
-
-
 # Libraries
 
 library(keras)
@@ -102,9 +97,9 @@ cbind(testtarget,ANN_1_pred)[1:20,]
 #                                 dense_units3 = c(8, 16),
 #                                 dense_units4 = c(4, 8),
 #                                 dropout1 = c(0.4, 0.5),
-#                                 dropout1 = c(0.3, 0.4),
-#                                 dropout1 = c(0.2, 0.3),
-#                                 dropout1 = c(0.1, 0.2),
+#                                 dropout2 = c(0.3, 0.4),
+#                                 dropout3 = c(0.2, 0.3),
+#                                 dropout4 = c(0.1, 0.2),
 #                                 batch_size = c(32, 64)))
 # 
 # write.csv2(x =runs,file = "results_tuning/AB_tot_ANN_tuning.csv", row.names = FALSE)

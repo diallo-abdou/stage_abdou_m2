@@ -1,0 +1,19 @@
+"Datas","Algorithms","Response 
+ variables","R2_adj 
+train","R2_ad 
+test","RMSE","MAE"
+"EcoBioSoil","GLM","AB_tot",0.23,0.25,5.83,4.72
+"EcoBioSoil","GAM","AB_tot",0.27,0.27,5.72,4.6
+"EcoBioSoil","RF","AB_tot",0.79,0.41,5.18,4.03
+"EcoBioSoil","GBM","AB_tot",0.68,0.4,5.24,4.12
+"EcoBioSoil","ANN","AB_tot",0.22,0.25,5.91,4.69
+"EcoBioSoil","GLM","BM_tot",0.18,0.22,3.28,2.66
+"EcoBioSoil","GAM","BM_tot",0.22,0.25,3.21,2.59
+"EcoBioSoil","RF","BM_tot",0.69,0.34,3.04,2.38
+"EcoBioSoil","GBM","BM_tot",0.48,0.32,3.06,2.42
+"EcoBioSoil","ANN","BM_tot",0.31,0.3,3.14,2.51
+"EcoBioSoil","GLM","Richesse_tot",0.36,0.33,2.16,1.73
+"EcoBioSoil","GAM","Richesse_tot",0.44,0.39,2.08,1.65
+"EcoBioSoil","RF","Richesse_tot",0.84,0.57,1.77,1.33
+"EcoBioSoil","GBM","Richesse_tot",0.78,0.55,1.8,1.35
+"EcoBioSoil","ANN","Richesse_tot",0.44,0.35,2.17,1.7

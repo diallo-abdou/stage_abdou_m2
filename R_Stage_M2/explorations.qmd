@@ -1,0 +1,1447 @@
+---
+title: "Exploration"
+author: "Abdourahmane Diallo"
+date: '`r Sys.Date()`'
+format: 
+  revealjs
+# preview-links: auto
+logo: logo-FRB-Cesab-francais.png
+# css: styles.css
+footer: "LANDWORM WS3"
+# multiplex: true
+#smaller: true
+scrollable: true
+#theme: sky
+editor: visual
+number-sections: true
+toc: FALSE
+#toc-expand: false
+#toc_float: 'yes'
+code_download: 'yes'
+slide-number: true
+margin: 0.1
+#center: true
+code-fold: true
+width: 1300
+height: 700
+toc_depth: 1
+execute:
+  cache: true
+# quarto render landworm.qmd --cache-refresh 
+---
+
+
+## Setting {.unnumbered}
+
+```{r setup, include=FALSE,fig.align='center',message=FALSE,warning=FALSE,message=FALSE,echo=TRUE}
+# rm(list=ls()) # Properly clear workspace
+# source("function_abdou.R")
+# knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{css, echo=FALSE}
+.title {
+  font-size: 100px;
+  font-style: italic;
+  color: blue;
+  font-family: Arial;
+  font-variant: small-caps;
+}
+```
+
+**Packages**
+
+```{r packages,echo=TRUE}
+  library(tidyverse)
+  # library(glme)
+  # library(lsmeans)
+  # library(agricolae)
+  # library(RVAideMemoire)
+  library(corrplot)
+  # library(emmeans)
+  library(lme4)
+  library(multcomp)
+  library(MASS)
+  # library(R2WinBUGS)
+  library(arm)
+  # library(performance)
+  # library(AER)
+  # library(AICcmodavg)
+  # library(MuMIn)
+  library(ade4)
+  library(Hmisc)
+  library(labdsv)
+  library(vegan)
+  library(cowplot)
+  library(ggpubr)
+  library(rstatix)
+  library(patchwork)
+  library(multcompView)
+  library(ggsignif)
+  library(grid)
+  library(FactoMineR)
+  library(factoextra)
+  library(explore)
+  library(ggrepel)
+  library(naniar)
+  library(outliers)
+  library(leaps)
+  library(fastDummies)
+  library(caret) # pour l'entrainement des models
+  library(mgcv)
+  library(ggeffects)
+  library(gratia)
+  library(GGally) # pour ggpair
+  # library(caTools)
+  # library(rpart)
+  # library(rpart.plot)
+  library(openxlsx)
+  library(readxl)
+  library(leaflet) # pour la carto
+  library(quarto)
+  library(raster)
+  library(knitr)
+  library(kableExtra)
+  library(stringr)
+  library(plotly)
+  # library(PerformanceAnalytics)
+  # library(usdm)
+  library(vcd) # pour la distribution des var reponse
+  library(prospectr)# pour split data avec kenSton()
+  # library(glmnet)
+  library(randomForest)
+  # library(doParallel)
+  library(gbm)
+  library(kernlab)
+  # library(e1071)
+  library(ggforce)
+  library(keras)
+  library(tensorflow)
+  library(neuralnet)
+  # library(parallel)
+  library(iml) # pour l'interpretabilité des models https://cran.r-project.org/web/packages/iml/vignettes/intro.html
+  library(stats)
+  # library(Boruta) # importance des predicteurs
+  library(bestNormalize)
+  library(rmarkdown)
+  library(DT)
+  library(gtExtras) # pour la
+  library(reshape2)
+  # library(mapview)
+  library(sf)
+  library(ggplot2)
+  library(maptools)
+  library(ggsn)
+  library(spThin)
+  library(sp)
+  library(gstat)
+
+```
+
+**Functions**
+
+```{r fonction, echo=TRUE}
+
+## Identification des NA dans un df -----------------------------------------------
+taux_completion<-
+  function(df, afficher_zero_percent = FALSE, seuil, trie=FALSE) {
+    # Calcule du pourcentage de NA dans le dataframe
+    pourcentage_total <-
+      round(sum(is.na(df)) / (nrow(df) * ncol(df)) * 100, 1)
+    
+    # Calcule du pourcentage de NA par colonne
+    pourcentage_colonnes <- round(colMeans(is.na(df)) * 100, 1)
+    
+    # Creation d'un dataframe résultat avec deux colonnes
+    result <-
+      data.frame(
+        Variables = names(df),
+        CR = pourcentage_colonnes,
+        row.names = NULL
+      )
+    
+    if (afficher_zero_percent) {
+      result <- result[result$CR == 0, ]
+      result$CR = 100 -result$CR
+    } else {
+      result <- result[result$CR > 0, ]
+      result$CR = 100 -result$CR
+      
+    }
+    
+    result <- rbind(result, c("Total", pourcentage_total))
+    #result <- rbind(result, c("Total", paste0(pourcentage_total, "")))
+    
+    result <- result[, c("Variables", "CR")]
+    result$CR = as.numeric(result$CR)
+    result$CR = round(result$CR,1)
+    if (trie){
+      result = result %>% arrange(desc(CR))
+    }
+    result$CR = paste0(result$CR,"%")
+    
+    return(result)
+  }
+# Converssion des colonne en num ou factor-----------------------------------------------
+conv_col <- function (data, columns_to_convert, to_types) {
+  if (to_types == "numeric") {
+    # Conversion des colonnes en numeric
+    for (col in columns_to_convert) {
+      data[, col] <- as.numeric(data[, col])
+    }
+  } else {
+    # Conversion des colonnes en facteurs
+    for (col in columns_to_convert) {
+      data[, col] <- as.factor(data[, col])
+    }
+  }
+  return(data)
+}
+#data_converted <- conv_col(data, names(data [, c(1, 3)]), "factor")
+
+# exploration graphiques des variables numeriques -----------------------------------------------
+explo_num <- function(nom_col, titre, df = landworm, ligne_col = c(2, 2),mini = min(df[[nom_col]]), maxi=max(df[[nom_col]]) ) {
+  par(mfrow = ligne_col)
+  
+  df[complete.cases(df[[nom_col]]), ]
+  df <- df %>%filter(!is.na(df[[nom_col]]))
+  df[[nom_col]] = as.numeric(df[[nom_col]])
+  # Boxplot
+  boxplot(df[[nom_col]], col = 'blue', ylab = titre, ylim = c(mini, maxi))
+  # Cleveland plot
+  dotchart(df[[nom_col]], pch = 16, col = 'blue', xlab = titre)
+  # Histogram
+  hist(df[[nom_col]], col = 'blue', xlab = titre, main = "")
+  # Quantile-Quantile plot
+  qqnorm(df[[nom_col]], pch = 16, col = 'blue', xlab = '')
+  qqline(df[[nom_col]], col = 'red') 
+}
+
+# Extraction des predictors + moyennes -----------------------------------------------
+
+extraction <- function(nom_col, tif_file_path, df = landworm, conv = 1) {
+  #df <- df %>%filter(!is.na(gps_x) & !is.na(gps_y))
+  raster_data <- raster(tif_file_path)
+  
+  # Création d'un dataframe pour stocker les valeurs extraites
+  df_interne <- data.frame(gps_x = df$gps_x, gps_y = df$gps_y)
+  proj4Str <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+  # Transformer les coordonnées GPS en système de coordonnées du raster
+  gps_coords_sp <- SpatialPoints(df_interne, proj4string = CRS(proj4Str))
+  gps_coords_proj <- spTransform(gps_coords_sp, crs(raster_data))
+  
+  # Extraction des valeurs du raster 
+  values <- raster::extract(raster_data, gps_coords_proj)
+  
+  # Ajout des valeurs extraites comme nouvelles colonnes a df
+  #df_save = data.frame()
+  #df_save[[nom_col]] <- values / conv
+  
+  df[[nom_col]] <- values / conv
+  
+  return(df)
+}
+
+# la moyenne des predictores -----------------------------------------------
+moyenne_val_extrct <- function(nom_col, vec_col, df=landworm) {
+  df[[nom_col]] <- rowMeans(as.matrix(df[, vec_col, drop = FALSE]), na.rm = TRUE)
+  df[[nom_col]] = round(df[[nom_col]],1)
+  return(as.data.frame(df))
+}
+
+
+# tests de corrélation avec un seuil -----------------------------------------------
+cor_function_seuil <- function(data, seuil,affiche=FALSE) {
+  # Création d'un vecteur pour stocker les paires de variables corrélées
+  variables_corr <- c()
+  
+  # Boucle pour tester la corrélation entre chaque paire de variables
+  for (i in 1:(ncol(data) - 1)) {
+    for (j in (i + 1):ncol(data)) {
+      # Calcul de la corrélation entre les variables i et j
+      cor_value <- stats::cor(data[, i], data[, j], use = "na.or.complete")
+      
+      # Stockage du résultat dans le vecteur si supérieur au seuil
+      if (cor_value >= seuil | cor_value <= -seuil) {
+        if(affiche){
+        cat(
+          "***",
+          colnames(data)[i],
+          "  __est correlee a__  ",
+          colnames(data)[j],
+          "avec un R =",
+          cor_value,
+          "\n \n \n"
+        )
+      }
+        
+        variables_corr <-
+          c(variables_corr, colnames(data)[i], colnames(data)[j])
+      }
+    }
+  }
+  
+  return(variables_corr)
+}
+
+
+# tests de valeurs aberant -----------------------------------------------
+test_grub <- function(data, variable, direction = "maxi") {
+  
+  if (direction == "maxi") { 
+    repeat {
+      #le test de Grubbs
+      test_aberrant <- grubbs.test(data[[variable]], opposite = FALSE)
+      
+      # Obtenir la p-valeur du test
+      p.value <- test_aberrant$p.value
+      # Si la p-valeur est inférieure au seuil de 0.05, on supprime la valeur aberrante
+      if (p.value < 0.05) {
+        max_value <- max(data[[variable]],na.rm=TRUE)
+        data <- subset(data, data[[variable]] != max_value | is.na(data[[variable]]))
+      } else {
+        # S'il n'y a plus de valeurs aberrantes, sortir de la boucle
+        break
+      }
+    }
+  }
+  
+  
+  if (direction == "mini") { 
+    repeat {
+      test_aberrant <- grubbs.test(data[[variable]], opposite = TRUE)
+      # Obtenir la p-valeur du test
+      p.value <- test_aberrant$p.value
+      # Si la p-valeur est inférieure au seuil de 0.05, on supprime la valeur aberrante
+      if (p.value < 0.05) {
+        min_value <- min(data[[variable]],na.rm=TRUE)
+        data <- subset(data, data[[variable]] != min_value | is.na(data[[variable]]))
+      } else {
+        # S'il n'y a plus de valeurs aberrantes, sortir de la boucle
+        break
+      }
+    }
+  }
+  
+  
+  return(data)
+}
+
+
+
+
+# boxplote -----------------------------------------------
+plot_boxplot <-function(donnee,
+           x_col,y_col,x_label,y_label,title,legend_title,
+           couleurs,
+           affiche_point = TRUE,
+           ymin = min(donnee[[y_col]]),
+           ymax = 1.2 * max(donnee[[y_col]])) {
+    
+  graphe <-ggplot(donnee,
+             aes_string(
+               x = x_col,
+               y = y_col,
+               colour = x_col
+             )) +
+  geom_boxplot(
+        outlier.shape = NA,
+        outlier.colour = "black",
+        alpha = 0.20,
+        size = 1.5 
+      ) +
+  labs(title = title,x = x_label,y = y_label) +
+  scale_color_manual(values = couleurs, name = legend_title) +
+  theme_classic(base_size = 12, base_family = "Arial") +
+  theme(axis.text = element_text(size = 10),
+        axis.title.y = element_text(
+          vjust = 5, size = 12, face = "bold"),
+        axis.title.x = element_text(face = "bold"),
+        axis.ticks.length = unit(0.2, "cm"),
+        legend.position = "none",  # Cette ligne supprime la lÃ©gende
+        #legend.position = "right",
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, face = "bold"),
+        plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")
+      )
+    if (affiche_point) {
+      graphe <-
+        graphe + geom_jitter(position = position_jitter(seed = 0.5), size = 0.8)
+    }
+    
+    if (y_col %in% names(donnee)) {
+      graphe <- graphe +
+        coord_cartesian(ylim = c(ymin, ymax))
+    }
+  
+    graphe = graphe + stat_summary(
+      fun.y = mean,
+      geom = "point",
+      shape = 15,
+      size = 1.5,
+      col = "black",
+      fill = "black"
+    )
+    
+    return(graphe)
+}
+
+
+
+#pour le  pairwise.t.test() -----------------------------------------------------
+tri.to.squ <- function(x) {
+  rn <- row.names(x)
+  cn <- colnames(x)
+  an <- unique(c(cn, rn))
+  myval <- x[!is.na(x)]
+  mymat <-
+    matrix(
+      1,
+      nrow = length(an),
+      ncol = length(an),
+      dimnames = list(an, an)
+    )
+  for (ext in 1:length(cn))
+  {
+    for (int in 1:length(rn))
+    {
+      if (is.na(x[row.names(x) == rn[int], colnames(x) == cn[ext]]))
+        next
+      mymat[row.names(mymat) == rn[int], colnames(mymat) == cn[ext]] <-
+        x[row.names(x) == rn[int], colnames(x) == cn[ext]]
+      mymat[row.names(mymat) == cn[ext], colnames(mymat) == rn[int]] <-
+        x[row.names(x) == rn[int], colnames(x) == cn[ext]]
+    }
+  }
+  return(mymat)
+}
+
+
+
+# Selection interaction -------------------------------
+select_inter <- function(response_var, df, explanatory_vars) {
+  results <- data.frame()
+  combinations <- combn(explanatory_vars, 2, simplify = FALSE)
+
+  for(i in seq_along(combinations)) {
+
+    formula <- as.formula(paste(response_var, "~", paste(combinations[[i]], collapse = "*")))
+    model <- gam(formula, data = df)
+    r_squared <- summary(model)$r.sq
+    aic <- AIC(model)
+    results <- rbind(results, data.frame("variables" = paste0(combinations[[i]], collapse = ".inter."), 
+                                         "r_squared" = r_squared, 
+                                 "aic" = aic))
+  }
+  return(results)
+}
+
+# Comparaion betwen predtited and observed -----------------------------------
+plot_comp = function (df,ylabel, title_class, legende = TRUE,plotly = FALSE,xlabel = "observations",title=""){ 
+
+  
+  p = ggplot(df, aes(x = observation)) + 
+  #graph representant observed
+  geom_point(aes(y = Observed, color = "Observed valuess")) +
+  geom_line(aes(y = Observed, color = "Observed valuess")) + 
+  
+  #graph representant  preticted
+  geom_point(aes(y = Predicted, color="Predicted values")) +
+  geom_line(aes(y = Predicted, color="Predicted values")) + 
+  # ggtitle(title)
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(title = title,x=xlabel, y=ylabel, color = "Legend :") + 
+  ylim(min(c(min(df$Predicted), min(df$Observed))),
+            max(c(max(df$Predicted), max(df$Observed)))+1  ) +
+    
+  scale_color_manual(values = c("Observed valuess"='red', "Predicted values"='green')) +
+  annotate("text", x = 8, y =  max(c(max(df$Predicted), max(df$Observed)))+1, 
+           label = title_class, col = "black", size = 3)
+
+  
+  if (!legende) {
+    p <- p + theme(legend.position = "none")
+  }
+  
+  if(plotly){
+    p = ggplotly(p)
+  }
+
+return (p)
+
+}
+
+
+# Calcul R²
+calcule_R2 = function(x, y) {cor(x, y)^2}
+
+```
+
+
+
+
+## Plan {.unnumbered}
+
+- Introduction
+
+
+- Matériels et méthodes
+
+
+- Resultats et discussion
+
+
+- Conclusion
+
+
+
+# Database import
+
+-   Import of database **LandWorm_dataset_site_V1.9.xlsx** (february 22, 2024)
+
+```{r import,echo=FALSE}
+chemin_fichier_excel = "C:/Users/diall/Downloads/datas/LandWorm_dataset_site_V1.9.xlsx"
+landworm <- read.xlsx(chemin_fichier_excel, sheet = "Sheet1")
+```
+
+-   The database contains **`r nrow(landworm)`** rows and **`r ncol(landworm)`** columns
+
+```{r conversion,echo=FALSE}
+col_en_factor = c("Programme","Annee","ID_Site","Code_Parcelle","postal_code","clcm_lvl1",
+                  "clcm_lvl2","clcm_lvl3","Modalite","Bloc","Protocole","land_cover_detail","type_tillage","fertilisation","ferti_min_product","ferti_orga_product")
+landworm = conv_col(landworm, col_en_factor, "factor")
+```
+
+
+## Protocols (avant séléction)
+
+-   **List of protocols available on the database ( `r length(levels(landworm$Protocole))` levels)**
+
+```{r protocols1,echo=TRUE}
+landworm$Protocole = as.factor(landworm$Protocole)
+df <- as.data.frame(summary(landworm$Protocole))
+colnames(df) <- c("Numbers")
+# DT::datatable(df, options = list(pageLength = 5))
+rm("df")
+```
+
+
+-   **Selection of protocols: 16** 
+
+```{r}
+# library(tidyverse)
+# library(DT)
+# library(gtExtras) # pour la
+
+df_suivi = landworm
+n_line = nrow(df_suivi)
+
+sel_proto = c("AITC_HS","FHS","HS","HS_4","HS_M_16","HSAITC_16","HSAITC_6.25","AITCTM","F_HS","hand sorting","HS_16","HS_F_16","HS_M_25","HSAITC_4",
+    "HSAITC_7.95775385","M_HS")
+
+landworm2 <- landworm
+n_line = nrow(landworm2)
+landworm2 <- landworm2 %>%
+  dplyr::filter(Protocole %in% sel_proto)
+landworm2 <- droplevels(landworm2)
+df = landworm2 %>%
+  pull(Protocole) %>%
+  table() %>%
+  as.data.frame() %>%
+  dplyr::rename(Numbers = 2) 
+
+kable(df)
+# df %>% datatable(options = list(pageLength = 5))
+
+landworm = landworm2
+```
+
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(landworm)`** observations.
+
+
+
+
+## Data selection: LandWorm
+
+-   On séléctionne tout sauf *mh* et *NA*
+```{r selection dc1,echo=FALSE}
+df_suivi = landworm
+n_line = nrow(df_suivi)
+
+landworm$owner=as.factor(landworm$owner)
+summary_df <- as.data.frame(summary(landworm$owner))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df)
+```
+
+```{r selection dc2,echo=TRUE}
+landworm <- subset(landworm, owner %in% c("dc","cp","gp","sg"))
+landworm$owner=droplevels(landworm$owner)
+
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(landworm)`** observations.
+
+# Database exploration
+
+-   CR = Completion rate
+
+## Complete columns
+
+```{r Complete columns, echo=TRUE}
+df_col=taux_completion(landworm,TRUE,trie=FALSE)
+df_col = df_col[df_col$Variables != "Total",]
+#print("table")
+kable(df_col, caption = "", col.width = c("75%", "25%"))
+# cat(                                                    )
+# head(landworm[, "ID"])
+```
+
+## Non-complete columns
+
+```{r Non-complete columns}
+df_col= taux_completion(landworm,FALSE,trie = TRUE)
+df_col = df_col[df_col$Variables != "Total",]
+# kable(df_col, caption = " ", col.width = c("75%", "25%"))
+
+# df_col %>% datatable(options = list(pageLength = 10), rownames = FALSE)
+
+```
+
+## Focus on GPS coordinates
+
+-   There is **`r sum(is.na(landworm$gps_x))`** NA (CR = `r df_col[df_col$Variable=="gps_x", "CR"]`) in **GPS_X**
+-   There is **`r sum(is.na(landworm$gps_y))`** NA (CR = `r df_col[df_col$Variable=="gps_y", "CR"]`) in **GPS_Y**
+
+```{r GPS,echo=TRUE}
+
+df_suivi = landworm
+n_line = nrow(df_suivi)
+
+landworm$gps_x <- as.numeric(gsub("[^0-9.-]", "", landworm$gps_x))
+landworm$gps_y <- as.numeric(gsub("[^0-9.-]", "", landworm$gps_y))
+landworm <- landworm[complete.cases(landworm$gps_x, landworm$gps_y), ]
+landworm <- landworm %>%filter(!is.na(gps_x) & !is.na(gps_y))
+#sum(is.na(landworm$gps_x))
+#sum(is.na(landworm$gps_y))
+```
+
+-   We delete the *NA* lines in the GPS coordinates
+-   The database therefore changes from **`r n_line`** to **`r nrow(landworm)`** observations.
+
+
+## Cartography
+
+```{r Cartography,echo=TRUE}
+df_suivi = landworm
+n_line = nrow(df_suivi)
+
+df_coord <- landworm[, c("gps_x", "gps_y")] %>% mutate(gps_x = as.numeric(gps_x),gps_y = as.numeric(gps_y))
+
+df_coord$num_ligne <- seq(nrow(df_coord))
+carte <- leaflet(df_coord) %>%
+  addTiles() %>%
+  addCircleMarkers(lng = ~gps_x, lat = ~gps_y, radius = 0.8, fillOpacity = 0.8, fillColor = "blue")
+carte
+```
+
+```{r outside France}
+hors_france= read.csv(file = "C:/Users/diall/Downloads/datas/hors_france.csv", header = TRUE)
+
+landworm <- landworm[!(landworm$gps_x %in% hors_france$gps_x & landworm$gps_y %in% hors_france$gps_y), ]
+landworm <- droplevels(landworm)
+```
+
+-   We delete points outside France (**`r nrow(hors_france)`**)
+-   The database therefore changes from **`r n_line`** to **`r nrow(landworm)`** observations.
+
+## Focus on years
+
+-   Cleaning the Annee column 
+<br/> 
+
+```{r years1}
+df_suivi = landworm
+n_line = nrow(df_suivi)
+
+# levels(landworm$Annee) # parfois années et jours et ou mois
+landworm$Annee= as.factor(landworm$Annee)
+landworm$Annee <- gsub("^(\\d{4}).*$", "\\1", landworm$Annee) # on prend uniquement les 04 premier chiffre
+landworm$Annee= as.factor(landworm$Annee)
+
+```
+
+
+-   CR of Annee = **`r df_col[df_col$Variable=="Annee", "CR"]`** (`r length(levels(landworm$Annee))` levels)
+
+```{r years2, scrollable = TRUE}
+landworm$Annee= as.factor(landworm$Annee)
+landworm = droplevels(landworm)
+summary_df <- as.data.frame(summary(landworm$Annee))
+colnames(summary_df) <- c("Numbers")
+# kable(summary_df)
+```
+
+
+
+-   We remove all the years before **1990** and the NA ( *`r sum(is.na(landworm$Annee))`* observations) 
+
+```{r years3, echo=TRUE, scrollable = TRUE}
+# sum(is.na(landworm$Annee))
+landworm <- landworm %>%filter(!is.na(Annee))# on enleve les NA
+annes_omit= c("1821", "1960", "1978", "1982", "1983", "1984", "1986", "1988", "1989") # annee sup
+landworm <- landworm[!landworm$Annee %in% annes_omit, ]
+landworm=droplevels(landworm)
+#levels (landworm$Annee)
+#summary (landworm$Annee)
+summary_df <- as.data.frame(summary(landworm$Annee))
+colnames(summary_df) <- c("Numbers")
+# kable(summary_df,padding = 5)
+summary_df %>% datatable(options = list(pageLength = 5))
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(landworm)`** observations. 
+
+
+
+
+
+## Focus on clcm_lvl1
+
+-   CR of clcm_lvl1 = **`r df_col[df_col$Variable=="clcm_lvl1","CR"]`** (`r length(levels(landworm$clcm_lvl1))` levels)
+
+```{r clcm_lvl1, echo=TRUE}
+landworm$clcm_lvl1= as.factor(landworm$clcm_lvl1)
+summary_df <- as.data.frame(summary(landworm$clcm_lvl1))
+colnames(summary_df) <- c("Numbers")
+# kable(summary_df,padding = 5)
+```
+
+-   Merging levels
+
+```{r merging clcm_lvl1, echo=TRUE}
+levels(landworm$clcm_lvl1)[levels(landworm$clcm_lvl1) == "1_Naturel"] <- "Forest and semi natural areas"
+levels(landworm$clcm_lvl1)[levels(landworm$clcm_lvl1) == "2_Agricole"] <- "Agricultural areas"
+
+landworm$clcm_lvl1= as.factor(landworm$clcm_lvl1)
+summary_df <- as.data.frame(summary(landworm$clcm_lvl1))
+colnames(summary_df) <- c("Numbers")
+kable(summary_df,padding = 5)
+```
+
+-   Update **code_clcm_lvl1**
+
+```{r code_clcm_lvl1, echo=TRUE}
+#landworm$code_clcm_lvl1 = as.factor(landworm$code_clcm_lvl1)
+
+landworm$code_clcm_lvl1 <- ifelse(landworm$clcm_lvl1 == "Forest and semi natural areas", 3, landworm$code_clcm_lvl1)
+
+landworm$code_clcm_lvl1 <- ifelse(landworm$clcm_lvl1 == "Agricultural areas", 2, landworm$code_clcm_lvl1)
+```
+
+-   For the moment, we will keep the NA of **clcm_lvl1**
+
+## Focus on clcm_lvl2
+
+-   CR of clcm_lvl2 = **`r df_col[df_col$Variable=="clcm_lvl2","CR"]`** (`r length(levels(landworm$clcm_lvl2))` levels)
+
+```{r clcm_lvl2 , echo=TRUE}
+landworm$clcm_lvl2= as.factor(landworm$clcm_lvl2)
+summary_df <- as.data.frame(summary(landworm$clcm_lvl2))
+colnames(summary_df) <- c("Numbers")
+# summary_df %>% datatable(options = list(pageLength = 5))
+```
+
+-   Merging levels
+
+```{r merging clcm_lvl2, echo=TRUE}
+levels(landworm$clcm_lvl2)[levels(landworm$clcm_lvl2) == "21_Agricole ouvert"] <- "Arable land"
+
+landworm$clcm_lvl2= as.factor(landworm$clcm_lvl2)
+summary_df <- as.data.frame(summary(landworm$clcm_lvl2))
+colnames(summary_df) <- c("Numbers")
+# kable(summary_df,padding = 5)
+summary_df %>% datatable(options = list(pageLength = 10), rownames = TRUE)
+```
+
+-   Update **code_clcm_lvl2**
+
+```{r code_clcm_lvl2, echo=TRUE}
+
+landworm$code_clcm_lvl2 <- ifelse(landworm$clcm_lvl2 == "Arable land", 21, landworm$code_clcm_lvl2)
+
+```
+
+## Focus on clcm_lvl3
+
+-   CR of clcm_lvl3 = **`r df_col[df_col$Variable=="clcm_lvl3","CR"]`** (`r length(levels(landworm$clcm_lvl3))` levels)
+
+```{r clcm_lvl3, echo=TRUE, scrollable = TRUE}
+df_suivi = landworm
+n_line = nrow(df_suivi)
+
+landworm$clcm_lvl3= as.factor(landworm$clcm_lvl3)
+summary_df <- as.data.frame(summary(landworm$clcm_lvl3))
+colnames(summary_df) <- c("Numbers")
+# kable(summary_df,padding = 5)
+summary_df %>% datatable(options = list(pageLength = 10), rownames = TRUE)
+```
+
+## Land use selection (clcm_lvl3)
+
+
+
+-   **Broad-leaved forest** 
+-   **Coniferous forest** 
+-   **Mixed forest** 
+
+-   **Pastures, meadows and other permanent grasslands under agricultural use** 
+
+-   **Non-irrigated arable land** 
+
+-   **Vineyards**
+
+-   **Green urban areas**
+
+-   **Natural grasslands**
+
+
+```{r select clcm_lvl3, echo=TRUE}
+# select_os= c("Broad-leaved forest", "Coniferous forest", "Mixed forest", 
+# "Pastures, meadows and other permanent grasslands under agricultural use", "Non-irrigated arable land", "Vineyards","Green urban areas","Natural grasslands")
+
+
+select_os= c("Broad-leaved forest", "Mixed forest", 
+"Pastures, meadows and other permanent grasslands under agricultural use", "Non-irrigated arable land", "Vineyards","Green urban areas","Natural grasslands")
+
+
+landworm <- landworm[landworm$clcm_lvl3 %in% select_os, ]
+landworm=droplevels(landworm)
+landworm$clcm_lvl3 = as.factor(landworm$clcm_lvl3)
+summary_df <- as.data.frame(summary(landworm$clcm_lvl3))
+colnames(summary_df) <- c("Numbers")
+summary_df %>% datatable(options = list(pageLength = 5))
+
+```
+
+-   **We merge the two types of forest **
+
+```{r}
+landworm$clcm_lvl3= as.factor(landworm$clcm_lvl3)
+levels(landworm$clcm_lvl3)[levels(landworm$clcm_lvl3)=="Broad-leaved forest"]="Forest"
+# levels(landworm$clcm_lvl3)[levels(landworm$clcm_lvl3) == "Coniferous forest"] <- "Forest"
+levels(landworm$clcm_lvl3)[levels(landworm$clcm_lvl3)=="Mixed forest"]="Forest"
+landworm$clcm_lvl3= as.factor(landworm$clcm_lvl3)
+landworm = droplevels(landworm)
+
+summary_df <- as.data.frame(summary(landworm$clcm_lvl3))
+colnames(summary_df) <- c("Numbers")
+summary_df %>% datatable(options = list(pageLength = 5))
+
+```
+
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(landworm)`** observations.
+
+
+
+## Focus on protocols (après séléction)
+
+-   List of protocols available on the database ( `r length(levels(landworm$Protocole))` levels)
+
+```{r protocols,echo=TRUE}
+landworm$Protocole = as.factor(landworm$Protocole)
+summary_df <- as.data.frame(summary(landworm$Protocole))
+colnames(summary_df) <- c("Numbers")
+summary_df %>% datatable(options = list(pageLength = 5))
+
+```
+
+
+-   Merging levels :
+
+    -   F_HS $=$ F_HS $+$ FHS
+    -   HS $=$ HS $+$ hand sorting
+
+    ```{r merging protocols,echo=TRUE}
+    levels(landworm$Protocole)[levels(landworm$Protocole) == "FHS"] <- "F_HS"
+    levels(landworm$Protocole)[levels(landworm$Protocole) == "hand sorting"] <- "HS"
+    landworm$Protocole = as.factor(landworm$Protocole)
+    summary_df <- as.data.frame(summary(landworm$Protocole))
+    colnames(summary_df) <- c("Numbers")
+   summary_df %>% datatable(options = list(pageLength = 5))
+    ```
+
+## Land use & protocol overview
+
+```{r LU & protocol overview, echo=TRUE}
+# kable (table(landworm$clcm_lvl1, landworm$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)
+# kable (table(landworm$clcm_lvl2, landworm$Protocole,exclude = NULL), align = "c", format = "pipe", padding = 10)
+df = table(landworm$clcm_lvl3, landworm$Protocole,exclude = NULL)
+# df = as.data.frame(df)
+kable (df, align = "c", format = "pipe", padding = 10)
+
+# df %>% datatable(options = list(pageLength = 8))
+```
+
+# Earthworms data
+
+
+
+
+## Total abundance
+
+```{r fig AB_tot,fig.align='center',fig.height=10}
+
+df_suivi = landworm
+n_line = nrow(df_suivi)
+
+AB_tot_aberant = landworm[,c("ID","Programme", "Annee", "ID_Site","clcm_lvl1","clcm_lvl2","clcm_lvl3","Protocole","AB_tot")]
+# summary(landworm$AB_tot) 
+df_cleaned = landworm
+
+df_cleaned$AB_tot = as.numeric(df_cleaned$AB_tot)
+explo_num(nom_col = 'AB_tot', titre = 'AB_tot (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'AB_tot', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'AB_tot', direction = 'mini')
+cat("Sppression des valeurs aberrantes")
+explo_num(nom_col = 'AB_tot', titre = 'AB_tot (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$AB_tot) 
+landworm = df_cleaned
+```
+
+<!-- **Zoom sur la partie bizard** -->
+<!-- ```{r ,fig.align='center',fig.height=10} -->
+<!-- # Cleveland plot -->
+<!-- df = landworm[1600:3000,] -->
+<!-- df = droplevels(df) -->
+<!-- dotchart(df$AB_tot, pch = 16, col = 'blue', xlab = "titre") -->
+<!-- ``` -->
+
+<!-- **Par Protocole** -->
+<!-- ```{r fig,fig.align='center',fig.height=10} -->
+<!-- # Plot and color by groups Protocole -->
+<!-- grps <- as.factor(df$Protocole) -->
+<!-- my_cols <- c("blue", "red", "darkgreen") -->
+<!-- dotchart(df$AB_tot, -->
+<!--          groups = grps, gcolor = my_cols, -->
+<!--          color = my_cols[grps], -->
+<!--          cex = 0.9,  pch = 16, xlab = "Abundance") -->
+
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- landworm$Protocole = as.factor(landworm$Protocole) -->
+<!-- summary_df <- as.data.frame(summary(landworm$Protocole)) -->
+<!-- colnames(summary_df) <- c("Numbers") -->
+<!-- kable(summary_df,padding = 5) -->
+<!-- ``` -->
+
+```{r}
+# n_line = nrow(landworm)
+# #select_protocole =c("F_HS", "FHS", "hand sorting" ,"HS")
+# select_protocole =c("M")
+# landworm <- landworm[!landworm$Protocole %in% select_protocole, ]
+# landworm=droplevels(landworm)
+# landworm$Protocole = as.factor(landworm$Protocole)
+# summary_df <- as.data.frame(summary(landworm$Protocole))
+# colnames(summary_df) <- c("Numbers")
+# kable(summary_df,padding = 5)
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(landworm)`** observations.
+
+## Graphe valeurs aberant AB_tot
+
+```{r,fig.align='center', echo=TRUE, eval=FALSE}
+# summary(AB_tot_aberant)
+AB_tot_aberant_2 = AB_tot_aberant[AB_tot_aberant$AB_tot > max(landworm$AB_tot),]
+AB_tot_aberant_2$clcm_lvl1 =as.factor(AB_tot_aberant_2$clcm_lvl1)
+AB_tot_aberant_2$clcm_lvl2 =as.factor(AB_tot_aberant_2$clcm_lvl2)
+AB_tot_aberant_2$clcm_lvl3 =as.factor(AB_tot_aberant_2$clcm_lvl3)
+AB_tot_aberant_2 = droplevels(AB_tot_aberant_2)
+kable(unique(AB_tot_aberant_2[,c("Programme","Annee","clcm_lvl3")]))
+
+df = AB_tot_aberant_2
+df$observation = 1:nrow(df)
+df$Richesse_tot_10 = df$Richesse_tot*100
+g_AB_tot_aberant = ggplot(df, aes(x = observation)) + 
+  geom_point(aes(y = AB_tot, color = "Abundance")) +
+  geom_line(aes(y = AB_tot, color = "Abundance")) + 
+  geom_point(aes(y = Richesse_tot_10, color="Richness*100")) +
+  geom_line(aes(y = Richesse_tot_10, color="Richness*100")) + 
+  # ggtitle(title)
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(title = "  ",x="Observation", y="Values", color = "Legend:") +
+  scale_color_manual(values = c("Abundance"='red', "Richness*100"='green'))
+# ggsave("g_AB_tot_aberant.png", plot = g_AB_tot_aberant, dpi = 300)
+ ggplotly(g_AB_tot_aberant)
+ 
+```
+
+
+
+## Total biomass 
+
+```{r fig BM_tot,fig.align='center',fig.height=10}
+
+df_suivi = landworm
+n_line = nrow(df_suivi)
+
+# summary(landworm$BM_tot) 
+df_cleaned = landworm
+
+df_cleaned$BM_tot = as.numeric(df_cleaned$BM_tot)
+explo_num(nom_col = 'BM_tot', titre = 'BM_tot (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'BM_tot', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'BM_tot', direction = 'mini')
+cat("Sppression des valeurs aberrantes")
+explo_num(nom_col = 'BM_tot', titre = 'BM_tot (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$BM_tot) 
+landworm = df_cleaned
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(landworm)`** observations.
+
+
+## Total taxonomic richness
+```{r}
+landworm_sp = landworm
+```
+
+**Total richness calculation method**
+
+-   1.    Removal of columns with only NA and/or only 0
+
+```{r step 1, echo=FALSE}
+df_suivi = landworm_sp
+n_line = nrow(df_suivi)
+
+# on supprime tout les colonnes ayant que des NA
+colonnes_na <- colnames(landworm_sp)[colSums(is.na(landworm_sp)) == nrow(landworm_sp)]
+# summary(landworm_sp[, colonnes_na])
+landworm_sp <- landworm_sp[, !colnames(landworm_sp) %in% colonnes_na]
+
+
+# On supprimme toutes les colonnes ayant que des NA et des 0
+colonnes_numeriques <- sapply(landworm_sp, is.numeric)
+somme_colonnes_numeriques <- colSums(landworm_sp[, colonnes_numeriques],na.rm=TRUE)
+colonnes_zeros <- names(somme_colonnes_numeriques[somme_colonnes_numeriques == 0])
+#summary(landworm_sp[, colonnes_zeros])
+landworm_sp <- landworm_sp[, !colnames(landworm_sp) %in% colonnes_zeros]
+```
+
+
+-   2.    Merging sub-species with their species
+```{r step 2, echo=FALSE}
+chemin_fichier_excel = "C:/Users/diall/Downloads/datas/choix_concaténation espèce_V2024.05.30.xlsx"
+df_sp_sous_sp= read.xlsx(chemin_fichier_excel, sheet = "rules_1")
+
+cat("Voici la liste des sp a fusionnée: \n")
+df= df_sp_sous_sp []
+rownames(df) = NULL
+datatable(df, options = list(pageLength = 5))
+
+```
+
+
+```{r, echo=TRUE}
+# function pour fusion les sous especes a leurs especes
+sp_identique = function(df, nom_sous_espece, nom_espece ) {
+  
+  # Si les deux colonnes existent dans df
+  if (nom_sous_espece %in% names(df) && nom_espece %in% names(df)) {
+    
+    # Addition des valeurs des deux colonnes et stockage du résultat dans nom_espece
+    # df[[nom_espece]] = df[[nom_sous_espece]] + df[[nom_espece]]
+    df[[nom_espece]] = rowSums(df[,c(nom_sous_espece,nom_espece)], na.rm = TRUE)
+    
+
+    df[[nom_sous_espece]] = NULL
+  
+  # Si nom_espece n'existe pas dans df mais nom_sous_espece existe
+  } else if (nom_sous_espece %in% names(df) && !(nom_espece %in% names(df))) {
+    
+    # on renome nom_sous_espece par nom_espece
+    names(df)[names(df) == nom_sous_espece] <- nom_espece
+    df[[nom_sous_espece]] = NULL
+  }
+  
+  return(df)
+}
+
+
+for (i in 1:nrow(df_sp_sous_sp)){
+ 
+landworm_sp = sp_identique(df = landworm_sp,nom_sous_espece = df_sp_sous_sp[i,"col_sp_origines"],
+                  nom_espece = df_sp_sous_sp[i,"col_sp_concatener"]) 
+}
+
+```
+
+-   3.    Identify columns beginning with **AB\_**
+```{r step 3, echo=FALSE}
+# On récupère toutes les colonnes qui commencent par **AB_**
+colonnes_AB <- grep("^AB_", names(landworm_sp), value = TRUE)
+```
+
+
+-   4.    Deletion of **AB\_** columns that are not species
+```{r step 4, echo = TRUE}
+# On supprimme les colonnes AB_ qui ne sont pas des espèces dans le calcule
+ab_supprimee =  c("AB_AD",
+                  "AB_JV",
+                  "AB_SA",
+                  "AB_STAD_X",
+                  "AB_indéterminable",
+                  "AB_Indéterminable",
+                  "AB_indéterminable_endogeic",
+                  "AB_tot",
+                  "AB_Indéterminable_epigeic",
+                  "AB_indéterminable_endogeic",
+                  "AB_Ep.X",
+                  "AB_vide",
+                  "AB_Ep.X1",
+                  "AB_Ep.X2",
+                  "AB_A.X",
+                  "AB_Adult",
+                  "AB_cocon",
+                  "AB_indéterminé",
+                  "AB_Juvenile",
+                  "AB_Sub.adult",
+                  "AB_Indéterminé")
+
+colonnes_AB <- colonnes_AB[!colonnes_AB %in% ab_supprimee]
+
+cat("A ce stade, la liste des especes est: \n")
+df= data.frame(colonnes_AB)
+rownames(df) = NULL
+DT::datatable(df, options = list(pageLength = 5))
+```
+
+-   5.    Calculate richness by assigning **1** to each column if the value is different from 0 and NA
+
+<!-- -   Total richness = **1** if the plot has a value in AB and/or BM -->
+
+A ce stade, la richesse varie de:
+
+```{r step 5, echo=TRUE}
+# On calcule la richesse en attribiant 1 à chaque colonne si la valeur est différent de 0 et de NA
+landworm_sp$Richesse_tot <- 0
+landworm_sp$Richesse_tot <- rowSums(!is.na(landworm_sp[colonnes_AB]) & landworm_sp[colonnes_AB] != 0)
+#sum (is.na(landworm_sp$Richesse_tot) )
+summary(landworm_sp$Richesse_tot)
+
+```
+
+
+-   6.    Décremmentation de la richesse
+
+Voir code:
+
+```{r step 6, echo=TRUE}
+# Apres calcule richesse ------------------------------------------------------
+sp_prorata <- function(df, sp_x, sp) {
+  
+  name_col <- names(df)
+  
+  #  si la colonne sp_x est présente
+  if (sp_x %in% name_col) {
+    
+    # pour chaque ligne 
+    for (i in 1:nrow(df)) {
+      
+      #  si les valeurs de la colonne sp_x ne sont ni 0 ni NA
+      if (!is.na(df[i, sp_x]) && df[i, sp_x] != 0) {
+        
+        # Si la somme des ab des sp est différente de 0
+        if (rowSums(df[i, sp], na.rm = TRUE) != 0) {
+          # La richesse diminue de 1
+          df[i, "Richesse_tot"] <- df[i, "Richesse_tot"] - 1
+        }
+      }
+    }
+  }
+  
+  return(df)
+}
+
+# Pour AB_Allolobophora_sp ------------------------------------------
+sp_x = "AB_Allolobophora_sp"
+sp=c("AB_Allolobophora_burgondiae",	
+     "AB_Allolobophora_chlorotica",			
+     "AB_Aporrectodea_cupulifera",	
+     "AB_Aporrectodea_icterica",	
+     "AB_Aporrectodea_limicola",	
+     "AB_Aporrectodea_rosea")
+# df= landworm_sp[, c(sp_x,sp, "Richesse_tot")]
+# df=df[!df$AB_Allolobophora_sp == 0,]
+# df=df[! is.na(df$AB_Allolobophora_sp),]
+# df$som = rowSums(df[,sp], na.rm=TRUE)
+# View(df)
+# 
+# dff <- sp_prorata(landworm_sp, sp_x, sp)
+# dff= dff[, c(sp_x,sp, "Richesse_tot")]
+# dff=dff[!dff$AB_Allolobophora_sp == 0,]
+# dff=dff[! is.na(dff$AB_Allolobophora_sp),]
+# dff$som = rowSums(dff[,sp], na.rm=TRUE)
+# View(dff)
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+
+# Pour AB_Aporrectodea_indéterminable ------------------------------------------
+sp_x = "AB_Aporrectodea_indéterminable"
+sp=c("AB_Allolobophora_burgondiae",	
+     "AB_Allolobophora_chlorotica",
+     "AB_Aporrectodea_cupulifera",
+     "AB_Aporrectodea_icterica",
+     "AB_Aporrectodea_limicola",
+     "AB_Aporrectodea_rosea")
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+
+# Pour AB_Aporrectodea_sp ------------------------------------------
+sp_x = "AB_Aporrectodea_sp"
+sp=c("AB_Aporrectodea_giardi",	
+     "AB_Aporrectodea_longa",	
+     "AB_Aporrectodea_nocturna",
+     "AB_Aporrectodea_ripicola")
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+
+
+# Pour AB_Dendrobaena_sp ------------------------------------------
+# Tous les "Dendrobaena" et "Dendrodrilus_rubidus" + Satchellius mammalis
+sp_x = "AB_Dendrobaena_sp"
+sp=c("AB_Dendrobaena_alpina",     
+     "AB_Dendrobaena_attemsi",
+     "AB_Dendrobaena_cognettii",
+     "AB_Dendrobaena_hortensis",      
+     "AB_Dendrobaena_octaedra",
+     "AB_Dendrodrilus_rubidus",
+     "AB_Satchellius_mammalis")
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+
+# Pour AB_Eisenia_sp ------------------------------------------
+# Tous les Eisenia possible
+sp_x = "AB_Eisenia_sp"
+sp=c("AB_Eisenia_andrei",
+     "AB_Eisenia_fetida",
+     "AB_Eisenia_veneta",             
+     "AB_Eiseniella_tetraedra")
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+
+# Pour AB_Lumbricus_sp  ------------------------------------------
+# Tous les Lumbricus sauf Lumbricus castaneus ?
+sp_x = "AB_Lumbricus_sp"
+sp=c("AB_Lumbricus_centralis",       
+"AB_Lumbricus_festivus",         
+"AB_Lumbricus_friendi",          
+"AB_Lumbricus_herculeus",        
+"AB_Lumbricus_meliboeus",        
+"AB_Lumbricus_rubellus" ,        
+"AB_Lumbricus_terrestris" )
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+
+
+# Pour AB_Microscolex_sp  ------------------------------------------
+# Tous les AB_Microscolex
+sp_x = "AB_Microscolex_sp"
+sp=c("AB_Microscolex_dubius",         
+"AB_Microscolex_phosphoreus")
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+
+
+# Pour AB_Octolasion_sp  ------------------------------------------
+# Tous les AB_Octolasion
+sp_x = "AB_Octolasion_sp"
+sp=c("AB_Octodrilus_complanatus",    
+"AB_Octolasion_cyaneum",         
+"AB_Octolasion_lacteum")
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+
+
+# Pour AB_Pheretima_indéterminable  ------------------------------------------
+# AB_Pheritima_Diffringens
+sp_x = "AB_Pheretima_indéterminable"
+sp=c("AB_Pheritima_Diffringens", "AB_Pheritima_Diffringens")
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+
+
+# Pour AB_Prosellodrilus_sp  ------------------------------------------
+# Tous les Prosellodrilus
+sp_x = "AB_Prosellodrilus_sp"
+sp=c("AB_Prosellodrilus_amplisetosus",
+"AB_Prosellodrilus_fragilis",    
+"AB_Prosellodrilus_occidentalis",
+"AB_Prosellodrilus_praticola",   
+"AB_Prosellodrilus_pyrenaicus")
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+
+
+# Pour AB_Scherotheca_sp  ------------------------------------------
+# Tous les AB_Scherotheca_sp
+sp_x = "AB_Scherotheca_sp"
+sp=c("AB_Satchellius_mammalis",       
+"AB_Scherotheca_aquitana",       
+"AB_Scherotheca_dinoscolex",     
+"AB_Scherotheca_nivicola",       
+"AB_Scherotheca_porotheca",      
+"AB_Scherotheca_rhodana",       
+"AB_Scherotheca_savignyi")
+landworm_sp <- sp_prorata(landworm_sp, sp_x, sp)
+
+```
+
+
+-   7.    Rules 3: Si le Owner de la parcelle est DC ou GP alors si Aporrectodea_trapezoides et/ou Aporrectodea_tuberculata sont presentent dans la parcelle alors si Aporrectodea_caliginosa est presente aussi dans la parcelle alors la richesse diminue de 1.
+
+```{r step 7, echo=TRUE}
+
+# dff <- data.frame(
+#   owner = c("DC", "GP", "XX", "DC"),
+#   AB_Aporrectodea_trapezoides = c(1, NA, 0, 2),
+#   AB_Aporrectodea_tuberculata = c(NA, 0, 1, 3),
+#   AB_Aporrectodea_caliginosa = c(2, 1, NA, 4),
+#   Richesse_tot = c(10, 20, 30, 40)
+# )
+# df <- dff
+
+df=landworm_sp
+for (i in 1:nrow(df)) {
+  # Si owner est "DC" ou "GP"
+  if (df[i, "owner"] %in% c("DC", "GP")) {
+    
+    # si AB_Aporrectodea_trapezoides ou AB_Aporrectodea_tuberculata sont présents et non nuls
+    if ((!is.na(df[i, "AB_Aporrectodea_trapezoides"]) && 
+         df[i, "AB_Aporrectodea_trapezoides"] != 0) 
+        || 
+        (!is.na(df[i, "AB_Aporrectodea_tuberculata"]) && 
+         df[i, "AB_Aporrectodea_tuberculata"] != 0)) {
+      
+      #  si AB_Aporrectodea_caliginosa est présente et non nulle
+      if (!is.na(df[i, "AB_Aporrectodea_caliginosa"]) && 
+          df[i, "AB_Aporrectodea_caliginosa"] != 0) {
+        
+        # La richesse diminue de 1 pour cette ligne
+        df[i, "Richesse_tot"] <- df[i, "Richesse_tot"] - 1
+      }
+    }
+  }
+}
+
+
+```
+
+-   8.    Verifications
+```{r step 8, echo=FALSE}
+# Check des lignes ayant des 0 richesse et X AB ou BM : 0 lignes
+# vdt_a_checker = landworm_sp[landworm_sp$Richesse_tot == 0 & (landworm_sp$Total_AB !=0 | landworm_sp$BM_to !=0), c("ID_Site","AB_tot","BM_tot","Richesse_tot")]
+# vdt_a_checker = subset(vdt_a_checker, Richesse_tot==0)
+# View(vdt_a_checker)
+# vdt_a_checker$Richesse_tot <- 1
+# Mettre à jour les ligne correspondant dans la landworm_sp 
+# landworm_sp[rownames(landworm_sp) %in% rownames(vdt_a_checker), "Richesse_tot"] <- 1
+
+
+
+# Check si y a des ligne ayant que des NA dans AB, BM et Richesse : nop
+# resultat <- subset(landworm_sp, is.na(AB_tot) & is.na(BM_tot) & is.na(Richesse_tot))
+# View(resultat[, c("AB_tot","BM_tot", "Richesse_tot")])
+
+
+
+# Check si y a des ligne ayant que des zéros ou des NA dans AB, BM et Richesse_tot: 66 ligne
+# vdt <- c("AB_tot", "BM_tot", "Richesse_tot")
+# lignes_zero <- which(rowSums(landworm_sp[vdt] != 0, na.rm = TRUE) == 0)
+# View(landworm_sp[lignes_zero,c("ID_Site","AB_tot", "BM_tot", "Richesse_tot")])
+
+
+
+# Check des lignes ayant de BM mais pas de AB
+# bm_sans_ab <- subset(landworm_sp, AB_tot == 0 & BM_tot != 0)
+# bm_sans_ab[, c("ID","ID_Site", "Programme", "Protocole", "AB_tot", "BM_tot")]
+
+# ab_sans_bm <- subset(landworm_sp, BM_tot == 0 & AB_tot != 0) # 1 parcelles
+# ab_sans_bm[, c("ID","ID_Site", "Programme", "Protocole", "AB_tot", "BM_tot")]
+
+
+# Check des doublons
+# 
+#duplicated_rows <- subset(landworm_sp, duplicated(landworm_sp[, c("ID", "AB_tot", "BM_tot")]) | #duplicated(landworm_sp[, c("ID", "AB_tot", "BM_tot")], fromLast = TRUE))
+
+```
+
+```{r}
+save_landworm = landworm
+landworm = landworm_sp
+```
+
+
+```{r fig richness, fig.align='center',fig.height=10}
+df_suivi = landworm
+n_line = nrow(df_suivi)
+
+df_cleaned = landworm
+
+df_cleaned$Richesse_tot = as.numeric(df_cleaned$Richesse_tot)
+explo_num(nom_col = 'Richesse_tot', titre = 'Richesse_tot (before cleaning)', df = df_cleaned)
+df_cleaned <- test_grub(df_cleaned, 'Richesse_tot', direction = 'maxi')
+df_cleaned <- test_grub(df_cleaned, 'Richesse_tot', direction = 'mini')
+cat("Sppression des valeurs aberrantes")
+explo_num(nom_col = 'Richesse_tot', titre = 'Richesse_tot (after cleaning)', df = df_cleaned)
+# summary(df_cleaned$Richesse_tot) 
+landworm = df_cleaned
+```
+
+-   The database therefore changes from **`r n_line`** to **`r nrow(landworm)`** observations.
+```{r}
+df= landworm[landworm$Richesse_tot>12,]
+```
+
+
+**Il n y a pas de valeurs aberant. Cependant, il y a `r nrow(df)` parcelles qui ont une richesse superieur a 12, a garder ou a supprimer ?**
+
+**Details des Parcelles a forte richesse: **
+
+
+```{r}
+df= landworm[landworm$Richesse_tot>12,]
+
+# Suppression des observations (lignes) qui ne contiennent que des NA ou des 0
+df = df[rowSums(is.na(df) | df == 0) != ncol(df), ]
+
+# Sélection des colonnes qui commencent par "AB_" et qui ont au moins une valeur différente de 0
+df = df[, grep("^AB_", colnames(df))]
+df = df[, colSums(df != 0, na.rm = TRUE) > 0]
+
+# on elnleve les colonne qui sont dans ab_supprimee
+df = df[, !colnames(df) %in% ab_supprimee]
+# names(df)
+
+id = landworm[rownames(df), c(1,2,4,13,223)]
+
+dff = cbind(id, df)
+# View(dff)
+rownames(df) = NULL
+DT::datatable(dff, options = list(pageLength = 5))
+View(dff)
+```
+
+
+
+
+
